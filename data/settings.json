@@ -1,0 +1,328 @@
+{
+  "first_run": false,
+  "debug_mode": false,
+  "auto_start": false,
+  "theme": "dark",
+  "speech": {
+    "language": "de-DE",
+    "wake_words": [
+      "jarvis",
+      "hey jarvis",
+      "hallo jarvis"
+    ],
+    "wake_word_enabled": true,
+    "tts_rate": 180,
+    "tts_volume": 0.8,
+    "voice_id": null,
+    "tts_backend": "xtts",
+    "tts_xtts_speaker": "speaker_0",
+    "voice_preset": "jarvis_marvel",
+    "stream_tts": true,
+    "min_command_words": 3,
+    "whisper_model": "large-v3",
+    "command_hotwords": [
+      "oeffne",
+      "starte",
+      "mach auf",
+      "beende",
+      "schliesse",
+      "stopp",
+      "spiele musik",
+      "lautstarke hoch",
+      "lautstarke runter",
+      "suche",
+      "zeige status"
+    ],
+    "command_synonyms": {
+      "open_program": [
+        "oeffne",
+        "offne",
+        "mach auf",
+        "starte",
+        "programm starten"
+      ],
+      "close_program": [
+        "schliesse",
+        "mach zu",
+        "beende",
+        "programm schliessen"
+      ],
+      "knowledge_search": [
+        "suche",
+        "finde",
+        "recherchiere",
+        "was ist"
+      ],
+      "play_media": [
+        "spiele musik",
+        "musik abspielen",
+        "spiel musik"
+      ],
+      "stop_media": [
+        "stopp",
+        "stoppe",
+        "musik stoppen"
+      ],
+      "volume_up": [
+        "lauter",
+        "lautstarke hoch",
+        "erhoehe lautstarke"
+      ],
+      "volume_down": [
+        "leiser",
+        "lautstarke runter",
+        "senke lautstarke"
+      ],
+      "time_query": [
+        "wie spaet",
+        "uhrzeit",
+        "wie viel uhr"
+      ],
+      "date_query": [
+        "welches datum",
+        "welcher tag"
+      ]
+    },
+    "preferred_programs": [],
+    "recognition": {
+      "command_timeout": 1.7,
+      "silence_timeout": 0.7,
+      "max_command_duration": 3.8
+    }
+  },
+  "stt": {
+    "engine": "faster_whisper",
+    "model": "Systran/faster-whisper-large-v3",
+    "device": "cuda",
+    "compute_type": "int8_float16",
+    "default_mode": "command",
+    "mode_profiles": {
+      "command": {
+        "language": "de",
+        "beam_size": 1,
+        "temperature": 0.0,
+        "patience": null,
+        "vad_filter": true,
+        "vad_parameters": {
+          "threshold": 0.68,
+          "min_speech_duration_ms": 300,
+          "min_silence_duration_ms": 650,
+          "speech_pad_ms": 200,
+          "max_speech_duration_s": 4.0
+        },
+        "condition_on_previous_text": false,
+        "no_speech_threshold": 0.7,
+        "initial_prompt": "Deutschsprachige Kurzbefehle wie 'öffne', 'starte', 'lauter', 'leiser', 'stopp', 'abbrechen', 'zeige status', 'wie spät ist es', 'suche', 'spiele musik'."
+      },
+      "dictation": {
+        "language": "de",
+        "beam_size": 5,
+        "temperature": 0.0,
+        "patience": 0.0,
+        "vad_filter": true,
+        "vad_parameters": {
+          "threshold": 0.55,
+          "min_speech_duration_ms": 200,
+          "min_silence_duration_ms": 500,
+          "speech_pad_ms": 150
+        },
+        "condition_on_previous_text": true,
+        "no_speech_threshold": 0.55
+      }
+    }
+  },
+  "audio": {
+    "sample_rate": 16000,
+    "chunk_size": 8000,
+    "channels": 1,
+    "input_device": "Mikrofon (JBL Quantum810 Wirele",
+    "input_device_index": 1,
+    "output_device": null,
+    "output_device_index": null,
+    "output_device_id": null,
+    "preferred_input_substrings": [
+      "jbl",
+      "wireless",
+      "chat"
+    ]
+  },
+  "knowledge": {
+    "cache_duration_hours": 24,
+    "max_cache_size": 1000,
+    "enable_wikipedia": true,
+    "enable_wikidata": false,
+    "auto_cleanup": true,
+    "expansion": {
+      "enabled": true,
+      "interval_minutes": 360,
+      "topics": [
+        "kuenstliche intelligenz",
+        "cybersecurity",
+        "nachhaltige energie",
+        "software engineering"
+      ]
+    }
+  },
+  "system": {
+    "monitor_interval": 10,
+    "max_log_size_mb": 10,
+    "backup_count": 5,
+    "enable_system_control": true
+  },
+  "models": {
+    "llm": {
+      "llama3": {
+        "load_strategy": "startup"
+      },
+      "mistral": {
+        "load_strategy": "on_demand"
+      },
+      "deepseek": {
+        "load_strategy": "on_demand"
+      }
+    },
+    "tts": {
+      "xtts": {
+        "load_strategy": "startup",
+        "enabled": true,
+        "default_speaker": "speaker_0",
+        "prompt_on_missing_speaker": true
+      }
+    },
+    "stt": {
+      "whisper": {
+        "load_strategy": "startup",
+        "enabled": true
+      }
+    }
+  },
+  "remote_control": {
+    "enabled": false,
+    "host": "127.0.0.1",
+    "port": 8765,
+    "token": 1220,
+    "broadcast_conversation": true,
+    "allow_status_queries": true,
+    "command_timeout_seconds": 45.0
+  },
+  "web_interface": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 5050,
+    "token": "12345678",
+    "allow_guest_commands": false,
+    "command_timeout_seconds": 45.0,
+    "auto_open_browser": true,
+    "allowed_ips": [],
+    "rate_limit_window_seconds": 60,
+    "rate_limit_max_requests": 120
+  },
+  "response": {
+    "condense_enabled": true,
+    "min_chars": 220,
+    "max_chars": 800
+  },
+  "nlu": {
+    "enable_slang_normalization": true,
+    "ambiguity_threshold": 0.12
+  },
+  "context": {
+    "enabled": true,
+    "max_history": 20
+  },
+  "apis": {
+    "wikipedia_language": "de",
+    "timeout_seconds": 10,
+    "retry_attempts": 3,
+    "enable_external_apis": true
+  },
+  "telemetry": {
+    "error_reporting": {
+      "enabled": true,
+      "send_anonymous": false,
+      "max_reports_per_day": 25
+    }
+  },
+  "security": {
+    "encrypt_data": false,
+    "log_conversations": true,
+    "store_feedback": true,
+    "privacy_mode": false,
+    "audit_logging": true,
+    "default_role": "user",
+    "default_security_level": "normal",
+    "auth": {
+      "passphrase": null,
+      "passphrase_hint": null,
+      "vault_reference": "security_passphrase",
+      "passphrase_cache_ttl": 600,
+      "voice_match_threshold": 0.75
+    },
+    "authenticator": {
+      "required": true,
+      "configured": true,
+      "setup_pending": false,
+      "issuer": "JarvisCore",
+      "account_name": "JarvisCore-WebUI",
+      "vault_reference": "security_totp_secret",
+      "configured_at": "2025-11-05T17:51:47.503624"
+    },
+    "read": {
+      "allowed_directories": [
+        "./",
+        "./data",
+        "~"
+      ],
+      "denied_directories": [
+        "C:/Windows",
+        "C:/Program Files",
+        "C:/Program Files (x86)"
+      ],
+      "max_file_size_mb": 8,
+      "allow_system_info": true,
+      "allow_process_listing": true,
+      "allow_network_info": true,
+      "allow_event_logs": false,
+      "allow_window_introspection": true,
+      "allow_screenshots": false
+    },
+    "write": {
+      "allowed_directories": [
+        "./output",
+        "./data"
+      ],
+      "denied_directories": [
+        "C:/Windows",
+        "C:/Program Files",
+        "C:/Program Files (x86)"
+      ],
+      "require_confirmation": false,
+      "command_whitelist": {},
+      "script_whitelist": []
+    },
+    "safe_mode": {
+      "apply_changes": true,
+      "notify_gui": true
+    },
+    "automation": {
+      "allow_workflows": true,
+      "max_steps": 10,
+      "require_confirmation": true
+    },
+    "voice": {
+      "profiles_required": true,
+      "min_profiles": 1
+    }
+  },
+  "crawler": {
+    "enabled": true,
+    "base_url": "http://127.0.0.1:8090",
+    "api_key": "142536",
+    "sync_interval_sec": 1800,
+    "auto_sync": true,
+    "safe_mode": "allow"
+  },
+  "retrieval": {
+    "cross_encoder_model_name": "amberoad/bert-multilingual-passage-reranking-msmarco"
+  }
+}

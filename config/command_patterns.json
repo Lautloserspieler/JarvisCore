@@ -1,0 +1,95 @@
+{
+  "greeting": {
+    "patterns": [
+      "(hallo|hi|hey|moin|servus|grü(ß|ss)e? (dich|sie|euch))",
+      "guten (tag|morgen|abend|mittag)",
+      "na (auch so|du|ihr)",
+      "was geht( ab)?"
+    ],
+    "responses": [
+      "Hallo! Schön, von dir zu hören. 😊 Wie kann ich dir helfen?",
+      "Guten Tag! Was kann ich für dich tun?",
+      "Hey! Alles klar bei dir? Wie kann ich dich unterstützen?",
+      "Servus! Was gibt's Neues?"
+    ],
+    "context_aware": true
+  },
+  "thanks": {
+    "patterns": [
+      "(danke|thx|merci)( (dir|ihnen|euch|schön|vielmals|recht herzlich))?",
+      "vielen (dank|lieben dank)",
+      "ich danke (dir|ihnen|euch)",
+      "das war nett"
+    ],
+    "responses": [
+      "Gerne doch! 😊",
+      "Keine Ursache, dafür bin ich ja da!",
+      "Immer gerne! Kann ich sonst noch etwas für dich tun?",
+      "Gern geschehen! Bei Fragen melde dich einfach."
+    ],
+    "context_aware": true
+  },
+  "goodbye": {
+    "patterns": [
+      "(auf )?wieder(sehn|sehen|sehe)( (dich|euch|sie))?",
+      "(tsch(ü|ue)ss|tschö|ciao|ade|pfi(a|ä)ti|servus|bis (dann|sp(ä|ae)ter|morgen|bald))",
+      "mach's gut",
+      "bis (zum )?(n(ä|ae)chsten mal|sp(ä|ae)ter)"
+    ],
+    "responses": [
+      "Bis bald! Melde dich, wenn du was brauchst! 👋",
+      "Tschüss! Bis zum nächsten Mal! 😊",
+      "Auf Wiedersehen! Schönen Tag noch!",
+      "Bis später! Ich bin für dich da, wenn du mich brauchst!"
+    ]
+  },
+  "time": {
+    "patterns": [
+      "(wieviel uhr ist es|wie sp(ä|ae)t ist es( jetzt)?|welche uhrzeit ist es|wieviel uhr haben wir)",
+      "kannst du mir die uhrzeit sagen",
+      "sag mir bitte die uhrzeit",
+      "wieviel uhr( ist es)? (gerade|jetzt|aktuell)"
+    ],
+    "function": "get_current_time",
+    "responses": [
+      "Es ist aktuell {time} Uhr.",
+      "Die Uhrzeit ist {time} Uhr.",
+      "Wir haben {time} Uhr.",
+      "Aktuell ist es {time} Uhr."
+    ]
+  },
+  "system_status": {
+    "patterns": [
+      "systemstatus",
+      "system überwachung",
+      "ressourcen anzeigen",
+      "system auslastung",
+      "zeige systeminformationen",
+      "cpu auslastung",
+      "ram auslastung",
+      "gpu auslastung",
+      "systemressourcen",
+      "system überprüfen"
+    ],
+    "function": "show_system_status",
+    "description": "Zeigt die aktuelle Systemauslastung (CPU, RAM, GPU) an"
+  },
+  "date": {
+    "patterns": [
+      "welches datum haben wir heute",
+      "welcher tag ist heute",
+      "welcher tag ist morgen"
+    ],
+    "function": "get_current_date"
+  },
+  "help": {
+    "patterns": [
+      "hilfe",
+      "was kannst du",
+      "was kannst du tun"
+    ],
+    "responses": [
+      "Ich kann Ihnen bei verschiedenen Aufgaben helfen. Sie können mich nach der Uhrzeit oder dem Datum fragen, ich kann einfache Berechnungen durchführen und vieles mehr. Fragen Sie einfach!"
+    ]
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "wikipedia_de": {
+    "name": "Wikipedia (Deutsch)",
+    "base_url": "https://de.wikipedia.org/w/api.php",
+    "params": {
+      "action": "query",
+      "prop": "extracts|pageprops",
+      "exintro": 1,
+      "explaintext": 1,
+      "format": "json",
+      "titles": "{query}",
+      "formatversion": 2
+    },
+    "description": "Deutsche Wikipedia API fuer Artikelzusammenfassungen",
+    "example_usage": "https://de.wikipedia.org/w/api.php?action=query&prop=extracts|pageprops&exintro=1&explaintext=1&format=json&titles=Deutschland&formatversion=2"
+  },
+  "wikipedia_en": {
+    "name": "Wikipedia (English)",
+    "base_url": "https://en.wikipedia.org/w/api.php",
+    "params": {
+      "action": "query",
+      "prop": "extracts|pageprops",
+      "exintro": 1,
+      "explaintext": 1,
+      "format": "json",
+      "titles": "{query}",
+      "formatversion": 2
+    },
+    "description": "English Wikipedia API for article summaries",
+    "example_usage": "https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageprops&exintro=1&explaintext=1&format=json&titles=Germany&formatversion=2"
+  },
+  "wikipedia_search": {
+    "name": "Wikipedia Suche",
+    "base_url": "https://{lang}.wikipedia.org/w/api.php",
+    "params": {
+      "action": "query",
+      "list": "search",
+      "format": "json",
+      "srsearch": "{query}",
+      "srinfo": "totalhits",
+      "srlimit": 5,
+      "srsort": "relevance"
+    },
+    "default_params": {
+      "lang": "de"
+    },
+    "description": "Wikipedia-Such-API fuer die Suche nach Artikeln",
+    "example_usage": "https://de.wikipedia.org/w/api.php?action=query&list=search&srsearch=Deutschland&format=json"
+  },
+  "wikidata": {
+    "name": "Wikidata",
+    "base_url": "https://www.wikidata.org/w/api.php",
+    "params": {
+      "action": "wbsearchentities",
+      "search": "{query}",
+      "language": "de",
+      "format": "json",
+      "uselang": "de"
+    },
+    "description": "Strukturierte Daten aus der freien Wissensdatenbank",
+    "example_usage": "https://www.wikidata.org/w/api.php?action=wbsearchentities&search=Deutschland&language=de&format=json"
+  },
+  "open_library": {
+    "name": "Open Library",
+    "base_url": "https://openlibrary.org",
+    "endpoints": {
+      "search": "/search.json"
+    },
+    "params": {
+      "q": "{query}",
+      "page": 1,
+      "limit": 5,
+      "has_fulltext": "true"
+    },
+    "description": "Offene Bibliothek mit Buchinformationen",
+    "example_usage": "https://openlibrary.org/search.json?q=die+unendliche+geschichte&page=1&limit=5&has_fulltext=true"
+  },
+  "openstreetmap": {
+    "name": "OpenStreetMap / Nominatim",
+    "base_url": "https://nominatim.openstreetmap.org/search",
+    "headers": {
+      "User-Agent": "J.A.R.V.I.S. Knowledge Collector (https://github.com/yourusername/jarvis)"
+    },
+    "params": {
+      "q": "{query}",
+      "format": "json",
+      "addressdetails": 1,
+      "limit": 5,
+      "accept-language": "de",
+      "email": "your.email@example.com"
+    },
+    "description": "Geodaten und Adresssuche. Ersetzen Sie die E-Mail-Adresse mit Ihrer eigenen E-Mail gemaess der Nutzungsbedingungen von Nominatim.",
+    "example_usage": "https://nominatim.openstreetmap.org/search?q=Brandenburger+Tor&format=json&addressdetails=1"
+  },
+  "pubmed": {
+    "name": "PubMed",
+    "base_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/",
+    "endpoints": {
+      "search": "esearch.fcgi",
+      "summary": "esummary.fcgi"
+    },
+    "params": {
+      "db": "pubmed",
+      "retmode": "json",
+      "retmax": 5,
+      "term": "{query}"
+    },
+    "description": "Biomedizinische Literaturrecherche (NCBI E-Utilities)",
+    "example_usage": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmode=json&term=cancer"
+  }
+}

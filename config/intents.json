@@ -1,0 +1,427 @@
+{
+  "language": "de-DE",
+  "version": 1,
+  "default_confidence": 0.35,
+  "intents": [
+    {
+      "name": "greeting",
+      "handler": "handle_greeting",
+      "priority": 90,
+      "patterns": [
+        "(?:^|\\b)(hallo|hi|hey|servus|moin|grüß(?: dich| euch)?)\\b",
+        "guten\\s+(morgen|tag|abend)"
+      ],
+      "keywords": [
+        "hallo",
+        "hi",
+        "hey",
+        "servus",
+        "moin",
+        "grüß dich",
+        "grüß euch"
+      ],
+      "examples": [
+        "hallo jarvis",
+        "hey, wie geht es dir",
+        "guten morgen jarvis"
+      ],
+      "description": "Freundliche Begruessung"
+    },
+    {
+      "name": "goodbye",
+      "handler": "handle_goodbye",
+      "priority": 40,
+      "patterns": [
+        "(?:^|\\b)(tschüss|tschues|ciao|bis bald|auf wiedersehen|mach es gut)"
+      ],
+      "keywords": [
+        "tschüss",
+        "tschues",
+        "ciao",
+        "bis bald",
+        "auf wiedersehen"
+      ],
+      "examples": [
+        "tschues jarvis",
+        "bis bald"
+      ],
+      "description": "Verabschiedung"
+    },
+    {
+      "name": "emergency_mode",
+      "handler": "handle_emergency_mode",
+      "priority": 80,
+      "patterns": [
+        "(?:notfallmodus|notfall protokoll|starte notfall|notfall auslösen|emergency mode)",
+        "(?:pc\\s+sperren|sperre den pc|sperr den bildschirm)",
+        "(?:netzwerk\\s+trennen|internet\\s+trennen|network disconnect)"
+      ],
+      "keywords": [
+        "notfall",
+        "emergency",
+        "alarm",
+        "sperren",
+        "netzwerk",
+        "disconnect"
+      ],
+      "examples": [
+        "Starte den Notfallmodus",
+        "Trenne das Netzwerk und sperre den PC",
+        "Notfallprotokoll aktivieren"
+      ],
+      "description": "Aktiviert Notfallaktionen wie Sperren, Alarm oder Netzwerktrennung"
+    },
+    {
+      "name": "voice_enroll",
+      "handler": "handle_voice_enroll",
+      "priority": 70,
+      "patterns": [
+        "(?:erstelle|aktualisiere|speichere)\\s+(?:eine\\s+)?stimmprobe(?:\\s+fuer\\s+(?P<profile>[a-z0-9_]+))?",
+        "(?:stimmprobe|stimmprofil|stimmbiometrie)\\s+(?:aufnehmen|starten|erstellen)",
+        "stimmprobe aufnehmen"
+      ],
+      "keywords": [
+        "stimmprobe",
+        "stimmprofil",
+        "stimmbiometrie",
+        "stimme speichern"
+      ],
+      "examples": [
+        "erstelle eine stimmprobe",
+        "aktualisiere mein stimmprofil",
+        "stimmprobe aufnehmen"
+      ],
+      "description": "Erstellt oder aktualisiert die biometrische Stimmprobe"
+    },
+    {
+      "name": "system_status",
+      "handler": "handle_system_status",
+      "priority": 75,
+      "patterns": [
+        "systemstatus",
+        "system\\s+auslastung",
+        "system\\s+check",
+        "zeige\\s+(?:mir\\s+)?system(?:informationen|ressourcen)",
+        "cpu",
+        "ram",
+        "gpu",
+        "system\\s+ressourcen"
+      ],
+      "keywords": [
+        "system",
+        "status",
+        "cpu",
+        "ram",
+        "gpu",
+        "ressourcen",
+        "auslastung"
+      ],
+      "examples": [
+        "zeige mir den systemstatus",
+        "cpu auslastung"
+      ],
+      "description": "Systeminformationen anzeigen",
+      "min_confidence": 0.4
+    },
+    {
+      "name": "open_program",
+      "handler": "handle_open_program",
+      "priority": 80,
+      "patterns": [
+        "(?:kannst du(?: bitte)?\\s+)?(?:oeffne|oeffnen|mach|starte|launch|beginne)\\s+(?P<program>[a-z0-9 ._-]+)",
+        "(?:kannst du(?: bitte)?\\s+)?(?:start|oeffne|oeffnen)\\s+den\\s+(?P<program_den>[a-z0-9 ._-]+)",
+        "(?:oeffne|oeffnen|starte)\\s+(?:mal\\s+)?(?P<program_generic>[a-z0-9 ._-]+)"
+      ],
+      "keywords": [
+        "oeffne",
+        "oeffnen",
+        "starte",
+        "programm",
+        "app",
+        "starten"
+      ],
+      "examples": [
+        "oeffne notepad",
+        "starte den browser"
+      ],
+      "description": "Programm oeffnen",
+      "min_confidence": 0.45
+    },
+    {
+      "name": "close_program",
+      "handler": "handle_close_program",
+      "priority": 70,
+      "patterns": [
+        "(?:kannst du(?: bitte)?\\s+)?(?:schliesse|schliessen|beende|stoppe|schalte aus)\\s+(?P<program>[a-z0-9 ._-]+)",
+        "(?:kannst du(?: bitte)?\\s+)?(?:schliesse|schliessen|beende)\\s+den\\s+(?P<program_den>[a-z0-9 ._-]+)"
+      ],
+      "keywords": [
+        "schliesse",
+        "schliessen",
+        "beende",
+        "stoppe",
+        "programm"
+      ],
+      "examples": [
+        "schliesse notepad",
+        "beende den browser"
+      ],
+      "description": "Programm schliessen",
+      "min_confidence": 0.45
+    },
+    {
+      "name": "create_file",
+      "handler": "handle_create_file",
+      "priority": 80,
+        "patterns": [
+          "(?:erstelle|erzeuge|erstell|lege|leg|speichere|schreibe)\\s+(?:eine\\s+)?(?:datei|file)\\s+(?:namens\\s+|called\\s+|mit\\s+dem\\s+namen\\s+)?[\\w\\-./\\\\]+",
+          "(?:schreibe|speichere|fuege|kopiere)\\s+(?:den\\s+|diesen\\s+|folgenden\\s+)?(?:code|text|inhalt)?\\s*(?::|=)?\\s+.+\\s+(?:in|nach)\\s+(?:die\\s+|den\\s+|das\\s+)?(?:datei|file)\\s+[\\w\\-./\\\\]+",
+          "(?:erstelle|programmier(?:e)?|baue|schreibe)\\s+(?:ein(?:e|en)?\\s+)?(?:python|py|javascript|js|typescript|ts|html|css|c\\+\\+|c|cpp|go|rust|powershell|batch|skript|script|programm)(?:\\s+programm|\\s+skript|\\s+script)?(?:\\s+auf\\s+(?:meinem|den|dem)\\s+(?:desktop|schreibtisch|dokumente|downloads|ordner))?.*"
+        ],
+        "keywords": [
+          "datei erstellen",
+          "erstelle datei",
+          "datei anlegen",
+          "schreibe in datei",
+          "code speichern",
+          "programm erstellen",
+          "python programm",
+          "skript erstellen"
+        ],
+      "examples": [
+        "erstelle eine datei scripts/app.py mit folgendem code",
+        "schreibe den text in die datei notizen.txt",
+        "speichere diesen code in src/main.py"
+      ],
+      "description": "Erstellt Dateien und kann Inhalt schreiben",
+      "min_confidence": 0.5
+    },
+    {
+      "name": "music_youtube",
+      "handler": "handle_music_command",
+      "priority": 95,
+      "patterns": [
+        "(?:hey\\s+jarvis\\s*,?\\s*)?(?:spiel|spiele|spiel mal)\\s+(?:auf\\s+youtube\\s+)?(?P<track>.+?)\\s*(?:auf\\s+youtube)?\\s*(?:ab)?$",
+        "(?:spiel|spiele)\\s+(?P<track>.+?)\\s+(?:auf\\s+youtube)\\s*(?:ab)?$",
+        "(?P<action>pause|pausiere|stopp|stoppe|halte an)(?:\\s+(?:die\\s+)?(?:musik|wiedergabe))?$",
+        "(?P<action>weiter|naechstes|next)\\s+(?:lied|song|video)",
+        "(?P<action>vorheriges|voriges|zurueck|zuruck|previous)\\s+(?:lied|song|video)",
+        "(?P<action>mach(?:e)?\\s+lauter|lauter|lautstaerke\\s+hoch|erhoehe\\s+lautstaerke)",
+        "(?P<action>mach(?:e)?\\s+leiser|leiser|lautstaerke\\s+runter|senke\\s+lautstaerke)",
+        "(?P<action>mute|stumm|stummschalten|lautlos)"
+      ],
+      "keywords": [
+        "youtube",
+        "musik",
+        "spiel",
+        "lied",
+        "song",
+        "video",
+        "pause",
+        "weiter",
+        "naechstes",
+        "vorheriges",
+        "lauter",
+        "leiser",
+        "lautstaerke"
+      ],
+      "examples": [
+        "spiel auf youtube avicii levels",
+        "spiel avicii levels auf youtube ab",
+        "pause die musik",
+        "mach die musik lauter"
+      ],
+      "description": "Steuert die Musikwiedergabe auf YouTube",
+      "min_confidence": 0.55
+    },
+    {
+      "name": "knowledge_search",
+      "handler": "handle_knowledge_search",
+      "priority": 85,
+      "patterns": [
+        "(?:suche|finde|recherchiere|zeige mir|was ist|erklaere|erkläre)\\s+(?P<topic>.+)",
+        "infos?\\s+über\\s+(?P<topic_alt>.+)",
+        "informationen\\s+zu\\s+(?P<topic_info>.+)"
+      ],
+      "keywords": [
+        "suche",
+        "finde",
+        "erkläre",
+        "information",
+        "informationen",
+        "infos",
+        "über",
+        "zu"
+      ],
+      "examples": [
+        "suche informationen ueber python",
+        "was ist kuenstliche intelligenz"
+      ],
+      "description": "Allgemeine Wissenssuche",
+      "min_confidence": 0.5
+    },
+    {
+      "name": "entertainment_mode",
+      "handler": "handle_entertainment_mode",
+      "priority": 60,
+      "patterns": [
+        "(?:unterhaltungsmodus|unterhalte mich|erzaehl mir (?:etwas|was)|erzaehl mir (?:etwas|was)|mach mal was lustiges|erheitere mich|unterhaltung bitte)",
+        "(?:erzaehl mir einen witz|erzaehl etwas lustiges|mach einen witz)",
+        "(?:zufallsfakt|random fact|lustiger fakt|infos zum tag|tagesgeschehen|heutige news)"
+      ],
+      "keywords": [
+        "unterhaltung",
+        "witz",
+        "zufallsfakt",
+        "smalltalk",
+        "entertaine",
+        "news",
+        "nachrichten"
+      ],
+      "examples": [
+        "Unterhaltungsmodus aktivieren",
+        "Erzaehl mir einen Witz",
+        "Gib mir einen Zufallsfakt",
+        "Was gibt es heute Neues?"
+      ],
+      "description": "Wechselt in den Unterhaltungsmodus mit Smalltalk, Fakten oder Witzen"
+    },
+    {
+      "name": "neural_mode",
+      "handler": "handle_neural_mode",
+      "priority": 65,
+      "patterns": [
+        "(?:neural(?:er)?\\s*modus|neural\\s*mode)",
+        "(?:aktiviere|starte|schalte)\\s+den?\\s+neural(?:en)?\\s+modus",
+        "(?:verknuepfe|kombiniere)\\s+(?:ideen|wissen)"
+      ],
+      "keywords": [
+        "neural",
+        "modus",
+        "verknuepfe",
+        "kombiniere",
+        "ideen"
+      ],
+      "examples": [
+        "Aktiviere den neuralen Modus",
+        "Neural Mode einschalten",
+        "Kombiniere Wissen im Neural Mode"
+      ],
+      "description": "Aktiviert einen Modus, in dem Jarvis Wissen aus mehreren Quellen verknuepft"
+    },
+    {
+      "name": "time_query",
+      "handler": "handle_time_request",
+      "priority": 60,
+      "patterns": [
+        "wie\\s+spät",
+        "wieviel\\s+uhr",
+        "aktuelle\\s+uhrzeit"
+      ],
+      "keywords": [
+        "spät",
+        "uhr",
+        "uhrzeit"
+      ],
+      "examples": [
+        "wie spaet ist es",
+        "sag mir die uhrzeit"
+      ],
+      "description": "Aktuelle Uhrzeit"
+    },
+    {
+      "name": "date_query",
+      "handler": "handle_date_request",
+      "priority": 55,
+      "patterns": [
+        "welches\\s+datum",
+        "welcher\\s+tag",
+        "welcher\\s+wochentag",
+        "heutiges\\s+datum"
+      ],
+      "keywords": [
+        "datum",
+        "tag",
+        "wochentag",
+        "heute"
+      ],
+      "examples": [
+        "welcher tag ist heute",
+        "welches datum haben wir"
+      ],
+      "description": "Aktuelles Datum"
+    },
+    {
+      "name": "help",
+      "handler": "handle_help",
+      "priority": 50,
+      "patterns": [
+        "hilfe",
+        "was\\s+kannst\\s+du",
+        "welche\\s+befehl[e]?"
+      ],
+      "keywords": [
+        "hilfe",
+        "befehle",
+        "kannst",
+        "was"
+      ],
+      "examples": [
+        "hilfe bitte",
+        "was kannst du tun"
+      ],
+      "description": "Erklaert Faehigkeiten"
+    },
+    {
+      "name": "creator_info",
+      "handler": "handle_creator_question",
+      "priority": 65,
+      "patterns": [
+        "wer hat dich gebaut",
+        "wer hat dich erschaffen",
+        "wer hat dich gemacht",
+        "wer hat dich programmiert",
+        "wer ist dein entwickler",
+        "wer ist dein erschaffer",
+        "wer ist dein ersteller"
+      ],
+      "keywords": [
+        "wer",
+        "entwickler",
+        "erschaffer",
+        "ersteller"
+      ],
+      "examples": [
+        "wer hat dich erschaffen",
+        "wer ist dein entwickler"
+      ],
+      "description": "Information zum Erbauer"
+    },
+    {
+      "name": "personal_state",
+      "handler": "handle_personal_state",
+      "priority": 65,
+      "patterns": [
+        "wie geht(?:'|\\s)es dir",
+        "wie gehts dir",
+        "alles klar bei dir",
+        "wie fuehlst du dich",
+        "wie geht es dir",
+        "wie fühlst du dich"
+      ],
+      "keywords": [
+        "wie",
+        "geht",
+        "dir",
+        "alles",
+        "klar",
+        "fühlst"
+      ],
+      "examples": [
+        "wie gehts dir",
+        "alles klar bei dir"
+      ],
+      "description": "Smalltalk: Befinden des Assistenten"
+    }
+  ]
+}

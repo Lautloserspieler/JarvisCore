@@ -1,0 +1,12 @@
+[
+  {
+    "event_type": "knowledge_lookup",
+    "payload": {
+      "query": "cryptography.h",
+      "source": "external",
+      "has_result": true
+    },
+    "timestamp": "2025-10-25T11:46:28.023018",
+    "importance": 0.7
+  }
+]

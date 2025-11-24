@@ -1,0 +1,58 @@
+{
+  "greeting": {
+    "patterns": ["hallo", "guten morgen", "guten tag", "guten abend", "hi", "hey"],
+    "responses": [
+      "Hallo! Wie kann ich Ihnen helfen?",
+      "Guten Tag! Was kann ich für Sie tun?",
+      "Hallo! Ich bin bereit für Ihre Befehle."
+    ]
+  },
+  "system_status": {
+    "patterns": ["systemstatus", "system status", "wie läuft das system", "status", "system info"],
+    "responses": ["Ich hole den Systemstatus für Sie."]
+  },
+  "open_program": {
+    "patterns": ["öffne", "starte", "programm starten", "application öffnen", "launch"],
+    "responses": ["Ich öffne das Programm für Sie."]
+  },
+  "close_program": {
+    "patterns": ["schließe", "beende", "programm beenden", "close", "quit"],
+    "responses": ["Ich beende das Programm."]
+  },
+  "knowledge_search": {
+    "patterns": ["suche", "finde", "informationen über", "was ist", "erkläre", "wikipedia"],
+    "responses": ["Ich suche nach Informationen für Sie."]
+  },
+  "time_date": {
+    "patterns": ["wie spät", "uhrzeit", "datum", "welcher tag", "time", "date"],
+    "responses": ["Hier ist die aktuelle Zeit."]
+  },
+  "help": {
+    "patterns": ["hilfe", "help", "was kannst du", "befehle", "kommandos"],
+    "responses": ["Ich kann Ihnen bei verschiedenen Aufgaben helfen."]
+  },
+  "weather": {
+    "patterns": ["wetter", "weather", "wie ist das wetter", "temperatur"],
+    "responses": ["Die Wetter-Funktion ist noch in Entwicklung."]
+  },
+  "music": {
+    "patterns": ["musik", "music", "spiele musik", "play music", "song"],
+    "responses": ["Die Musik-Funktion ist noch in Entwicklung."]
+  },
+  "calculate": {
+    "patterns": ["rechne", "calculate", "berechne", "mathematik", "math"],
+    "responses": ["Ich kann einfache Berechnungen durchführen."]
+  },
+  "goodbye": {
+    "patterns": ["auf wiedersehen", "tschüss", "bye", "goodbye", "ciao"],
+    "responses": [
+      "Auf Wiedersehen! Rufen Sie mich jederzeit wieder.",
+      "Tschüss! Ich bin da, wenn Sie mich brauchen.",
+      "Bis bald! Schönen Tag noch."
+    ]
+  },
+  "ai_chat": {
+    "patterns": ["unterhaltung", "rede mit mir", "chatbot", "ki chat", "llm", "intelligente antwort", "wie denkst du", "was meinst du"],
+    "responses": ["Ich aktiviere den erweiterten AI-Chat Modus für Sie."]
+  }
+}

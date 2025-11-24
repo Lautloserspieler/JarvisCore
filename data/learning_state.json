@@ -1,0 +1,305 @@
+{
+  "intent_stats": {
+    "greeting": {
+      "count": 26,
+      "score": 11.0,
+      "success": 26
+    },
+    "entertainment_mode": {
+      "count": 2,
+      "score": 1.0,
+      "success": 2
+    },
+    "help": {
+      "count": 3,
+      "score": 1.5,
+      "success": 3
+    },
+    "personal_state": {
+      "count": 6,
+      "score": 2.0,
+      "success": 6
+    },
+    "goodbye": {
+      "count": 2,
+      "score": 1.0,
+      "success": 2
+    },
+    "open_program": {
+      "count": 6,
+      "score": 3.0,
+      "success": 6
+    },
+    "system_status": {
+      "count": 2,
+      "score": 1.0,
+      "success": 2
+    },
+    "music_youtube": {
+      "count": 30,
+      "score": 17.0,
+      "success": 30
+    },
+    "create_file": {
+      "count": 6,
+      "score": 1.8,
+      "success": 5
+    },
+    "voice_enroll": {
+      "count": 1,
+      "score": 0.5,
+      "success": 1
+    },
+    "emergency_mode": {
+      "count": 1,
+      "score": 0.5,
+      "success": 1
+    },
+    "creator_info": {
+      "count": 1,
+      "score": 0.5,
+      "success": 1
+    }
+  },
+  "intent_weights": {
+    "greeting": -0.1,
+    "personal_state": -0.05,
+    "music_youtube": 0.1
+  },
+  "command_usage": {
+    "guten abend Schatz": 1,
+    "Unterhaltungsmodus aktivieren": 1,
+    "erzähle mir ein Witz": 1,
+    "Was kannst du tun?": 2,
+    "hallo": 19,
+    "wie geht das tier wie geht es dir": 1,
+    "Hey Jarvis!": 1,
+    "hallo.": 1,
+    "Tschüss. Test.": 1,
+    "Tschüss, tschüss, tschüss. Töp, töp, töp.": 1,
+    "Wie geht es dir? Wie geht es?": 1,
+    "javas öffne notepad.": 1,
+    "Notepad": 1,
+    "Spiele den Song EVEN IF IT KILLS ME ab auf Youtube": 1,
+    "Spiele musik.": 1,
+    "Spielmusik.": 1,
+    "Spiele Hard Rock auf YouTube ab.": 1,
+    "Spiele meinen YouTube-Mail.": 1,
+    "Spiele Red Eye ab.": 1,
+    "Pause meine Musik.": 1,
+    "Spiele Link and Park in the End": 1,
+    "Like mir lustige Katzenvideos auf YouTube.": 1,
+    "Spiele des nächsten": 1,
+    "Pauseere Spiele des nächsten Musik.": 1,
+    "Stelle Pauseere Spiele des nächsten Musik. Lautstärke auf Pauseere Spiele des nächsten Musik.": 1,
+    "Ich stelle Stelle Pauseere Spiele des nächsten Musik. Lautstärke auf Pauseere Spiele des nächsten Musik. Musik.": 1,
+    "Musik lautstärke auf 50%.": 1,
+    "Spiel ist": 1,
+    "Ich spiele das nächste Lied in meiner Playlist ab. Pause sehr am Ende.": 1,
+    "Sie haben eine musik": 1,
+    "Pausiere die Musik.": 1,
+    "Spielmusik ab.": 1,
+    "Spiel Spielmusik ab. nächsten Song ab.": 1,
+    "Spiele link.": 1,
+    "Spiele link & park": 1,
+    "Spiele Link an Park-in-Pack.": 1,
+    "Pausiere Spiele Link an Park-in-Pack. Musik.": 1,
+    "Pausiere Spiele Link an Park-in-Pack. Musik. Musik.": 1,
+    "erstelle ein Py programm auf mein Desktop das ein taschenrenscher ist": 3,
+    "öffne erstelle ein Py programm auf mein Desktop das ein taschenrenscher ist datei": 1,
+    "erstelle ein Py programm auf mein Desktop das ein taschenrenscher ist datei intent_open_program du erstellt hast": 1,
+    "nee öffne sie": 1,
+    "erstelle ein py programm das ein Taschenreschner ist": 1,
+    "wie gehts ;-)": 1,
+    "Stimmprobe auf.": 1,
+    "Notfallmodus Stufe 1": 1,
+    "guten abend": 1,
+    "wie ist guten abend system sicherheit": 1,
+    "weist du wer ich bin": 1,
+    "starte scherheitsprotokoll 3": 1,
+    "Spiele in der...": 1,
+    "Spiele Spiele in der... Song in the end von Linkin Park.": 1,
+    "Starte Notfallprotokoll 1.": 1,
+    "Video mit Notfallprotokoll 1. intent_open_program intent_emergency_protocol": 1,
+    ", spiele Musik.": 1,
+    "starte stimmen audifizirung": 1,
+    "erstelle ein Programm stimmen audifizirung intent_open_program program_run passwörter ferwalten kann": 1,
+    "wie gehts": 2,
+    "guten abend wie gehts": 1,
+    "hallo wie gehts dir": 1,
+    "wie gehts dir": 1,
+    "was kannst du": 1,
+    "spiele den song PAVES 16 - EURO, PESO & DOLLARS": 1,
+    "spiele In the End ab": 1
+  },
+  "feedback_log": [
+    {
+      "timestamp": "2025-11-21T19:32:26.412856",
+      "score": 1.0,
+      "message": "Guten Abend! Wie kann ich Sie unterstuetzen? Ich erinnere mich noch an unsere Themen rund um hallo.",
+      "intent": "greeting",
+      "weight": 0.05
+    },
+    {
+      "timestamp": "2025-11-21T19:32:50.543834",
+      "score": -1.0,
+      "message": "Auf was genau bezieht sich 'das'? Koennen Sie das bitte genauer spezifizieren?",
+      "intent": "greeting",
+      "weight": 0.0
+    },
+    {
+      "timestamp": "2025-11-21T19:51:43.213463",
+      "score": -1.0,
+      "message": "Meinten Sie 'greeting' oder 'personal_state'? Bitte spezifizieren.",
+      "intent": "greeting",
+      "weight": -0.05
+    },
+    {
+      "timestamp": "2025-11-21T19:59:54.769907",
+      "score": -1.0,
+      "message": "Guten Tag! Ich bin J.A.R.V.I.S., Ihr persönlicher KI-Assistent. Ich bin hier, um Ihnen zu helfen und Ihre Anliegen zu bearbeiten. Wie kann ich Ihnen heute unterstützen? Wollen Sie sich über bestimmte Themen austauschen ?",
+      "intent": "greeting",
+      "weight": -0.1
+    },
+    {
+      "timestamp": "2025-11-21T20:00:57.840333",
+      "score": -1.0,
+      "message": "Ich bin ein KI-System, ich habe keine Emotionen oder physische Bedenken. Ich bin bereit, Ihnen zu helfen und Ihre Anliegen zu bearbeiten. Wollen Sie sich über bestimmte Themen austauschen oder eine bestimmte Aufgabe ?",
+      "intent": "personal_state",
+      "weight": -0.05
+    },
+    {
+      "timestamp": "2025-11-21T20:08:53.864612",
+      "score": 1.0,
+      "message": "YouTube >> song PAVES 16 - EURO, PESO & DOLLARS",
+      "intent": "music_youtube",
+      "weight": 0.05
+    },
+    {
+      "timestamp": "2025-11-21T20:10:26.171106",
+      "score": 1.0,
+      "message": "YouTube >> In the End",
+      "intent": "music_youtube",
+      "weight": 0.1
+    }
+  ],
+  "time_histogram": {
+    "21": {
+      "total": 7,
+      "intents": {
+        "greeting": 1,
+        "entertainment_mode": 2,
+        "personal_state": 1,
+        "help": 1,
+        "music_youtube": 2
+      }
+    },
+    "16": {
+      "total": 23,
+      "intents": {
+        "help": 1,
+        "music_youtube": 19,
+        "greeting": 3
+      }
+    },
+    "15": {
+      "total": 11,
+      "intents": {
+        "greeting": 2,
+        "personal_state": 1,
+        "open_program": 1,
+        "system_status": 1,
+        "music_youtube": 6
+      }
+    },
+    "17": {
+      "total": 8,
+      "intents": {
+        "greeting": 7,
+        "create_file": 1
+      }
+    },
+    "13": {
+      "total": 5,
+      "intents": {
+        "goodbye": 2,
+        "open_program": 1,
+        "create_file": 1,
+        "greeting": 1
+      }
+    },
+    "14": {
+      "total": 2,
+      "intents": {
+        "personal_state": 1,
+        "greeting": 1
+      }
+    },
+    "19": {
+      "total": 1,
+      "intents": {
+        "create_file": 1
+      }
+    },
+    "20": {
+      "total": 15,
+      "intents": {
+        "create_file": 3,
+        "open_program": 2,
+        "help": 1,
+        "greeting": 7,
+        "personal_state": 2
+      }
+    },
+    "18": {
+      "total": 4,
+      "intents": {
+        "personal_state": 1,
+        "music_youtube": 1,
+        "greeting": 2
+      }
+    },
+    "0": {
+      "total": 2,
+      "intents": {
+        "voice_enroll": 1,
+        "emergency_mode": 1
+      }
+    },
+    "22": {
+      "total": 4,
+      "intents": {
+        "greeting": 2,
+        "creator_info": 1,
+        "open_program": 1
+      }
+    },
+    "23": {
+      "total": 4,
+      "intents": {
+        "music_youtube": 2,
+        "open_program": 1,
+        "system_status": 1
+      }
+    }
+  },
+  "last_context": {
+    "last_intent": "music_youtube",
+    "last_command": "spiele In the End ab",
+    "pending_feedback": {
+      "timestamp": "2025-11-21T20:10:26.171106",
+      "score": 1.0,
+      "message": "YouTube >> In the End",
+      "intent": "music_youtube",
+      "weight": 0.1
+    }
+  },
+  "last_update": {
+    "knowledge": "2025-11-21T20:08:05.435331",
+    "models": "2025-11-21T20:08:05.439835",
+    "long_term_trainer": "2025-11-21T20:08:05.451308",
+    "long_term_summary": "2025-11-21T20:08:05.452306",
+    "retraining": "2025-11-21T20:08:05.436330",
+    "reinforcement": "2025-11-21T20:10:26.171106"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "first_run": true,
+  "debug_mode": false,
+  "auto_start": false,
+  "theme": "dark",
+  "speech": {
+    "language": "de-DE",
+    "wake_words": ["jarvis", "hey jarvis", "hallo jarvis"],
+    "wake_word_enabled": true,
+    "tts_rate": 180,
+    "tts_volume": 0.8,
+    "voice_id": null,
+    "tts_backend": "pyttsx3",
+    "tts_xtts_speaker": "speaker_0",
+    "voice_preset": "jarvis_marvel",
+    "stream_tts": true,
+    "min_command_words": 3,
+    "whisper_model": "large-v3"
+  },
+  "stt": {
+    "engine": "faster_whisper",
+    "model": "Systran/faster-whisper-large-v3",
+    "device": "cuda",
+    "compute_type": "float16",
+    "default_mode": "command"
+  },
+  "audio": {
+    "sample_rate": 16000,
+    "chunk_size": 8000,
+    "channels": 1,
+    "input_device": null,
+    "output_device": null
+  },
+  "remote_control": {
+    "enabled": false,
+    "host": "127.0.0.1",
+    "port": 8765,
+    "token": "CHANGE_THIS_TOKEN"
+  },
+  "web_interface": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 5050,
+    "token": "CHANGE_THIS_TOKEN",
+    "allow_guest_commands": false
+  },
+  "security": {
+    "encrypt_data": false,
+    "log_conversations": true,
+    "store_feedback": true,
+    "privacy_mode": false,
+    "auth": {
+      "passphrase": null,
+      "vault_reference": "security_passphrase"
+    }
+  }
+}

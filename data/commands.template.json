@@ -1,0 +1,29 @@
+{
+  "greeting": {
+    "patterns": ["hallo", "guten morgen", "guten tag", "guten abend", "hi", "hey"],
+    "responses": [
+      "Hallo! Wie kann ich dir helfen?",
+      "Guten Tag! Was kann ich für dich tun?"
+    ]
+  },
+  "system_status": {
+    "patterns": ["systemstatus", "status", "system info"],
+    "responses": ["Ich hole den Systemstatus für dich."]
+  },
+  "open_program": {
+    "patterns": ["öffne", "starte", "programm starten"],
+    "responses": ["Ich öffne das Programm."]
+  },
+  "close_program": {
+    "patterns": ["schließe", "beende", "programm beenden"],
+    "responses": ["Ich beende das Programm."]
+  },
+  "knowledge_search": {
+    "patterns": ["suche", "finde", "informationen über", "was ist"],
+    "responses": ["Ich suche nach Informationen."]
+  },
+  "time_date": {
+    "patterns": ["wie spät", "uhrzeit", "datum", "welcher tag"],
+    "responses": ["Hier ist die aktuelle Zeit."]
+  }
+}

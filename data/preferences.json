@@ -1,0 +1,17 @@
+{
+  "usage": {
+    "intent:greeting": 23,
+    "intent:personal_state": 6,
+    "intent:system_status": 15,
+    "intent:open_program": 10,
+    "intent:help": 4,
+    "intent:creator_info": 2,
+    "intent:entertainment_mode": 2,
+    "intent:goodbye": 2,
+    "intent:music_youtube": 28,
+    "intent:create_file": 6,
+    "intent:voice_enroll": 1,
+    "intent:emergency_mode": 1
+  },
+  "defaults": {}
+}

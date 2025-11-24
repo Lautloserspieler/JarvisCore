@@ -165,12 +165,12 @@ Tabs:
 
 | Problem / Meldung | Lösung |
 | ----------------- | ------- |
-| `CUDA nicht verfügbar – CPU` | CUDA 11.8 + Treiber installieren |
+| `CUDA nicht verfügbar – CPU` | CUDA 12.3 + Treiber installieren |
 | `PyAudio Fehler` | Microsoft C++ Build Tools installieren |
 | `Ignoring invalid distribution` | Virtuelle Umgebung neu anlegen |
 | Modelle laden ewig | Erst-Download = mehrere GB, danach Cache |
 | Web-UI leer / 401 | Token prüfen & `jarvis.log` kontrollieren |
-
+| AMD GPU´s werden  zurzeit nich voll Suportet |
 ---
 
 ## 🧩 Entwicklung & Beiträge

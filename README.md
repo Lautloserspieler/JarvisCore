@@ -1,7 +1,7 @@
 # 🧠 J.A.R.V.I.S. / JarvisCore – Lokaler KI-Assistent  
 🇩🇪 Vollständig lokal · 🇬🇧 English version below  
 
-J.A.R.V.I.S. (JarvisCore) ist ein **modularer, vollständig lokaler Sprach- und Automationsassistent** mit Web- und Desktop-Oberfläche, Spracherkennung (Whisper/VOSK), Text-zu-Sprache (XTTS/Coqui), Wissens­datenbank, Plugin-System und GPU-beschleunigten LLMs.  
+J.A.R.V.I.S. (JarvisCore) ist ein **modularer, vollständig lokaler Sprach- und Automationsassistent** mit Web- und Desktop-Oberfläche ( momentan Deaktiviert ) , Spracherkennung (Whisper/VOSK), Text-zu-Sprache (XTTS/Coqui), Wissens­datenbank, Plugin-System und GPU-beschleunigten LLMs.  
 Entwickelt für Datenschutz, Erweiterbarkeit und echte Offline-Intelligenz.  
 **Hinweis:** Sprach-Ein- und -Ausgabe befinden sich noch in aktiver Entwicklung; Funktionsumfang und Stabilität können sich ändern.  
 

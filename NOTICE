@@ -1,0 +1,14 @@
+NOTICE
+======
+J.A.R.V.I.S. – Local AI Assistant
+Copyright (c) 2025 Lautloserspieler
+
+This project includes third-party components under separate licenses:
+- Meta Llama 3 (Meta License)
+- Mistral / Mixtral (Apache 2.0)
+- DeepSeek-V3 (MIT)
+- XTTS (MPL 2.0)
+- Whisper / Faster-Whisper (MIT)
+- VOSK (Apache 2.0)
+
+Each component retains its own license terms, available in /third_party_licenses.

@@ -1,26 +1,26 @@
-\# Sicherheit
+# Sicherheit
 
 
 
-\## Kryptografie
+## Kryptografie
 
 
 
-\- \[translate:AES-256] zur symmetrischen Verschlüsselung.
+- \[translate:AES-256] zur symmetrischen Verschlüsselung.
 
-\- \[translate:RSA-4096] für Schlüsseltausch und Signatur.
-
-
-
-\## Rollen \& Rechte
+- \[translate:RSA-4096] für Schlüsseltausch und Signatur.
 
 
 
-\- Rollenbasiertes Zugriffssystem:
+## Rollen \& Rechte
+
+
+
+- Rollenbasiertes Zugriffssystem:
 
 &nbsp; - z. B. Admin, User, Gast (je nach Konfiguration).
 
-\- Einschränkungen:
+- Einschränkungen:
 
 &nbsp; - Dateisystem-Zugriff
 
@@ -30,23 +30,23 @@
 
 
 
-\## Safe-Mode
+## Safe-Mode
 
 
 
-\- Safe-Mode kann in der Konfiguration aktiviert werden.
+- Safe-Mode kann in der Konfiguration aktiviert werden.
 
-\- Beschränkt die erlaubten Aktionen auf einen sicheren Subset.
-
-
-
-\## Logging
+- Beschränkt die erlaubten Aktionen auf einen sicheren Subset.
 
 
 
-\- Sicherheitsrelevante Ereignisse werden nachverfolgt.
+## Logging
 
-\- Relevante Dateien:
+
+
+- Sicherheitsrelevante Ereignisse werden nachverfolgt.
+
+- Relevante Dateien:
 
 &nbsp; - `logs/security.log`
 
@@ -54,15 +54,16 @@
 
 
 
-\## Notfallprotokoll
+## Notfallprotokoll
 
 
 
-\- Geplante Mechanismen für:
+- Geplante Mechanismen für:
 
 &nbsp; - Sperrung von Accounts/Tokens.
 
 &nbsp; - kontrollierten Shutdown.
 
 &nbsp; - Alerts (z. B. an Admin).
+
 

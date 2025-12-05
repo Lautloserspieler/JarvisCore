@@ -7,6 +7,8 @@ import re
 import threading
 import time
 import copy
+import os
+import base64
 from array import array
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -31,6 +33,7 @@ from utils.logger import Logger
 from models.download_whisper import WhisperDownloader
 from core.emotion_analyzer import EmotionAnalyzer
 from core.hotword_manager import HotwordManager
+import requests
 
 
 WHISPER_TRANSCRIBE_OPTIONS = {
@@ -178,6 +181,70 @@ DEFAULT_MODE_PROFILES: Dict[str, Dict[str, Any]] = {
 }
 
 
+class SpeechServiceClient:
+    """HTTP-Client fuer den Go-basierten speechtaskd-Service."""
+
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        token: Optional[str] = None,
+        *,
+        timeout: float = 6.0,
+        logger: Optional[Logger] = None,
+    ) -> None:
+        env_disable = os.getenv("JARVIS_SPEECHD_ENABLED")
+        disable_flag = env_disable is not None and env_disable.strip().lower() in {"0", "false", "no"}
+        chosen_url = base_url or os.getenv("JARVIS_SPEECHD_URL") or "http://127.0.0.1:7074"
+        if disable_flag:
+            chosen_url = ""
+        self.base_url = chosen_url.rstrip("/") if chosen_url else ""
+        self.token = token or os.getenv("JARVIS_SPEECHD_TOKEN") or os.getenv("SPEECHD_TOKEN")
+        self.timeout = timeout
+        self.enabled = bool(self.base_url)
+        self.logger = logger or Logger()
+        self.session = requests.Session()
+
+    @classmethod
+    def from_settings(cls, settings: Optional[Any] = None, logger: Optional[Logger] = None) -> "SpeechServiceClient":
+        base_url = None
+        token = None
+        timeout = 6.0
+        try:
+            raw = getattr(settings, "settings", {}) if settings else {}
+            go_cfg = raw.get("go_services") or {}
+            speech_cfg = go_cfg.get("speechtaskd", go_cfg) if isinstance(go_cfg, dict) else {}
+            if isinstance(speech_cfg, dict):
+                base_url = speech_cfg.get("base_url") or speech_cfg.get("url")
+                token = speech_cfg.get("token") or speech_cfg.get("api_key")
+                timeout = float(speech_cfg.get("timeout_seconds", timeout))
+        except Exception:
+            pass
+        return cls(base_url=base_url, token=token, timeout=timeout, logger=logger)
+
+    def recognize(self, raw_audio: bytes, sample_rate: int, channels: int) -> Optional[str]:
+        if not self.enabled or not raw_audio:
+            return None
+        headers = {"Content-Type": "application/json"}
+        if self.token:
+            headers["X-API-Key"] = self.token
+        payload = {
+            "audio": base64.b64encode(raw_audio).decode("ascii"),
+            "sample_rate": sample_rate,
+            "channels": channels,
+        }
+        try:
+            resp = self.session.post(f"{self.base_url}/speech/recognize", json=payload, headers=headers, timeout=self.timeout)
+            if not resp.ok:
+                return None
+            data = resp.json() or {}
+            text = data.get("transcript")
+            if isinstance(text, str):
+                return text
+        except Exception as exc:
+            self.logger.debug("speechtaskd recognize fehlgeschlagen: %s", exc)
+        return None
+
+
 class SpeechRecognizer:
     """Speech recognition with wake word and buffered command capture."""
 
@@ -190,6 +257,7 @@ class SpeechRecognizer:
         settings: Optional[object] = None,
     ) -> None:
         self.logger = Logger()
+        self.speechd_client = SpeechServiceClient.from_settings(settings, logger=self.logger)
         missing_deps: List[str] = []
         if pyaudio is None:
             missing_deps.append("pyaudio")
@@ -1626,6 +1694,13 @@ class SpeechRecognizer:
     def _transcribe_audio(self, raw_audio: bytes) -> str:
         if not raw_audio:
             return ""
+        # Erst versuchen, die Go-Orchestrierung zu nutzen; leiser Fallback bei Fehlern.
+        try:
+            remote_text = self.speechd_client.recognize(raw_audio, sample_rate=self.config.sample_rate, channels=self.config.channels)
+            if isinstance(remote_text, str) and remote_text.strip():
+                return self._clean_transcript(remote_text)
+        except Exception:
+            self.logger.debug("speechtaskd Transkription fehlgeschlagen, nutze lokalen Whisper", exc_info=True)
         if not self._ensure_model_ready():
             return ""
         try:

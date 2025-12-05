@@ -22,9 +22,79 @@ import re
 import stat
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+import requests
 
 from core.security_manager import SecurityManager
 from utils.logger import Logger
+
+
+class SystemServiceClient:
+    """HTTP-Client fuer den Go-basierten systemd-Service."""
+
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        token: Optional[str] = None,
+        *,
+        timeout: float = 5.0,
+        logger: Optional[Logger] = None,
+    ) -> None:
+        env_disable = os.getenv("JARVIS_SYSTEMD_ENABLED")
+        disable_flag = env_disable is not None and env_disable.strip().lower() in {"0", "false", "no"}
+        chosen_url = base_url or os.getenv("JARVIS_SYSTEMD_URL") or "http://127.0.0.1:7073"
+        if disable_flag:
+            chosen_url = ""
+        self.base_url = chosen_url.rstrip("/") if chosen_url else ""
+        self.token = token or os.getenv("JARVIS_SYSTEMD_TOKEN") or os.getenv("SYSTEMD_TOKEN")
+        self.timeout = timeout
+        self.enabled = bool(self.base_url)
+        self.logger = logger or Logger()
+        self.session = requests.Session()
+
+    @classmethod
+    def from_env(cls, logger: Optional[Logger] = None, settings: Any = None) -> "SystemServiceClient":
+        base_url = None
+        token = None
+        timeout = 5.0
+        try:
+            raw_settings = getattr(settings, "settings", {}) if settings else {}
+            go_cfg = raw_settings.get("go_services") or {}
+            sys_cfg = go_cfg.get("systemd", go_cfg) if isinstance(go_cfg, dict) else {}
+            if isinstance(sys_cfg, dict):
+                base_url = sys_cfg.get("base_url") or sys_cfg.get("url")
+                token = sys_cfg.get("token") or sys_cfg.get("api_key")
+                timeout = float(sys_cfg.get("timeout_seconds", timeout))
+        except Exception:
+            pass
+        return cls(base_url=base_url, token=token, timeout=timeout, logger=logger)
+
+    def _headers(self) -> Dict[str, str]:
+        headers = {"Content-Type": "application/json"}
+        if self.token:
+            headers["X-API-Key"] = self.token
+        return headers
+
+    def get_resources(self) -> Optional[Dict[str, Any]]:
+        if not self.enabled:
+            return None
+        try:
+            resp = self.session.get(f"{self.base_url}/system/resources", headers=self._headers(), timeout=self.timeout)
+            if resp.ok:
+                return resp.json()
+        except Exception as exc:
+            self.logger.debug("systemd resources fehlgeschlagen: %s", exc)
+        return None
+
+    def get_status(self) -> Optional[Dict[str, Any]]:
+        if not self.enabled:
+            return None
+        try:
+            resp = self.session.get(f"{self.base_url}/system/status", headers=self._headers(), timeout=self.timeout)
+            if resp.ok:
+                return resp.json()
+        except Exception as exc:
+            self.logger.debug("systemd status fehlgeschlagen: %s", exc)
+        return None
 
 
 class SystemControl:
@@ -33,6 +103,7 @@ class SystemControl:
     def __init__(self, security_manager: Optional[SecurityManager] = None, settings: Any = None):
         self.logger = Logger()
         self.settings = settings
+        self.systemd_client = SystemServiceClient.from_env(logger=self.logger)
         if security_manager is None:
             raise ValueError("SystemControl requires an explicit SecurityManager instance.")
         if not isinstance(security_manager, SecurityManager):
@@ -329,6 +400,13 @@ class SystemControl:
 
     def get_system_metrics(self) -> Dict[str, Any]:
         self._ensure_capability("system_info")
+        try:
+            remote = self.systemd_client.get_resources()
+            if remote:
+                return remote
+        except Exception:
+            self.logger.debug("systemd get_system_metrics fallback auf lokal", exc_info=True)
+
         cpu_percent = psutil.cpu_percent(interval=0.2)
         cpu_times = psutil.cpu_times_percent(interval=None, percpu=False)
         memory = psutil.virtual_memory()
@@ -1371,6 +1449,15 @@ class SystemControl:
             self._safe_mode_active = False
             self.logger.info("Safe-Mode beendet")
             return outcome
+
+    def get_safe_mode_status(self) -> Dict[str, Any]:
+        """Gibt aktuellen Safe-Mode-Status fuer APIs/UI zurueck."""
+        with self._safe_mode_lock:
+            return {
+                "active": self._safe_mode_active,
+                "dry_run": self._safe_mode_dryrun,
+                "state": dict(self._safe_mode_state),
+            }
 
     def get_hardware_health(self) -> Dict[str, Any]:
         """Gibt grundlegende Hardware-Kennzahlen zurück."""

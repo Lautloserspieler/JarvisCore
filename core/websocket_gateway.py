@@ -9,13 +9,74 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+import os
 import threading
 import time
 from concurrent.futures import TimeoutError as FuturesTimeout
 from typing import Any, Dict, Optional, Set
 
+import requests
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from websockets.server import WebSocketServerProtocol, serve
+
+
+class GatewayServiceClient:
+    """HTTP-Client fuer den Go-basierten gatewayd-Server."""
+
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        token: Optional[str] = None,
+        *,
+        logger: Optional[Any] = None,
+        timeout: float = 5.0,
+    ) -> None:
+        self.logger = logger
+        env_disable = os.getenv("JARVIS_GATEWAYD_ENABLED")
+        disable_flag = env_disable is not None and env_disable.strip().lower() in {"0", "false", "no"}
+        chosen_url = base_url or os.getenv("JARVIS_GATEWAYD_URL") or "http://127.0.0.1:7081"
+        if disable_flag:
+            chosen_url = ""
+        self.base_url = chosen_url.rstrip("/") if chosen_url else ""
+        self.token = token or os.getenv("JARVIS_GATEWAYD_TOKEN") or os.getenv("GATEWAYD_TOKEN")
+        self.timeout = timeout
+        self.enabled = bool(self.base_url)
+        self.session = requests.Session()
+
+    @classmethod
+    def from_settings(cls, settings: Dict[str, Any] | None, logger: Optional[Any] = None) -> "GatewayServiceClient":
+        settings = settings or {}
+        gateway_cfg = settings.get("gatewayd") or settings.get("go_services") or {}
+        if isinstance(gateway_cfg, dict) and "gatewayd" in gateway_cfg:
+            gateway_cfg = gateway_cfg.get("gatewayd") or {}
+        url = gateway_cfg.get("base_url") or gateway_cfg.get("url")
+        token = gateway_cfg.get("token") or gateway_cfg.get("api_key")
+        timeout = float(gateway_cfg.get("timeout_seconds", 5.0)) if isinstance(gateway_cfg, dict) else 5.0
+        return cls(base_url=url, token=token, timeout=timeout, logger=logger)
+
+    def broadcast(self, event_type: str, payload: Optional[Dict[str, Any]] = None) -> bool:
+        if not self.enabled:
+            return False
+        url = f"{self.base_url}/api/events"
+        headers = {"Content-Type": "application/json"}
+        if self.token:
+            headers["X-API-Key"] = self.token
+        body = {
+            "type": event_type,
+            "timestamp": time.time(),
+            "payload": payload or {},
+        }
+        try:
+            resp = self.session.post(url, json=body, headers=headers, timeout=self.timeout)
+            if resp.status_code >= 400:
+                if self.logger:
+                    self.logger.debug(f"gatewayd Broadcast fehlgeschlagen: {resp.status_code} {resp.text}")
+                return False
+            return True
+        except Exception as exc:
+            if self.logger:
+                self.logger.debug(f"gatewayd Broadcast nicht erreichbar: {exc}")
+            return False
 
 
 class RemoteCommandGateway:
@@ -28,11 +89,16 @@ class RemoteCommandGateway:
         self.enabled = bool(self.config.get("enabled", False))
         self.host = str(self.config.get("host") or "127.0.0.1")
         self.port = int(self.config.get("port") or 8765)
-        self.token = (self.config.get("token") or None)
+        raw_token = self.config.get("token")
+        token_str = str(raw_token).strip() if raw_token is not None else ""
+        self.token = token_str or None
         self.broadcast_conversation = bool(self.config.get("broadcast_conversation", True))
         self.allow_status_queries = bool(self.config.get("allow_status_queries", True))
         timeout = self.config.get("command_timeout_seconds", 45.0)
         self.command_timeout = float(timeout if timeout is not None else 45.0)
+        self.gateway_client = GatewayServiceClient.from_settings(self.config, logger=self.logger)
+        forward_only_env = os.getenv("JARVIS_GATEWAYD_ONLY", "").strip().lower()
+        self.forward_only_gatewayd = forward_only_env in {"1", "true", "yes"} or bool(self.config.get("gatewayd_only", False))
 
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.server: Optional[asyncio.base_events.Server] = None
@@ -43,7 +109,11 @@ class RemoteCommandGateway:
 
     # -- Lifecycle -----------------------------------------------------
     def start(self) -> None:
+        # Wenn Go-gatewayd genutzt werden soll, muss der Python-Server nicht laufen
         if not self.enabled:
+            return
+        if self.forward_only_gatewayd and self.gateway_client and self.gateway_client.enabled:
+            # Nur Forwarding an gatewayd, kein lokaler WS-Server
             return
         if self.thread and self.thread.is_alive():
             return
@@ -81,7 +151,17 @@ class RemoteCommandGateway:
 
     def publish(self, event_type: str, payload: Optional[Dict[str, Any]] = None) -> None:
         """Sendet Ereignisse an verbundene Clients."""
+        # Zuerst optional an gatewayd weiterleiten (Go-Service)
+        forwarded = False
+        try:
+            if self.gateway_client and self.gateway_client.enabled:
+                forwarded = self.gateway_client.broadcast(event_type, payload)
+        except Exception:
+            forwarded = False
+
         if not self.enabled or not self.loop or not self._ready_event.is_set():
+            if self.forward_only_gatewayd and forwarded:
+                return
             return
         if event_type in ("user_message", "assistant_message") and not self.broadcast_conversation:
             return

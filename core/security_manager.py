@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Union, List
+from typing import Any, Dict, Iterable, Optional, Union, List
 
 from utils.logger import Logger
 from .adaptive_access_control import AdaptiveAccessController, AccessDecision
@@ -26,6 +27,18 @@ class SecurityManager:
         self.logger = Logger()
         self._settings = settings
         self._lock = threading.Lock()
+        self.security_log_path = Path("logs") / "security.log"
+        self.security_log_path.parent.mkdir(parents=True, exist_ok=True)
+        self._security_logger = logging.getLogger("J.A.R.V.I.S.::Security")
+        if not self._security_logger.handlers:
+            handler = logging.FileHandler(self.security_log_path, encoding="utf-8")
+            formatter = logging.Formatter(
+                "%(asctime)s - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+            handler.setFormatter(formatter)
+            self._security_logger.addHandler(handler)
+            self._security_logger.setLevel(logging.INFO)
 
         security_cfg = settings.get("security", {}) or {}
         self.audit_enabled = bool(security_cfg.get("audit_logging", True))
@@ -55,16 +68,28 @@ class SecurityManager:
         self._current_context: Dict[str, Any] = {}
         self._decision_log: List[AccessDecision] = []
 
+        self.crypto_suite = None
+        try:
+            from utils.crypto_utils import CryptoSuite
+
+            self.crypto_suite = CryptoSuite(Path.cwd(), logger=self.logger)
+        except Exception as exc:
+            self.logger.warning("CryptoSuite deaktiviert: %s", exc)
+
     # ------------------------------------------------------------------
     # Public helpers
     # ------------------------------------------------------------------
     def set_user_role(self, role: str) -> None:
         """Passt die aktuelle Sicherheitsrolle (z.B. user/power/admin) an."""
-        self.access_controller.update_state(user_role=str(role).lower())
+        target_role = str(role).lower()
+        self.access_controller.update_state(user_role=target_role)
+        self._log_security_event(f"role -> {target_role}")
 
     def update_security_level(self, level: str) -> None:
         """Informiert den adaptiven Controller über die aktuelle Gefahrenstufe."""
-        self.access_controller.update_state(security_level=str(level).lower())
+        target_level = str(level).lower()
+        self.access_controller.update_state(security_level=target_level)
+        self._log_security_event(f"security_level -> {target_level}")
 
     def update_access_context(self, context: Optional[Dict[str, Any]] = None) -> None:
         """Aktualisiert Kontextsignale (z.B. Use-Case, Task, Stimmung)."""
@@ -225,9 +250,44 @@ class SecurityManager:
         )
         return decision.allowed
 
+    def get_status(self) -> Dict[str, Any]:
+        """Aggregated Sicherheitsstatus fuer UI/API."""
+        encryption_enabled = bool(self._settings.get("security", {}).get("encrypt_data", False))
+        return {
+            "role": getattr(self.access_controller, "current_role", "user"),
+            "security_level": getattr(self.access_controller, "security_level", "normal"),
+            "audit_logging": self.audit_enabled,
+            "encryption": {
+                "enabled": encryption_enabled,
+                "aes_256": bool(getattr(self.crypto_suite, "_aes_key", None)),
+                "rsa_4096": bool(getattr(self.crypto_suite, "_rsa_private", None)),
+            },
+            "read": {
+                "allowed": [str(p) for p in self.allowed_read_dirs],
+                "denied": [str(p) for p in self.denied_read_dirs],
+                "max_file_size_bytes": self.max_read_size_bytes,
+            },
+            "write": {
+                "allowed": [str(p) for p in self.allowed_write_dirs],
+                "denied": [str(p) for p in self.denied_write_dirs],
+                "require_confirmation": self.write_require_confirmation,
+            },
+            "automation": {
+                "allow_workflows": self.allow_workflows,
+                "max_steps": self.workflow_max_steps,
+                "require_confirmation": self.automation_require_confirmation,
+            },
+        }
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+    def _log_security_event(self, message: str) -> None:
+        try:
+            self._security_logger.info(message)
+        except Exception:
+            self.logger.debug("Security-Event konnte nicht geloggt werden: %s", message)
+
     def _evaluate_adaptive(
         self,
         capability: str,

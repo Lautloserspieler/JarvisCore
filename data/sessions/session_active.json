@@ -1,0 +1,20 @@
+{
+  "session_id": "persistent_conversation",
+  "started_at": "2025-11-26T18:41:54.156752",
+  "updated_at": "2025-11-26T18:45:11.070018",
+  "entries": [
+    {
+      "timestamp": "2025-11-26T18:45:00.293838",
+      "role": "user",
+      "content": "hallo",
+      "topics": null
+    },
+    {
+      "timestamp": "2025-11-26T18:45:11.070018",
+      "role": "assistant",
+      "content": "Willkommen! Ich bin J.A.R.V.I.S., Ihr persönlicher Assistent. Ich bin hier, um Ihnen zu helfen. Wobei soll ich starten?",
+      "topics": null
+    }
+  ],
+  "summary": "[18:45] Nutzer: hallo\n[18:45] Assistent: Willkommen! Ich bin J.A.R.V.I.S., Ihr persönlicher Assistent. Ich bin hier, um Ihnen zu helfen. Wobei soll ich starten?"
+}

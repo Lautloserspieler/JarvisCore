@@ -1,9 +1,9 @@
 {
   "intent_stats": {
     "greeting": {
-      "count": 26,
-      "score": 11.0,
-      "success": 26
+      "count": 27,
+      "score": 12.5,
+      "success": 27
     },
     "entertainment_mode": {
       "count": 2,
@@ -62,7 +62,7 @@
     }
   },
   "intent_weights": {
-    "greeting": -0.1,
+    "greeting": -0.05,
     "personal_state": -0.05,
     "music_youtube": 0.1
   },
@@ -71,7 +71,7 @@
     "Unterhaltungsmodus aktivieren": 1,
     "erzähle mir ein Witz": 1,
     "Was kannst du tun?": 2,
-    "hallo": 19,
+    "hallo": 20,
     "wie geht das tier wie geht es dir": 1,
     "Hey Jarvis!": 1,
     "hallo.": 1,
@@ -181,6 +181,13 @@
       "message": "YouTube >> In the End",
       "intent": "music_youtube",
       "weight": 0.1
+    },
+    {
+      "timestamp": "2025-11-26T17:45:18.348616",
+      "score": 1.0,
+      "message": "Willkommen! Ich bin J.A.R.V.I.S., Ihr persönlicher Assistent. Ich bin hier, um Ihnen zu helfen. Wobei soll ich starten?",
+      "intent": "greeting",
+      "weight": -0.05
     }
   ],
   "time_histogram": {
@@ -252,11 +259,11 @@
       }
     },
     "18": {
-      "total": 4,
+      "total": 5,
       "intents": {
         "personal_state": 1,
         "music_youtube": 1,
-        "greeting": 2
+        "greeting": 3
       }
     },
     "0": {
@@ -284,22 +291,22 @@
     }
   },
   "last_context": {
-    "last_intent": "music_youtube",
-    "last_command": "spiele In the End ab",
+    "last_intent": "greeting",
+    "last_command": "hallo",
     "pending_feedback": {
-      "timestamp": "2025-11-21T20:10:26.171106",
+      "timestamp": "2025-11-26T17:45:18.348616",
       "score": 1.0,
-      "message": "YouTube >> In the End",
-      "intent": "music_youtube",
-      "weight": 0.1
+      "message": "Willkommen! Ich bin J.A.R.V.I.S., Ihr persönlicher Assistent. Ich bin hier, um Ihnen zu helfen. Wobei soll ich starten?",
+      "intent": "greeting",
+      "weight": -0.05
     }
   },
   "last_update": {
-    "knowledge": "2025-11-21T20:08:05.435331",
-    "models": "2025-11-21T20:08:05.439835",
-    "long_term_trainer": "2025-11-21T20:08:05.451308",
-    "long_term_summary": "2025-11-21T20:08:05.452306",
-    "retraining": "2025-11-21T20:08:05.436330",
-    "reinforcement": "2025-11-21T20:10:26.171106"
+    "knowledge": "2025-12-02T18:04:37.725810",
+    "models": "2025-12-02T18:04:37.729890",
+    "long_term_trainer": "2025-12-02T18:04:37.743695",
+    "long_term_summary": "2025-12-02T18:04:37.745341",
+    "retraining": "2025-12-02T18:04:37.727315",
+    "reinforcement": "2025-11-26T17:45:18.348616"
   }
 }

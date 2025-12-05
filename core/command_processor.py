@@ -15,6 +15,8 @@ import re
 import datetime
 import random
 import difflib
+import os
+import requests
 
 from pathlib import Path
 
@@ -67,6 +69,67 @@ from core.security_protocol import PriorityLevel
 from config.persona import persona
 
 
+class CommandServiceClient:
+    """HTTP-Client fuer den Go-basierten commandd-Service."""
+
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        token: Optional[str] = None,
+        *,
+        timeout: float = 5.0,
+        logger: Optional[Logger] = None,
+    ) -> None:
+        env_disable = os.getenv("JARVIS_COMMANDD_ENABLED")
+        disable_flag = env_disable is not None and env_disable.strip().lower() in {"0", "false", "no"}
+        chosen_url = base_url or os.getenv("JARVIS_COMMANDD_URL") or "http://127.0.0.1:7075"
+        if disable_flag:
+            chosen_url = ""
+        self.base_url = chosen_url.rstrip("/") if chosen_url else ""
+        self.token = token or os.getenv("JARVIS_COMMANDD_TOKEN") or os.getenv("COMMANDD_TOKEN")
+        self.timeout = timeout
+        self.enabled = bool(self.base_url)
+        self.logger = logger or Logger()
+        self.session = requests.Session()
+
+    @classmethod
+    def from_settings(cls, settings: Optional[Any] = None, logger: Optional[Logger] = None) -> "CommandServiceClient":
+        base_url = None
+        token = None
+        timeout = 5.0
+        try:
+            raw_settings = getattr(settings, "settings", {}) if settings else {}
+            go_cfg = raw_settings.get("go_services") or {}
+            cmd_cfg = go_cfg.get("commandd", go_cfg) if isinstance(go_cfg, dict) else {}
+            if isinstance(cmd_cfg, dict):
+                base_url = cmd_cfg.get("base_url") or cmd_cfg.get("url")
+                token = cmd_cfg.get("token") or cmd_cfg.get("api_key")
+                timeout = float(cmd_cfg.get("timeout_seconds", timeout))
+        except Exception:
+            pass
+        return cls(base_url=base_url, token=token, timeout=timeout, logger=logger)
+
+    def execute(self, text: str, *, metadata: Optional[Dict[str, Any]] = None, context: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+        if not self.enabled:
+            return None
+        payload = {
+            "text": text,
+            "metadata": metadata or {},
+            "context": context or {},
+        }
+        headers = {"Content-Type": "application/json"}
+        if self.token:
+            headers["X-API-Key"] = self.token
+        try:
+            resp = self.session.post(f"{self.base_url}/command/execute", json=payload, headers=headers, timeout=self.timeout)
+            if not resp.ok:
+                return None
+            return resp.json()
+        except Exception as exc:
+            self.logger.debug("commandd execute fehlgeschlagen: %s", exc)
+            return None
+
+
 
 class CommandProcessor:
 
@@ -87,16 +150,17 @@ class CommandProcessor:
         reinforcement_core: Optional[Any] = None,
         security_protocol: Optional[Any] = None,
         llm_manager: Optional[Any] = None,
+        settings: Optional[Any] = None,
     ):
 
         self.logger = Logger()
+        self.system_control = system_control
+        # Settings zuerst setzen, damit Clients sie sehen
+        self.settings = settings or getattr(self.system_control, 'settings', None)
+        self.commandd_client = CommandServiceClient.from_settings(settings=self.settings, logger=self.logger)
 
         self.knowledge_manager = knowledge_manager
-
-        self.system_control = system_control
-
         self.tts = tts
-
         self.plugin_manager = plugin_manager
         self.learning_manager = learning_manager
         self.voice_biometrics = voice_biometrics
@@ -104,8 +168,9 @@ class CommandProcessor:
         self.task_core = task_core
         self.reinforcement_core = reinforcement_core
 
-        # Settings Zugriff (ueber SystemControl, falls vorhanden)
-        self.settings = getattr(self.system_control, 'settings', None)
+        # Settings Zugriff (ueber SystemControl bevorzugt, falls vorhanden)
+        if getattr(self.system_control, 'settings', None) is not None:
+            self.settings = getattr(self.system_control, 'settings', None)
         nlu_cfg = {}
         ctx_cfg = {}
         if self.settings is not None:
@@ -642,6 +707,19 @@ class CommandProcessor:
         original_text = command_text
 
         normalized_text = command_text.strip()
+        # Optional: Vorab an Go-Command-Router spiegeln (non-blocking)
+        try:
+            remote = self.commandd_client.execute(
+                normalized_text,
+                metadata=meta,
+                context=self.context,
+            )
+            if remote and isinstance(remote, dict):
+                remote_resp = remote.get("response")
+                if isinstance(remote_resp, str) and remote_resp.strip():
+                    return remote_resp
+        except Exception:
+            self.logger.debug("commandd Ausfuehrung fehlgeschlagen, nutze lokalen Pfad", exc_info=True)
         # Vor-Normalisierung: Slang/Umgangssprache reduzieren
         if self.normalizer is not None:
             try:

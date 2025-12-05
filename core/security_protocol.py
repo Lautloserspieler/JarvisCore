@@ -11,6 +11,7 @@ import datetime as _dt
 import json
 import logging
 import os
+import requests
 import shutil
 import traceback
 import zipfile
@@ -113,6 +114,119 @@ class SecurityProtocolError(RuntimeError):
     """Fehler, der beim Abarbeiten des Protokolls auftreten kann."""
 
 
+class SecurityServiceClient:
+    """Lightweight client that forwards security checks to the Go securityd service."""
+
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        *,
+        timeout: float = 5.0,
+        logger: Optional[Logger] = None,
+    ) -> None:
+        env_enabled = os.getenv("JARVIS_SECURITYD_ENABLED")
+        disable_flag = env_enabled is not None and env_enabled.strip().lower() in {"0", "false", "no"}
+        chosen_url = base_url or os.getenv("JARVIS_SECURITYD_URL") or "http://127.0.0.1:7071"
+        if disable_flag:
+            chosen_url = ""
+        self.base_url = chosen_url.rstrip("/") if chosen_url else ""
+        self.api_key = api_key or os.getenv("JARVIS_SECURITYD_TOKEN") or os.getenv("SECURITYD_TOKEN")
+        self.timeout = timeout
+        self.session = requests.Session()
+        self.logger = logger or Logger()
+        self.enabled = bool(self.base_url)
+
+    @classmethod
+    def from_settings(cls, settings: Any, logger: Optional[Logger] = None) -> "SecurityServiceClient":
+        base_url = None
+        api_key = None
+        timeout = 5.0
+        try:
+            raw_settings = getattr(settings, "settings", {}) if settings else {}
+            if isinstance(raw_settings, dict):
+                go_cfg = raw_settings.get("go_services", {}) or raw_settings.get("securityd", {}) or {}
+                sec_cfg = go_cfg.get("securityd", go_cfg)
+                base_url = sec_cfg.get("base_url") or sec_cfg.get("url")
+                api_key = sec_cfg.get("api_key") or sec_cfg.get("token")
+                timeout = float(sec_cfg.get("timeout_seconds", timeout))
+        except Exception:
+            pass
+        return cls(base_url=base_url, api_key=api_key, timeout=timeout, logger=logger)
+
+    def _request(self, method: str, path: str, payload: Dict[str, Any]) -> tuple[Optional[Dict[str, Any]], Optional[int]]:
+        if not self.enabled:
+            return None, None
+        url = f"{self.base_url}{path}"
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["X-API-Key"] = self.api_key
+        try:
+            response = self.session.request(method, url, json=payload, headers=headers, timeout=self.timeout)
+        except Exception as exc:
+            self.logger.debug(f"securityd request failed ({method} {url}): {exc}")
+            return None, None
+        try:
+            data = response.json()
+        except Exception:
+            data = None
+        return data, response.status_code
+
+    def validate_request(
+        self,
+        action: str,
+        resource: str,
+        *,
+        context: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        payload_context = context if isinstance(context, dict) else {"context": context}
+        payload_metadata = metadata if isinstance(metadata, dict) else {}
+        payload = {
+            "action": action,
+            "resource": resource,
+            "context": payload_context,
+            "metadata": payload_metadata,
+        }
+        data, status = self._request("POST", "/security/validate", payload)
+        if data is None:
+            return None
+        if "allowed" not in data and isinstance(status, int):
+            data["allowed"] = status < 300
+        return data
+
+    def check_permission(
+        self,
+        permission: str,
+        *,
+        user_id: Optional[str] = None,
+        roles: Optional[List[str]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        payload_context = context if isinstance(context, dict) else {"context": context}
+        payload = {
+            "user_id": user_id or "",
+            "roles": roles or [],
+            "permission": permission,
+            "context": payload_context,
+        }
+        data, status = self._request("POST", "/security/check_permission", payload)
+        if data is None:
+            return None
+        if "allowed" not in data and isinstance(status, int):
+            data["allowed"] = status < 300
+        return data
+
+    def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
+        payload = {"token": token}
+        data, status = self._request("POST", "/security/verify_token", payload)
+        if data is None:
+            return None
+        if "valid" not in data and isinstance(status, int):
+            data["valid"] = status < 300
+        return data
+
+
 class SecurityProtocolManager:
     """Koordiniert SNP-01-Lokal inklusive Safemode, Recovery und Dokumentation."""
 
@@ -138,6 +252,7 @@ class SecurityProtocolManager:
         self.gui = gui
         self.tts = tts
         self.base_dir = Path(base_dir or os.getcwd()).resolve()
+        self.securityd_client = SecurityServiceClient.from_settings(settings, logger=self.logger)
 
         self.backup_dir = self.base_dir / "backups" / "temp"
         self.report_dir = self.base_dir / "reports" / "security"
@@ -163,6 +278,56 @@ class SecurityProtocolManager:
     # ------------------------------------------------------------------ #
     # Public API
     # ------------------------------------------------------------------ #
+    def validate_request(
+        self,
+        action: str,
+        resource: str,
+        *,
+        context: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Forward a policy validation to the Go securityd backend."""
+        client = self.securityd_client
+        if not client or not client.enabled:
+            return {"allowed": True, "reason": "securityd_disabled"}
+        try:
+            response = client.validate_request(action, resource, context=context, metadata=metadata)
+        except Exception as exc:
+            self.logger.debug(f"securityd validate_request failed: {exc}")
+            response = None
+        return response or {"allowed": True, "reason": "securityd_unreachable"}
+
+    def check_permission(
+        self,
+        permission: str,
+        *,
+        user_id: Optional[str] = None,
+        roles: Optional[List[str]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Check a concrete permission string via securityd."""
+        client = self.securityd_client
+        if not client or not client.enabled:
+            return {"allowed": True, "reason": "securityd_disabled"}
+        try:
+            response = client.check_permission(permission, user_id=user_id, roles=roles, context=context)
+        except Exception as exc:
+            self.logger.debug(f"securityd check_permission failed: {exc}")
+            response = None
+        return response or {"allowed": True, "reason": "securityd_unreachable"}
+
+    def verify_token(self, token: str) -> Dict[str, Any]:
+        """Validate a token with securityd and provide a permissive fallback."""
+        client = self.securityd_client
+        if not client or not client.enabled:
+            return {"valid": True, "reason": "securityd_disabled"}
+        try:
+            response = client.verify_token(token)
+        except Exception as exc:
+            self.logger.debug(f"securityd verify_token failed: {exc}")
+            response = None
+        return response or {"valid": True, "reason": "securityd_unreachable"}
+
     def activate(
         self,
         level: PriorityLevel | str | None,
@@ -173,12 +338,23 @@ class SecurityProtocolManager:
     ) -> SecurityIncident:
         """Führt SNP-01-Lokal vollständig aus und gibt Incident-Daten zurück."""
 
+        metadata = metadata or {}
         resolved_level = level if isinstance(level, PriorityLevel) else PriorityLevel.from_text(str(level))
         incident = SecurityIncident(
             level=resolved_level,
             reason=reason,
             initiated_by=initiated_by,
         )
+        policy_check = self.validate_request(
+            "write:safe_mode",
+            "system.security_protocol",
+            context={"user_id": initiated_by, "roles": getattr(self.security_manager, "roles", None)},
+            metadata=metadata,
+        )
+        if not policy_check.get("allowed", True):
+            reason_txt = policy_check.get("reason") or policy_check.get("message") or "denied"
+            incident.errors.append(f"Ablehnung durch securityd: {reason_txt}")
+            self.logger.warning(f"Sicherheitsprotokoll wurde von securityd abgelehnt: {reason_txt}")
         severity_map = {
             PriorityLevel.CRITICAL: "critical",
             PriorityLevel.MAJOR: "elevated",

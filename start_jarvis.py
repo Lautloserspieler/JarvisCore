@@ -48,16 +48,30 @@ def cleanup():
         try:
             desktop_process.terminate()
             desktop_process.wait(timeout=5)
-        except:
+        except subprocess.TimeoutExpired:
+            logger.warning("⚠️  Desktop UI did not stop gracefully, forcing kill")
             desktop_process.kill()
+        except Exception as e:
+            logger.error(f"❌ Failed to stop Desktop UI: {e}")
+            try:
+                desktop_process.kill()
+            except Exception as kill_error:
+                logger.error(f"❌ Force kill failed: {kill_error}")
     
     if backend_process:
         logger.info("🛡️  Stopping Python Backend...")
         try:
             backend_process.terminate()
             backend_process.wait(timeout=5)
-        except:
+        except subprocess.TimeoutExpired:
+            logger.warning("⚠️  Backend did not stop gracefully, forcing kill")
             backend_process.kill()
+        except Exception as e:
+            logger.error(f"❌ Failed to stop Backend: {e}")
+            try:
+                backend_process.kill()
+            except Exception as kill_error:
+                logger.error(f"❌ Force kill failed: {kill_error}")
     
     logger.info("✅ J.A.R.V.I.S. Core stopped.")
 
@@ -79,6 +93,8 @@ def check_dependencies():
             logger.warning("⚠️  Go not found - Desktop UI will not work")
     except FileNotFoundError:
         logger.warning("⚠️  Go not installed - skipping Desktop UI")
+    except Exception as e:
+        logger.warning(f"⚠️  Error checking Go: {e}")
     
     # Check Wails
     try:
@@ -89,6 +105,8 @@ def check_dependencies():
             logger.warning("⚠️  Wails not found")
     except FileNotFoundError:
         logger.warning("⚠️  Wails not installed - run: go install github.com/wailsapp/wails/v2/cmd/wails@latest")
+    except Exception as e:
+        logger.warning(f"⚠️  Error checking Wails: {e}")
     
     return True
 

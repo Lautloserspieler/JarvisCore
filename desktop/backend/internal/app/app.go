@@ -103,3 +103,135 @@ func (a *App) TogglePlugin(pluginName string, enabled bool) error {
 	
 	return err
 }
+
+// ===== Knowledge Base APIs =====
+
+// GetKnowledgeStats holt Knowledge Base Statistiken
+func (a *App) GetKnowledgeStats() (map[string]interface{}, error) {
+	return a.bridge.Get("/api/knowledge/stats")
+}
+
+// ===== Memory System APIs =====
+
+// GetMemory holt Memory Snapshot mit optionaler Suche
+func (a *App) GetMemory(query string) (map[string]interface{}, error) {
+	url := "/api/memory"
+	if query != "" {
+		url += "?q=" + query
+	}
+	return a.bridge.Get(url)
+}
+
+// ===== Logs APIs =====
+
+// GetLogs holt System-Logs
+func (a *App) GetLogs(queryParams string) (map[string]interface{}, error) {
+	url := "/api/logs"
+	if queryParams != "" {
+		url += "?" + queryParams
+	}
+	return a.bridge.Get(url)
+}
+
+// ClearLogs löscht alle Logs
+func (a *App) ClearLogs() error {
+	_, err := a.bridge.Post("/api/logs/clear", nil)
+	return err
+}
+
+// ===== Training APIs =====
+
+// GetTraining holt Training Status und Daten
+func (a *App) GetTraining() (map[string]interface{}, error) {
+	return a.bridge.Get("/api/training")
+}
+
+// RunTrainingCycle startet einen Training-Zyklus
+func (a *App) RunTrainingCycle() error {
+	_, err := a.bridge.Get("/api/training/run")
+	if err == nil {
+		a.BroadcastMessage("training_started", map[string]interface{}{
+			"status": "running",
+		})
+	}
+	return err
+}
+
+// ===== Custom Commands APIs =====
+
+// GetCommands holt benutzerdefinierte Befehle
+func (a *App) GetCommands() (map[string]interface{}, error) {
+	return a.bridge.Get("/api/commands")
+}
+
+// AddCustomCommand fügt benutzerdefinierten Befehl hinzu
+func (a *App) AddCustomCommand(pattern, response string) error {
+	payload := map[string]string{
+		"pattern":  pattern,
+		"response": response,
+	}
+	_, err := a.bridge.Post("/api/commands", payload)
+	if err == nil {
+		a.BroadcastMessage("command_added", map[string]interface{}{
+			"pattern": pattern,
+		})
+	}
+	return err
+}
+
+// DeleteCustomCommand löscht benutzerdefinierten Befehl
+func (a *App) DeleteCustomCommand(pattern string) error {
+	payload := map[string]string{
+		"pattern": pattern,
+		"action":  "delete",
+	}
+	_, err := a.bridge.Post("/api/commands", payload)
+	if err == nil {
+		a.BroadcastMessage("command_deleted", map[string]interface{}{
+			"pattern": pattern,
+		})
+	}
+	return err
+}
+
+// ===== Audio Device APIs =====
+
+// GetAudioDevices holt verfügbare Audio-Geräte
+func (a *App) GetAudioDevices() (map[string]interface{}, error) {
+	return a.bridge.Get("/api/audio/devices")
+}
+
+// SetAudioDevice setzt aktives Audio-Gerät
+func (a *App) SetAudioDevice(index int) error {
+	payload := map[string]int{"index": index}
+	_, err := a.bridge.Post("/api/audio/devices", payload)
+	return err
+}
+
+// MeasureAudioLevel misst Audio-Pegel
+func (a *App) MeasureAudioLevel(duration float64) (map[string]interface{}, error) {
+	payload := map[string]float64{"duration": duration}
+	return a.bridge.Post("/api/audio/measure", payload)
+}
+
+// ===== Speech Control APIs =====
+
+// GetSpeechStatus holt Speech Recognition Status
+func (a *App) GetSpeechStatus() (map[string]interface{}, error) {
+	return a.bridge.Get("/api/speech/status")
+}
+
+// ToggleListening startet/stoppt Speech Recognition
+func (a *App) ToggleListening(action string) (map[string]interface{}, error) {
+	payload := map[string]string{"action": action}
+	return a.bridge.Post("/api/speech/control", payload)
+}
+
+// ToggleWakeWord aktiviert/deaktiviert Wake-Word Detection
+func (a *App) ToggleWakeWord(enabled bool) (map[string]interface{}, error) {
+	payload := map[string]interface{}{
+		"action":  "wake_word",
+		"enabled": enabled,
+	}
+	return a.bridge.Post("/api/speech/control", payload)
+}

@@ -20,6 +20,7 @@
 - [📡 Backend API](#-backend-api)
 - [⚙️ Konfiguration](#-konfiguration)
 - [🛠️ Entwicklung](#-entwicklung)
+- [⚠️ Known Limitations](#-known-limitations-v100)
 - [🔄 Migration](#-migration-web--desktop)
 - [🐛 Troubleshooting](#-troubleshooting)
 - [📊 Performance](#-performance)
@@ -89,7 +90,7 @@
 │  │  - 11 Responsive Views                                 │  │
 │  │  - WebSocket Live-Updates                             │  │
 │  │  - Voice Recording + Visualizer                       │  │
-│  └─────────────────────┬──────────────────────────────────────┘  │
+│  └─────────────────────┬─────────────────────────────────────┘  │
 │                        │ Wails Bridge (IPC)                  │
 │  ┌─────────────────────┴─────────────────────────────────────┐  │
 │  │  Backend: Go + Wails v2                               │  │
@@ -97,9 +98,9 @@
 │  │  - WebSocket Manager                                   │  │
 │  │  - Single Binary Compilation                          │  │
 │  └─────────────────────┬─────────────────────────────────────┘  │
-└────────────────────────┼─────────────────────────────────────┘
+└────────────────────────┬─────────────────────────────────────┘
                          │ HTTP/WebSocket
-          ┌──────────────┴──────────────┐
+          ┌──────────┴──────────┐
           │   Python Backend (Core)     │
           │  ┌────────────────────────┐ │
           │  │ JarvisCore Engine      │ │
@@ -412,6 +413,93 @@ python start_jarvis.py --build
 
 ---
 
+## ⚠️ **Known Limitations (v1.0.0)**
+
+> **Diese Punkte sind bekannt und werden in kommenden Updates adressiert.**
+
+### **🔒 Security**
+
+- **Token-System ist rudimentär**
+  - Desktop-Backend nutzt generierten Random-Token
+  - Keine persistente Token-Verwaltung
+  - Keine Token-Rotation
+  - 🛠️ **Fix geplant:** v1.0.1 - Config-basiertes Token-Management
+  - 🛠️ **Fix geplant:** v1.1.0 - Token-Pairing über UI
+
+- **Shell-Command-Injection-Risiken**
+  - `system_control.py` nutzt `shell=True` an mehreren Stellen
+  - User-Input-Validierung muss auditiert werden
+  - 🛠️ **Fix geplant:** v1.0.1 - Shell-Call Audit + Whitelisting
+  - 🛠️ **Fix geplant:** v1.1.0 - Komplett auf `shell=False` migrieren
+
+### **🏛️ Code Quality**
+
+- **`system_control.py` ist zu groß (~1500+ Zeilen)**
+  - Mischt Prozess-Management, Dateisystem, Netzwerk, Power, Shell
+  - Schwer wartbar und testbar
+  - 🛠️ **Fix geplant:** v1.1.0 - Aufteilung in Module:
+    - `system_processes.py`
+    - `system_files.py`
+    - `system_network.py`
+    - `system_power.py`
+    - `system_shell.py` (extra gesichert)
+
+- **TTS-Code ist fragmentiert**
+  - Mehrere parallele Implementierungen: `xtts_tts.py`, `xtts_tts_fixed.py`, `xttsv2_tts.py`, `reliable_tts.py`
+  - Entwicklungshistorie, aber verwirrend
+  - 🛠️ **Fix geplant:** v1.1.0 - Einheitliche TTS-API + Legacy-Cleanup
+
+- **Exception Handling unvollständig**
+  - Einige `bare except:` Blöcke ohne Logging (bereits teilweise gefixt)
+  - 🛠️ **Fix geplant:** v1.0.1 - Komplettes Exception-Audit
+
+### **⚙️ Performance**
+
+- **Whisper lädt beim Start**
+  - `load_strategy = "startup"` verzögert Start auf schwächeren Maschinen
+  - 🛠️ **Fix geplant:** v1.3.0 - Lazy Loading + UI-Toggle
+
+- **Keine Shutdown-Sequenz**
+  - Threads/Queues werden teils unsauber gestoppt
+  - Potential für Deadlocks
+  - 🛠️ **Fix geplant:** v1.3.0 - Lifecycle-Manager
+
+### **✅ Testing**
+
+- **Test-Coverage gering**
+  - Nur 1 Testmodul (`test_crawler_guard.py`)
+  - Keine Unit-Tests für Core-Module
+  - Keine Integrationstests
+  - 🛠️ **Fix geplant:** v1.2.0 - Test-Suite für:
+    - `config.Settings`
+    - `knowledge_manager`
+    - `system_control` (Teile)
+    - Desktop Bridge (Go ↔ Python)
+
+### **📝 Dokumentation**
+
+- **Type-Hints fehlen teilweise**
+  - Erschwert statische Analyse (mypy, pyright)
+  - 🛠️ **Fix geplant:** v1.3.0 - Schrittweise Typisierung
+
+---
+
+### **📌 Hinweis**
+
+**Diese Limitierungen beeinträchtigen NICHT die Kernfunktionalität!**
+
+Das System ist **voll funktionsfähig** für:
+- ✅ Chat mit 3 LLM-Modellen
+- ✅ Voice Control
+- ✅ Knowledge Base
+- ✅ Memory System
+- ✅ System Monitoring
+- ✅ Plugin Management
+
+Die genannten Punkte sind **Code-Quality- und Security-Verbesserungen** für Production-Readiness.
+
+---
+
 ## 🔄 **Migration (Web UI → Desktop)**
 
 **Web UI wurde am 05.12.2025 entfernt!**
@@ -492,41 +580,40 @@ LLM Inference:   ~50 tokens/s (CPU), ~200 tokens/s (GPU)
 
 ## 🎯 **Roadmap**
 
-### **v1.1 (Q1 2026)** - System Integration
+### **v1.0.1 (Dezember 2025)** - Security Hardening
+- [ ] Token-Management aus Config
+- [ ] Shell-Command Audit + Whitelisting
+- [ ] Exception-Handling Audit
+- [ ] 🔄 **Auto-Update System** (bereits implementiert!)
+
+### **v1.1 (Q1 2026)** - Code Cleanup & Features
+- [ ] `system_control.py` Refactoring (Modul-Split)
+- [ ] TTS-Konsolidierung (einheitliche API)
 - [ ] System Tray Integration
-- [ ] Global Hotkeys (z.B. Ctrl+Alt+J)
+- [ ] Global Hotkeys
 - [ ] Multi-Language Support (EN, DE, FR)
-- [ ] Mehr LLM Modelle (Qwen, Phi-3)
 
-### **v1.2 (Q2 2026)** - Advanced Features
-- [ ] Wake Word Detection (stable)
-- [ ] Screen Capture & Analysis
-- [ ] Calendar Integration (Google, Outlook)
-- [ ] Smart Home Integration (Home Assistant)
-- [ ] Cloud Sync (Memory + Knowledge Base)
+### **v1.2 (Q2 2026)** - Testing & Stability
+- [ ] Test-Suite (60%+ Coverage)
+- [ ] CI/CD Pipeline (GitHub Actions)
+- [ ] Performance-Profiling
 - [ ] **XTTS UI Integration** 🎙️
-  - Voice Training Interface in Desktop UI
-  - Latents Manager (Liste trainierter Stimmen)
-  - Voice Sample Recorder (5-10min Audio)
-  - Voice Preview/Test
-  - XTTS vs. pyttsx3 Auswahl in Settings
+  - Voice Training Interface
+  - Latents Manager
+  - Voice Sample Recorder
 
-### **v1.3 (Q3 2026)** - AI Enhancements
-- [ ] **RAG-System** (Retrieval-Augmented Generation)
-  - Vector-DB Integration (Qdrant/ChromaDB)
-  - PDF/Markdown Ingestion
-  - Semantic Chunking
+### **v1.3 (Q3 2026)** - Advanced Features
+- [ ] Lifecycle-Manager (sauberes Shutdown)
+- [ ] Lazy Loading für STT/TTS
+- [ ] Type-Hints (vollständig)
+- [ ] **RAG-System** (Vector-DB)
 - [ ] **Code Execution Sandbox**
-  - Python Code Runner (sandboxed)
-  - Matplotlib Charts generieren
-  - Jupyter-like Interface
 
 ### **v2.0 (Q4 2026)** - Enterprise
-- [ ] Distributed Architecture (Multi-Device)
-- [ ] Browser Extension (Chrome, Firefox)
+- [ ] Distributed Architecture
+- [ ] Browser Extension
 - [ ] Plugin Marketplace
-- [ ] Enterprise Features (Team Management)
-- [ ] Cloud-LLM Option (OpenAI, Anthropic)
+- [ ] Cloud-LLM Option
 
 ---
 

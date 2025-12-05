@@ -2,7 +2,7 @@ package app
 
 import (
 	"bytes"
-	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -161,6 +161,3 @@ func convertToWAV(pcmData []byte, sampleRate, channels int) ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
-
-// Missing import
-import "encoding/binary"

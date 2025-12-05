@@ -1,226 +1,444 @@
-# 🧠 J.A.R.V.I.S. (JarvisCore)
+# 🤖 J.A.R.V.I.S. Core - Desktop Edition
 
-J.A.R.V.I.S. (JarvisCore) ist ein modularer, vollständig lokaler Sprach- und Automationsassistent mit **Web-UI und nativer Desktop-Anwendung**, Spracherkennung, Text-zu-Sprache, Wissensdatenbank, Plugin-System und GPU-beschleunigten LLMs.  
-Fokus: Datenschutz, Erweiterbarkeit, echte Offline-Intelligenz.
+> **Just A Rather Very Intelligent System** - Native Desktop AI Assistant with Advanced Capabilities
 
-> Hinweis: Sprach-Ein- und -Ausgabe sind noch in aktiver Entwicklung. Stabilität und Funktionsumfang können sich ändern.
-
----
-
-## 🚀 Features
-
-- Vollständig lokale Pipeline für Spracheingabe und -ausgabe (kein Cloud-Zwang).
-- CUDA-beschleunigter LLM-Kern (LLaMA 3, Mistral, Hermes, DeepSeek) via `llama-cpp-python`.
-- **Zwei UI-Optionen:**
-  - 🌐 **Web-Dashboard** mit Live-Telemetrie, Model-Verwaltung und Plugin-Steuerung
-  - 🖥️ **Native Desktop-App** (Wails + Vue.js) - Single Binary, ~20-30MB
-- Rollenbasiertes Sicherheitsmodell mit AES-256 / RSA-4096, Safe-Mode und Notfallprotokoll.
-- Modularer Aufbau mit Plugins, Training-/Debug-Modus und Task-Automation.
-
-Mehr Details findest du in der ausführlichen Doku im Ordner [`docs/`](./docs).
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
+[![Go](https://img.shields.io/badge/Go-1.21+-00ADD8.svg)](https://golang.org)
+[![Wails](https://img.shields.io/badge/Wails-v2-673ab8.svg)](https://wails.io)
+[![Vue](https://img.shields.io/badge/Vue-3.0-42b883.svg)](https://vuejs.org)
 
 ---
 
-## 🖥️ Desktop UI (NEU!)
+## 📋 **Inhaltsverzeichnis**
 
-**Native Desktop-Anwendung als Alternative zur Web-UI.**
+- [✨ Features](#-features)
+- [🏗️ Architektur](#-architektur)
+- [📦 Installation](#-installation)
+- [🚀 Schnellstart](#-schnellstart)
+- [🎨 Desktop UI](#-desktop-ui-features)
+- [📡 Backend API](#-backend-api)
+- [⚙️ Konfiguration](#-konfiguration)
+- [🛠️ Entwicklung](#-entwicklung)
+- [🔄 Migration](#-migration-web--desktop)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [📊 Performance](#-performance)
+- [🎯 Roadmap](#-roadmap)
+- [⚖️ Lizenz](#-lizenz)
 
-### Vorteile
-- ✅ **Native Performance** - Kein Browser-Overhead
-- ✅ **System-Integration** - Tray-Icon, Shortcuts, Benachrichtigungen
-- ✅ **Single Binary** - Nur ~20-30MB
-- ✅ **Offline-First** - Keine Port-Konflikte
-- ✅ **Cross-Platform** - Windows, Linux, macOS
+---
 
-### Quick Start
+## ✨ **Features**
+
+### **🎯 Core Capabilities**
+
+- **🧠 Multi-Model AI System**
+  - Support für OpenAI GPT-4, Claude, Gemini, Local LLMs (Ollama)
+  - Dynamisches Model-Loading/Unloading zur Laufzeit
+  - Context-aware Response Generation
+
+- **📚 Knowledge Base System**
+  - Automatisches Web-Crawling & Indexierung
+  - Vector-basierte Semantic Search (Sentence-BERT)
+  - Real-time Knowledge Feed mit Progress-Tracking
+
+- **🧠 Advanced Memory System**
+  - Langzeit-Memory mit Timeline-Visualisierung
+  - Context-basiertes Memory-Retrieval
+  - Semantic Search über Memory-Einträge
+
+- **🎓 Reinforcement Learning**
+  - Adaptive Command Recognition
+  - User-specific Pattern Learning
+  - Top-Command Analytics & Optimization
+
+- **🔌 Plugin System**
+  - Hot-loading von Custom Plugins
+  - Enable/Disable ohne Neustart
+  - Extensible Plugin API
+
+- **🎙️ Voice Control**
+  - Spracheingabe via Whisper (OpenAI)
+  - Real-time Audio Visualizer
+  - Hands-free Operation
+
+- **🔒 Security Features**
+  - Passphrase-based Authentication
+  - TOTP 2FA Support (Google Authenticator)
+  - Encrypted Memory Storage
+
+---
+
+## 🏗️ **Architektur**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  Desktop UI (Native App)                     │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Frontend: Vue 3 + TypeScript + Vite                  │  │
+│  │  - 11 Responsive Views                                 │  │
+│  │  - WebSocket Live-Updates                             │  │
+│  │  - Voice Recording + Visualizer                       │  │
+│  └─────────────────────┬─────────────────────────────────┘  │
+│                        │ Wails Bridge (IPC)                  │
+│  ┌─────────────────────▼─────────────────────────────────┐  │
+│  │  Backend: Go + Wails v2                               │  │
+│  │  - HTTP API Proxy (→ Python Backend)                  │  │
+│  │  - WebSocket Manager                                   │  │
+│  │  - Single Binary Compilation                          │  │
+│  └─────────────────────┬─────────────────────────────────┘  │
+└────────────────────────┼─────────────────────────────────────┘
+                         │ HTTP/WebSocket
+          ┌──────────────▼──────────────┐
+          │   Python Backend (Core)     │
+          │  ┌────────────────────────┐ │
+          │  │ JarvisCore Engine      │ │
+          │  │ - NLP Processing       │ │
+          │  │ - LLM Integration      │ │
+          │  │ - Knowledge Manager    │ │
+          │  │ - Memory System        │ │
+          │  │ - Plugin Orchestrator  │ │
+          │  └────────────────────────┘ │
+          │                              │
+          │  HTTP API (Port 5050)        │
+          │  WebSocket (Port 8765)       │
+          └──────────────────────────────┘
+```
+
+### **Tech Stack**
+
+| Layer | Technologien |
+|-------|-------------|
+| **Frontend** | Vue 3, TypeScript, Vite, Axios, WebSocket API |
+| **Desktop Bridge** | Go 1.21+, Wails v2, Gorilla WebSocket |
+| **Backend** | Python 3.10+, asyncio, aiohttp, FastAPI |
+| **AI/ML** | OpenAI API, Anthropic Claude, Google Gemini, Ollama, Sentence-BERT |
+| **Database** | JSON-based Storage (Memory, Knowledge, Training Data) |
+| **Voice** | Whisper (OpenAI), Web Audio API |
+| **Security** | bcrypt, pyotp (TOTP) |
+
+---
+
+## 📦 **Installation**
+
+### **Voraussetzungen**
+
+#### **Python Backend**
+```bash
+# Python 3.10 oder höher
+python --version
+
+# Empfohlen: Virtual Environment
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+```
+
+#### **Desktop UI (Go + Wails)**
+```bash
+# Go 1.21 oder höher
+go version
+
+# Node.js 18+ (für Frontend)
+node --version
+
+# Wails CLI installieren
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+```
+
+### **Installation Schritte**
 
 ```bash
-# 1) JarvisCore starten
-python main.py
-
-# 2) Desktop UI starten (in separatem Terminal)
-cd desktop
-wails dev
-```
-
-**Mehr Infos:** [`desktop/README.md`](./desktop/README.md)
-
----
-
-## 🧩 Architektur
-
-Siehe ausführlicher: [`docs/architecture.md`](./docs/architecture.md).
-
-Kurzüberblick:
-
-- Sprachverarbeitung:
-  - Wake-Word: „Hey Jarvis“
-  - STT: VOSK / Whisper / Faster-Whisper
-  - TTS: XTTS v2 / Coqui / pyttsx3
-- Intelligenz-Kern:
-  - Lokale LLMs (LLaMA 3, Mistral, Hermes, DeepSeek) mit GPU-Beschleunigung
-- Wissen:
-  - Lokaler Cache + Wikipedia + OpenLibrary + Semantic Scholar + OSM
-  - Cross-Encoder (MiniLM L6 v2) für semantisches Ranking
-- Oberfläche:
-  - 🌐 Web-Dashboard (AIOHTTP)
-  - 🖥️ **Native Desktop-App (Wails + Vue.js + Go)** ← NEU!
-- Sicherheit:
-  - AES-256 + RSA-4096
-  - Rollen, Safe-Mode, Security-Logs
-
----
-
-## ⚙️ Systemanforderungen
-
-### Python Backend
-- OS: Windows 10/11 (empfohlen), Linux/macOS mit Anpassungen
-- Python: 3.11 x64
-- RAM: ≥ 16 GB
-- GPU: NVIDIA mit CUDA ≥ 12.0 (AMD nur eingeschränkt)
-- Git: für Repository-Klon
-
-### Desktop UI (optional)
-- Go: 1.21+
-- Node.js: 18+
-- Wails CLI: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
-
----
-
-## ⚡ Schnellstart (Windows / PowerShell)
-
-### Web-UI (Standard)
-
-```
-# 1) Repository klonen oder entpacken
-cd C:\Users\<du>\Desktop
+# 1. Repository klonen
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 
-# 2) Automatische Einrichtung + Start
-py -3.11 bootstrap.py --run
-# oder per Doppelklick:
-run_jarvis.bat
+# 2. Python Dependencies
+pip install -r requirements.txt
+
+# 3. Desktop UI Dependencies (optional)
+cd desktop/frontend
+npm install
+cd ../..
+
+# 4. Konfiguration
+cp config/settings.example.py config/settings.py
+vim config/settings.py  # API Keys hinzufügen
 ```
 
-### Desktop UI (Alternative)
+---
+
+## 🚀 **Schnellstart**
+
+### **Development Mode**
 
 ```bash
-# Terminal 1: JarvisCore Backend
+# Terminal 1: Python Backend
 cd JarvisCore
 python main.py
 
 # Terminal 2: Desktop UI
 cd desktop
-npm install
-wails dev
+make dev
+# oder: wails dev
 ```
 
-> Bei Problemen: siehe [`docs/troubleshooting.md`](./docs/troubleshooting.md).
-
----
-
-## 📦 Installation
-
-Ausführliche Infos: [`docs/installation.md`](./docs/installation.md).
-
-Kurzform (manuell):
-
-```
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-python main.py
-```
-
-Beim ersten Start werden `data/`, `logs/`, `models/` und `data/settings.json` erstellt.
-
----
-
-## 🎮 Nutzung
-
-### Web-UI
-
-Standardstart:
-
-```
-cd JarvisCore
-python main.py
-```
-
-- Web-Dashboard: http://127.0.0.1:5050
-- Token (default): `12345678` (änderbar in `data/settings.json`)
-
-Tabs in der Web-UI:
-
-- Chat – Text/Sprachsteuerung, Verlauf, Markdown
-- System – Hardware- und Leistungsmonitor
-- Modelle – LLM-Verwaltung
-- Plugins / Memory / Training / Logs / Einstellungen
-
-### Desktop UI
+### **Production Build**
 
 ```bash
-# Development
 cd desktop
-wails dev
-
-# Production Build
-cd desktop
-wails build
-# Binary: ./build/bin/jarvis-desktop.exe
+make build
+# Output: build/bin/jarvis-desktop.exe (~28MB)
 ```
 
-Mehr in [`docs/usage.md`](./docs/usage.md) und [`desktop/README.md`](./desktop/README.md).
+---
+
+## 🎨 **Desktop UI Features**
+
+### **11 Haupt-Ansichten**
+
+| View | Icon | Features |
+|------|------|----------|
+| **Chat** | 💬 | Text & Voice Input, Streaming, Visualizer |
+| **System** | 📊 | CPU/RAM/GPU Monitoring, Live-Updates |
+| **Models** | 🧠 | LLM Management, Load/Unload |
+| **Plugins** | 🔌 | Enable/Disable, Configuration |
+| **Knowledge** | 📚 | Crawling Feed, Stats, Search |
+| **Memory** | 🧠 | Timeline, Search, Export |
+| **Logs** | 📋 | Real-time Streaming, Filters |
+| **Training** | 🎯 | RL Stats, Top Commands |
+| **Commands** | 🎮 | Pattern Editor, Testing |
+| **Settings** | ⚙️ | Audio, API Keys, Config |
+| **Security** | 🔒 | Passphrase/TOTP Overlay (Global) |
 
 ---
 
-## 🔒 Sicherheit
+## 📡 **Backend API**
 
-- AES-256 + RSA-4096 für sensible Daten.
-- Rollenbasiertes Zugriffssystem.
-- Safe-Mode zur Begrenzung kritischer Aktionen.
-- Sicherheits-Logs unter `logs/security.log`.
+### **HTTP Endpoints**
 
-Details: [`docs/security.md`](./docs/security.md).
+```python
+# System
+GET  /api/status              # Backend Status
+GET  /api/system/metrics      # CPU/RAM/GPU
+
+# Chat
+POST /api/command             # Send Message
+
+# Models
+GET  /api/models              # List Models
+POST /api/models/load         # Load Model
+
+# Knowledge
+GET  /api/knowledge/stats     # KB Stats
+
+# Memory
+GET  /api/memory              # Memory Timeline
+POST /api/memory/search       # Search
+
+# Logs
+GET  /api/logs                # Get Logs
+POST /api/logs/clear          # Clear Logs
+
+# Training
+GET  /api/training            # RL Stats
+
+# Commands
+GET  /api/commands            # List Commands
+POST /api/commands            # Add Command
+
+# Plugins
+GET  /api/plugins             # List Plugins
+POST /api/plugins/toggle      # Enable/Disable
+```
+
+### **WebSocket Events**
+
+```javascript
+// Connect
+ws://127.0.0.1:8765
+
+// Events
+- system_metrics      // Live CPU/RAM/GPU
+- chat_message        // New Messages
+- knowledge_progress  // Crawling Progress
+- memory_update       // Memory Changes
+- security_challenge  // 2FA Prompt
+- log_entry           // New Log
+- training_progress   // RL Updates
+```
 
 ---
 
-## 🧠 Modelle & Lizenzen
+## ⚙️ **Konfiguration**
 
-Übersicht aller eingebundenen Modelle, Lizenzen und Quellen: [`docs/models.md`](./docs/models.md).
+**config/settings.py:**
 
----
+```python
+# API Keys
+OPENAI_API_KEY = "sk-proj-..."
+ANTHROPIC_API_KEY = "sk-ant-..."
 
-## 🧩 Plugins
+# Model Settings
+DEFAULT_MODEL = "gpt-4"
 
-JarvisCore bietet ein Plugin-System zur Erweiterung (Automation, Tools, Crawler, usw.).  
-Siehe: [`docs/plugins.md`](./docs/plugins.md).
+# Backend
+API_HOST = "127.0.0.1"
+API_PORT = 5050
+WEBSOCKET_PORT = 8765
 
----
+# Security
+SECURITY_PASSPHRASE = "your-passphrase"
+TOTP_SECRET = "BASE32SECRET"
 
-## 🤝 Beiträge
-
-Beiträge sind willkommen! Lies bitte zuerst [`CONTRIBUTING.md`](./CONTRIBUTING.md).
-
-- Bug melden: GitHub Issue mit Log-Auszug und Reproduktionsschritten.
-- Feature vorschlagen: Issue mit Use-Case.
-- Code beitragen: Fork → Branch → PR.
-
----
-
-## ⚖️ Lizenz
-
-Copyright © 2025 Lautloserspieler
-
-Lizenziert unter der Apache License 2.0 mit Zusatzklausel:  
-Kommerzielle Nutzung, Verkauf oder Weiterverbreitung dieses Projekts sind ohne vorherige schriftliche Genehmigung untersagt.
-
-Drittanbieter-Komponenten unterliegen ihren jeweiligen Lizenzen (siehe `third_party_licenses`).
+# Logging
+LOG_LEVEL = "INFO"
+```
 
 ---
 
-## 💬 Kontakt
+## 🛠️ **Entwicklung**
 
-- GitHub: https://github.com/Lautloserspieler
-- Feedback & Issues: bitte über den Issue-Tracker des Repos.
+### **Projekt-Struktur**
+
+```
+JarvisCore/
+├── main.py                      # Backend Entry
+├── config/settings.py           # Configuration
+├── core/                        # Core Logic
+├── plugins/                     # Plugin System
+├── data/                        # Storage
+└── desktop/                     # Desktop UI
+    ├── main.go                  # Go Entry
+    ├── frontend/                # Vue 3
+    │   ├── src/components/
+    │   └── package.json
+    └── backend/internal/        # Go Bridge
+```
+
+### **Development Commands**
+
+```bash
+# Backend
+python main.py
+
+# Frontend (Standalone)
+cd desktop/frontend
+npm run dev
+
+# Full Desktop (Wails)
+cd desktop
+make dev
+
+# Production Build
+make build
+```
+
+---
+
+## 🔄 **Migration (Web UI → Desktop)**
+
+**Web UI wurde am 05.12.2025 entfernt!**
+
+Siehe [MIGRATION.md](MIGRATION.md) für Details.
+
+**Kurz:**
+```bash
+# ALT
+python main.py  # → Browser öffnet auf :8080
+
+# NEU
+python main.py              # Backend only
+cd desktop && make dev      # Desktop App
+```
+
+---
+
+## 🐛 **Troubleshooting**
+
+### **Backend startet nicht**
+```bash
+pip install -r requirements.txt
+lsof -ti:5050 | xargs kill -9  # Port freigeben
+```
+
+### **Desktop UI startet nicht**
+```bash
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+cd desktop/frontend && npm install
+```
+
+### **WebSocket Connection Failed**
+```bash
+# Check Backend
+curl http://127.0.0.1:5050/api/status
+netstat -an | grep 8765
+```
+
+---
+
+## 📊 **Performance**
+
+### **System Requirements**
+
+| Komponente | Minimum | Empfohlen |
+|------------|---------|------------|
+| **CPU** | 4 Cores @ 2.5 GHz | 8 Cores @ 3.5 GHz |
+| **RAM** | 8 GB | 16 GB |
+| **GPU** | - | NVIDIA RTX 3060+ |
+| **Disk** | 10 GB | 50 GB |
+
+### **Benchmarks**
+```
+Startup:     2-3s (Desktop) + 3-5s (Backend)
+Memory:      120 MB (Desktop) + 400 MB (Backend)
+Binary Size: 28 MB
+```
+
+---
+
+## 🎯 **Roadmap**
+
+### **v1.1 (Q1 2026)**
+- [ ] System Tray Integration
+- [ ] Global Hotkeys
+- [ ] Multi-Language Support
+- [ ] Cloud Sync
+- [ ] Mobile App
+
+### **v1.2 (Q2 2026)**
+- [ ] Wake Word Detection
+- [ ] Screen Capture & Analysis
+- [ ] Calendar Integration
+- [ ] Smart Home Integration
+
+### **v2.0 (Q3 2026)**
+- [ ] Distributed Architecture
+- [ ] Browser Extension
+- [ ] Plugin Marketplace
+- [ ] Enterprise Features
+
+---
+
+## ⚖️ **Lizenz**
+
+**Proprietary License** - © 2025 Lautloserspieler
+
+Dieses Projekt ist privat. Kommerzielle Nutzung nur nach Genehmigung.
+
+---
+
+## 📞 **Support**
+
+- **Issues:** [GitHub Issues](https://github.com/Lautloserspieler/JarvisCore/issues)
+- **Email:** emeyer@fn.de
+
+---
+
+<div align="center">
+
+**Built with ❤️ using Python, Go, Vue 3, and Wails**
+
+⭐ **Star this project if you like it!**
+
+</div>

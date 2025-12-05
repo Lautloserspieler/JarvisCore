@@ -226,6 +226,16 @@ class Settings:
                 "rate_limit_window_seconds": 60,
                 "rate_limit_max_requests": 120
             },
+            "desktop_app": {
+                "enabled": False,
+                "window_title": "J.A.R.V.I.S.",
+                "width": 1280,
+                "height": 820,
+                "frameless": False,
+                "background_color": "#0b1220",
+                "open_devtools": False,
+                "suppress_browser": True
+            },
 
             # Antwort-/Textlaengen-Einstellungen
             "response": {

@@ -1,5 +1,9 @@
 <template>
   <div class="chat-container">
+    <div class="status-banner" v-if="isDevelopment">
+      ⚠️ Dev-Modus: Simulierte Antworten (JarvisCore nicht verbunden)
+    </div>
+    
     <div class="messages" ref="messagesContainer">
       <div 
         v-for="msg in messages" 
@@ -56,10 +60,13 @@
 
 <script>
 import { ref, nextTick, onMounted } from 'vue'
+import { useWails } from '../composables/useWails'
 
 export default {
   name: 'Chat',
   setup() {
+    const { api, isDevelopment } = useWails()
+    
     const messages = ref([])
     const userInput = ref('')
     const isProcessing = ref(false)
@@ -70,6 +77,7 @@ export default {
       const text = userInput.value.trim()
       if (!text || isProcessing.value) return
       
+      // User-Message hinzufügen
       messages.value.push({
         id: Date.now(),
         role: 'user',
@@ -82,12 +90,10 @@ export default {
       scrollToBottom()
       
       try {
-        // TODO: Wails Backend-Call aktivieren
-        // const response = await window.go.app.App.ProcessCommand(text)
+        // ✅ Wails API Call (mit Fallback)
+        const response = await api.ProcessCommand(text)
         
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        const response = `Du hast gesagt: "${text}"`
-        
+        // Assistant-Antwort hinzufügen
         messages.value.push({
           id: Date.now() + 1,
           role: 'assistant',
@@ -108,8 +114,25 @@ export default {
       }
     }
     
+    const loadHistory = async () => {
+      try {
+        const history = await api.GetConversationHistory(50)
+        if (history && history.length > 0) {
+          messages.value = history.map((entry, index) => ({
+            id: index,
+            role: entry.role,
+            text: entry.text,
+            timestamp: entry.timestamp * 1000
+          }))
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden des Verlaufs:', error)
+      }
+    }
+    
     const toggleListening = () => {
       isListening.value = !isListening.value
+      // TODO: Voice Recording implementieren
     }
     
     const scrollToBottom = () => {
@@ -128,13 +151,20 @@ export default {
       })
     }
     
-    onMounted(() => {
-      messages.value.push({
-        id: Date.now(),
-        role: 'assistant',
-        text: 'Hallo! Ich bin J.A.R.V.I.S. Wie kann ich dir helfen?',
-        timestamp: Date.now()
-      })
+    onMounted(async () => {
+      await loadHistory()
+      
+      // Willkommensnachricht falls leer
+      if (messages.value.length === 0) {
+        messages.value.push({
+          id: Date.now(),
+          role: 'assistant',
+          text: 'Hallo! Ich bin J.A.R.V.I.S. Wie kann ich dir helfen?',
+          timestamp: Date.now()
+        })
+      }
+      
+      scrollToBottom()
     })
     
     return {
@@ -143,6 +173,7 @@ export default {
       isProcessing,
       isListening,
       messagesContainer,
+      isDevelopment,
       sendMessage,
       toggleListening,
       formatTime
@@ -152,6 +183,15 @@ export default {
 </script>
 
 <style scoped>
+.status-banner {
+  padding: 8px 16px;
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  text-align: center;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -178,14 +218,8 @@ export default {
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .message.user {
@@ -227,21 +261,12 @@ export default {
   animation: bounce 1.4s infinite ease-in-out;
 }
 
-.typing-indicator span:nth-child(1) {
-  animation-delay: -0.32s;
-}
-
-.typing-indicator span:nth-child(2) {
-  animation-delay: -0.16s;
-}
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
 
 @keyframes bounce {
-  0%, 80%, 100% {
-    transform: scale(0);
-  }
-  40% {
-    transform: scale(1);
-  }
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
 }
 
 .input-area {
@@ -276,12 +301,8 @@ export default {
 }
 
 @keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 var(--accent);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(0, 180, 216, 0);
-  }
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent); }
+  50% { box-shadow: 0 0 0 10px rgba(0, 180, 216, 0); }
 }
 
 input {

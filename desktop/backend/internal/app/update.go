@@ -31,12 +31,15 @@ type UpdateSettings struct {
 	LastCheckTime  string `json:"last_check_time"`
 }
 
+var (
+	// Version is injected at build time via ldflags
+	// Example: wails build -ldflags "-X 'github.com/Lautloserspieler/JarvisCore/desktop/backend/internal/app.Version=v1.0.1'"
+	Version = "v1.0.0" // Default fallback
+)
+
 const (
-	// CurrentVersion is injected at build time via ldflags
-	// go build -ldflags "-X main.Version=v1.0.1"
-	CurrentVersion = "v1.0.0"
-	GitHubRepo     = "Lautloserspieler/JarvisCore"
-	GitHubAPI      = "https://api.github.com/repos/" + GitHubRepo + "/releases/latest"
+	GitHubRepo = "Lautloserspieler/JarvisCore"
+	GitHubAPI  = "https://api.github.com/repos/" + GitHubRepo + "/releases/latest"
 )
 
 // CheckForUpdates queries GitHub API for latest release
@@ -74,7 +77,7 @@ func (a *App) CheckForUpdates() (UpdateInfo, error) {
 	}
 
 	// Compare versions using semver
-	currentVer, err := semver.NewVersion(strings.TrimPrefix(CurrentVersion, "v"))
+	currentVer, err := semver.NewVersion(strings.TrimPrefix(Version, "v"))
 	if err != nil {
 		return UpdateInfo{}, fmt.Errorf("invalid current version: %w", err)
 	}
@@ -105,7 +108,7 @@ func (a *App) CheckForUpdates() (UpdateInfo, error) {
 
 	return UpdateInfo{
 		Available:      updateAvailable,
-		CurrentVersion: CurrentVersion,
+		CurrentVersion: Version,
 		LatestVersion:  release.TagName,
 		ReleaseURL:     release.HtmlURL,
 		Changelog:      release.Body,
@@ -150,5 +153,5 @@ func (a *App) SaveUpdateSettings(settings UpdateSettings) error {
 
 // GetCurrentVersion returns the current application version
 func (a *App) GetCurrentVersion() string {
-	return CurrentVersion
+	return Version
 }

@@ -1,0 +1,2 @@
+# This directory stores AI models
+# Large model files (*.gguf, *.bin, *.pth) are ignored via .gitignore

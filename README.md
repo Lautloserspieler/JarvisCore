@@ -489,15 +489,14 @@ LLM Inference:   ~50 tokens/s (CPU), ~200 tokens/s (GPU)
 - [ ] System Tray Integration
 - [ ] Global Hotkeys
 - [ ] Multi-Language Support
-- [ ] Cloud Sync
-- [ ] Mobile App
+- [ ] Mehr LLM Modelle (Qwen, Phi-3)
 
 ### **v1.2 (Q2 2026)**
 - [ ] Wake Word Detection
 - [ ] Screen Capture & Analysis
 - [ ] Calendar Integration
 - [ ] Smart Home Integration
-- [ ] Mehr LLM Modelle (Qwen, Phi-3)
+- [ ] Cloud Sync
 
 ### **v2.0 (Q3 2026)**
 - [ ] Distributed Architecture

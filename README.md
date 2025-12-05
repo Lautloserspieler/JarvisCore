@@ -53,7 +53,7 @@
   - Context-basiertes Memory-Retrieval
   - Semantic Search über Memory-Einträge
 
-- **🎓 Reinforcement Learning**
+- **🎯 Reinforcement Learning**
   - Adaptive Command Recognition
   - User-specific Pattern Learning
   - Top-Command Analytics & Optimization
@@ -67,6 +67,10 @@
   - Spracheingabe via Whisper (OpenAI)
   - Real-time Audio Visualizer
   - Hands-free Operation
+  - **XTTS v2 Integration** (Backend bereits vorhanden)
+    - Neural Text-to-Speech
+    - Voice Cloning Support
+    - High-Quality German Voice
 
 - **🔒 Security Features**
   - Passphrase-based Authentication
@@ -80,22 +84,22 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                  Desktop UI (Native App)                     │
-│  ┌───────────────────────────────────────────────────────┐  │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │  Frontend: Vue 3 + TypeScript + Vite                  │  │
 │  │  - 11 Responsive Views                                 │  │
 │  │  - WebSocket Live-Updates                             │  │
 │  │  - Voice Recording + Visualizer                       │  │
-│  └─────────────────────┬─────────────────────────────────┘  │
+│  └─────────────────────┬──────────────────────────────────────┘  │
 │                        │ Wails Bridge (IPC)                  │
-│  ┌─────────────────────▼─────────────────────────────────┐  │
+│  ┌─────────────────────┴─────────────────────────────────────┐  │
 │  │  Backend: Go + Wails v2                               │  │
 │  │  - HTTP API Proxy (→ Python Backend)                  │  │
 │  │  - WebSocket Manager                                   │  │
 │  │  - Single Binary Compilation                          │  │
-│  └─────────────────────┬─────────────────────────────────┘  │
+│  └─────────────────────┬─────────────────────────────────────┘  │
 └────────────────────────┼─────────────────────────────────────┘
                          │ HTTP/WebSocket
-          ┌──────────────▼──────────────┐
+          ┌──────────────┴──────────────┐
           │   Python Backend (Core)     │
           │  ┌────────────────────────┐ │
           │  │ JarvisCore Engine      │ │
@@ -120,7 +124,7 @@
 | **Backend** | Python 3.10+, asyncio, aiohttp, FastAPI |
 | **AI/ML** | llama-cpp-python, Hugging Face Models (GGUF), Sentence-BERT |
 | **Database** | JSON-based Storage (Memory, Knowledge, Training Data) |
-| **Voice** | Whisper (OpenAI), Web Audio API |
+| **Voice** | Whisper (OpenAI), XTTS v2 (Coqui), Web Audio API |
 | **Security** | bcrypt, pyotp (TOTP) |
 
 ---
@@ -371,6 +375,9 @@ JarvisCore/
 ├── core/
 │   ├── llm_manager.py           # LLM Manager (3 Models)
 │   ├── llm_router.py            # Intelligente Modellwahl
+│   ├── xtts_manager.py          # XTTS v2 Manager
+│   ├── xttsv2_tts.py            # XTTS v2 TTS Engine
+│   ├── xttsv2_clone.py          # Voice Cloning
 │   └── ...
 ├── models/llm/                  # LLM Download-Ordner
 ├── plugins/                     # Plugin System
@@ -409,7 +416,7 @@ python start_jarvis.py --build
 
 **Web UI wurde am 05.12.2025 entfernt!**
 
-Siehe [MIGRATION.md](MIGRATION.md) für Details.
+Siehe [docs/MIGRATION.md](docs/MIGRATION.md) für Details.
 
 **Kurz:**
 ```bash
@@ -485,24 +492,40 @@ LLM Inference:   ~50 tokens/s (CPU), ~200 tokens/s (GPU)
 
 ## 🎯 **Roadmap**
 
-### **v1.1 (Q1 2026)**
+### **v1.1 (Q1 2026)** - System Integration
 - [ ] System Tray Integration
-- [ ] Global Hotkeys
-- [ ] Multi-Language Support
+- [ ] Global Hotkeys (z.B. Ctrl+Alt+J)
+- [ ] Multi-Language Support (EN, DE, FR)
 - [ ] Mehr LLM Modelle (Qwen, Phi-3)
 
-### **v1.2 (Q2 2026)**
-- [ ] Wake Word Detection
+### **v1.2 (Q2 2026)** - Advanced Features
+- [ ] Wake Word Detection (stable)
 - [ ] Screen Capture & Analysis
-- [ ] Calendar Integration
-- [ ] Smart Home Integration
-- [ ] Cloud Sync
+- [ ] Calendar Integration (Google, Outlook)
+- [ ] Smart Home Integration (Home Assistant)
+- [ ] Cloud Sync (Memory + Knowledge Base)
+- [ ] **XTTS UI Integration** 🎙️
+  - Voice Training Interface in Desktop UI
+  - Latents Manager (Liste trainierter Stimmen)
+  - Voice Sample Recorder (5-10min Audio)
+  - Voice Preview/Test
+  - XTTS vs. pyttsx3 Auswahl in Settings
 
-### **v2.0 (Q3 2026)**
-- [ ] Distributed Architecture
-- [ ] Browser Extension
+### **v1.3 (Q3 2026)** - AI Enhancements
+- [ ] **RAG-System** (Retrieval-Augmented Generation)
+  - Vector-DB Integration (Qdrant/ChromaDB)
+  - PDF/Markdown Ingestion
+  - Semantic Chunking
+- [ ] **Code Execution Sandbox**
+  - Python Code Runner (sandboxed)
+  - Matplotlib Charts generieren
+  - Jupyter-like Interface
+
+### **v2.0 (Q4 2026)** - Enterprise
+- [ ] Distributed Architecture (Multi-Device)
+- [ ] Browser Extension (Chrome, Firefox)
 - [ ] Plugin Marketplace
-- [ ] Enterprise Features
+- [ ] Enterprise Features (Team Management)
 - [ ] Cloud-LLM Option (OpenAI, Anthropic)
 
 ---

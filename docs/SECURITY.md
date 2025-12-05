@@ -1,402 +1,402 @@
-# 🔒 Security Report
+# 🔒 Sicherheitsbericht
 
 <div align="center">
 
 **Version:** v1.0.0  
-**Last Updated:** 2025-12-05 14:30 CET  
-**Status:** ✅ Approved for Release
+**Letzte Aktualisierung:** 2025-12-05 14:30 CET  
+**Status:** ✅ Freigegeben für Release
 
 ---
 
-### 🛡️ Overall Security Rating
+### 🛡️ Gesamt-Sicherheitsbewertung
 
-# 🟢 GOOD
+# 🟢 GUT
 
-**For single-user, local deployment**
+**Für Einzelbenutzer, lokale Installation**
 
 </div>
 
 ---
 
-## 📊 Executive Summary
+## 📊 Zusammenfassung
 
 <table>
 <tr>
 <td width="25%" align="center">
 
 ### 🟡 1
-**Medium Risk**
-<br/><sub>Mitigated</sub>
+**Mittleres Risiko**
+<br/><sub>Abgemildert</sub>
 
 </td>
 <td width="25%" align="center">
 
 ### 🟢 4
-**Low Risk**
-<br/><sub>Acceptable</sub>
+**Niedriges Risiko**
+<br/><sub>Akzeptabel</sub>
 
 </td>
 <td width="25%" align="center">
 
 ### ✅ 5
-**Security Features**
-<br/><sub>Implemented</sub>
+**Sicherheitsfunktionen**
+<br/><sub>Implementiert</sub>
 
 </td>
 <td width="25%" align="center">
 
 ### 🔴 0
-**Critical Issues**
-<br/><sub>None Found</sub>
+**Kritische Probleme**
+<br/><sub>Keine gefunden</sub>
 
 </td>
 </tr>
 </table>
 
-### ✅ Recommendation: **PROCEED** with v1.0.0 Release
+### ✅ Empfehlung: **FREIGABE** für v1.0.0 Release
 
-**Caveats:**
-- 📋 Mark as "Beta" in documentation ✅ Done
-- 📝 Document known limitations ✅ Done
-- 🔄 Plan security hardening for v1.0.1 ✅ Planned
+**Vorbehalte:**
+- 📋 Als "Beta" markieren ✅ Erledigt
+- 📝 Bekannte Einschränkungen dokumentieren ✅ Erledigt
+- 🔄 Sicherheitshärtung für v1.0.1 planen ✅ Geplant
 
 ---
 
-## 🎯 Risk Overview
+## 🎯 Risikoübersicht
 
-### 🟡 Medium Priority
+### 🟡 Mittlere Priorität
 
 <details>
-<summary><b>1. Shell Injection Risks</b> - <code>core/system_control.py</code></summary>
+<summary><b>1. Shell-Injection-Risiken</b> - <code>core/system_control.py</code></summary>
 
-#### 📍 Location
-`core/system_control.py` - Lines ~680, ~904, ~1520, ~1539
+#### 📍 Speicherort
+`core/system_control.py` - Zeilen ~680, ~904, ~1520, ~1539
 
-#### ⚠️ Issue
-Multiple `shell=True` subprocess calls present potential injection vectors
+#### ⚠️ Problem
+Mehrere `shell=True` Subprocess-Aufrufe stellen potenzielle Injection-Vektoren dar
 
-#### 🛡️ Current Mitigations (All Effective)
+#### 🛡️ Aktuelle Schutzmaßnahmen (Alle wirksam)
 
-| Protection Layer | Status | Details |
-|------------------|--------|----------|
-| **SecurityManager** | ✅ Active | Validates all commands against whitelist |
-| **Whitelist Programs** | ✅ Active | Only predefined programs in `program_paths` |
-| **Path Validation** | ✅ Active | All paths validated before execution |
-| **NLP Parser** | ✅ Active | Sanitizes user input before command execution |
+| Schutzebene | Status | Details |
+|-------------|--------|----------|
+| **SecurityManager** | ✅ Aktiv | Validiert alle Befehle gegen Whitelist |
+| **Whitelist-Programme** | ✅ Aktiv | Nur vordefinierte Programme in `program_paths` |
+| **Pfad-Validierung** | ✅ Aktiv | Alle Pfade werden vor Ausführung validiert |
+| **NLP-Parser** | ✅ Aktiv | Bereinigt Benutzereingaben vor Befehlsausführung |
 
-#### 🎯 Risk Score
+#### 🎯 Risikobewertung
 
 ```yaml
-Likelihood:     LOW      (Multiple validation layers)
-Impact:         CRITICAL (If exploited: arbitrary code execution)
-Exploitability: LOW      (Requires bypassing multiple security layers)
-Overall Risk:   MEDIUM   🟡 (Acceptable with monitoring)
+Wahrscheinlichkeit: NIEDRIG    (Mehrere Validierungsebenen)
+Auswirkung:         KRITISCH   (Falls ausgenutzt: beliebige Code-Ausführung)
+Ausnutzbarkeit:     NIEDRIG    (Erfordert Umgehung mehrerer Sicherheitsebenen)
+Gesamtrisiko:       MITTEL 🟡  (Akzeptabel mit Überwachung)
 ```
 
-#### 📋 Fix Plan
+#### 📋 Behebungsplan
 
-| Version | Action | Timeline |
-|---------|--------|----------|
-| **v1.0.1** | Add command execution logging | 1-2 days |
-| **v1.1.0** | Replace all `shell=True` → `shell=False` | 1-2 weeks |
-| **v1.1.0** | Implement `SafeShell` wrapper class | 1-2 weeks |
-| **v1.2.0** | Command execution audit log + penetration testing | 3-4 weeks |
-
-</details>
-
-### 🟢 Low Priority
-
-<details>
-<summary><b>2. File Permission Elevation</b> - Windows <code>attrib</code> command</summary>
-
-**Risk:** Uses `attrib` command to modify file attributes  
-**Mitigation:** ✅ All paths validated by `SecurityManager.ensure_write_permission()`  
-**Status:** ✅ Acceptable
+| Version | Maßnahme | Zeitplan |
+|---------|----------|----------|
+| **v1.0.1** | Protokollierung der Befehlsausführung hinzufügen | 1-2 Tage |
+| **v1.1.0** | Alle `shell=True` → `shell=False` ersetzen | 1-2 Wochen |
+| **v1.1.0** | `SafeShell` Wrapper-Klasse implementieren | 1-2 Wochen |
+| **v1.2.0** | Audit-Log für Befehlsausführung + Penetrationstests | 3-4 Wochen |
 
 </details>
 
-<details>
-<summary><b>3. Dynamic Program Registration</b> - Windows shortcuts indexing</summary>
+### 🟢 Niedrige Priorität
 
-**Risk:** Scans Start Menu for `.lnk` files  
-**Mitigation:** ✅ Limited to trusted directories, requires explicit user action  
-**Status:** ✅ Acceptable
+<details>
+<summary><b>2. Dateirechte-Erhöhung</b> - Windows <code>attrib</code> Befehl</summary>
+
+**Risiko:** Verwendet `attrib` Befehl zum Ändern von Dateiattributen  
+**Abschwächung:** ✅ Alle Pfade werden durch `SecurityManager.ensure_write_permission()` validiert  
+**Status:** ✅ Akzeptabel
 
 </details>
 
 <details>
-<summary><b>4. Process Termination</b> - Can kill processes by name</summary>
+<summary><b>3. Dynamische Programmregistrierung</b> - Windows Verknüpfungs-Indexierung</summary>
 
-**Risk:** Can terminate arbitrary processes  
-**Mitigation:** ✅ Requires `process_control` capability, whitelist-based  
-**Status:** ✅ Acceptable
+**Risiko:** Durchsucht Startmenü nach `.lnk` Dateien  
+**Abschwächung:** ✅ Begrenzt auf vertrauenswürdige Verzeichnisse, erfordert explizite Benutzeraktion  
+**Status:** ✅ Akzeptabel
 
 </details>
 
 <details>
-<summary><b>5. Emergency Actions</b> - Network disconnect + workstation lock</summary>
+<summary><b>4. Prozess-Beendigung</b> - Kann Prozesse nach Namen beenden</summary>
 
-**Risk:** Denial of Service if triggered  
-**Mitigation:** ✅ Only triggered by threat detection, dry-run by default  
-**Status:** ✅ Working as intended
+**Risiko:** Kann beliebige Prozesse beenden  
+**Abschwächung:** ✅ Erfordert `process_control` Berechtigung, Whitelist-basiert  
+**Status:** ✅ Akzeptabel
+
+</details>
+
+<details>
+<summary><b>5. Notfall-Aktionen</b> - Netzwerktrennung + Workstation-Sperre</summary>
+
+**Risiko:** Denial of Service falls ausgelöst  
+**Abschwächung:** ✅ Nur durch Bedrohungserkennung ausgelöst, standardmäßig Dry-Run  
+**Status:** ✅ Funktioniert wie vorgesehen
 
 </details>
 
 ---
 
-## ✅ Security Features Implemented
+## ✅ Implementierte Sicherheitsfunktionen
 
-### 🛡️ Defense-in-Depth Architecture
+### 🛡️ Defense-in-Depth Architektur
 
 ```mermaid
 graph LR
-    A[User Input] --> B[NLP Parser]
-    B --> C[Intent Recognition]
+    A[Benutzereingabe] --> B[NLP Parser]
+    B --> C[Intent-Erkennung]
     C --> D[SecurityManager]
-    D --> E[Whitelist Check]
-    E --> F[Path Validation]
-    F --> G[Capability Check]
-    G --> H[Execute]
-    D -.Blocks.-> I[Rejected]
+    D --> E[Whitelist-Prüfung]
+    E --> F[Pfad-Validierung]
+    F --> G[Berechtigungs-Prüfung]
+    G --> H[Ausführen]
+    D -.Blockiert.-> I[Abgelehnt]
 ```
 
 ### 1️⃣ SecurityManager
 
-**Validates all security-sensitive operations**
+**Validiert alle sicherheitskritischen Operationen**
 
 ```python
-✅ Write operations       → ensure_write_permission()
-✅ Command execution      → ensure_command_allowed()
-✅ Path access           → is_path_allowed()
-✅ Capability checks     → can(capability)
+✅ Schreiboperationen        → ensure_write_permission()
+✅ Befehlsausführung        → ensure_command_allowed()
+✅ Pfadzugriff              → is_path_allowed()
+✅ Berechtigungsprüfungen   → can(capability)
 ```
 
 ### 2️⃣ Safe Mode
 
-**Emergency lockdown with rollback capability**
+**Notfall-Lockdown mit Rollback-Fähigkeit**
 
 ```python
-✅ Network isolation      → _disable_network_adapters()
-✅ Write protection       → _enable_write_protection()
-✅ Process termination    → _terminate_suspicious_processes()
-✅ Dry-run by default     → No actual changes in v1.0.0
+✅ Netzwerk-Isolation       → _disable_network_adapters()
+✅ Schreibschutz            → _enable_write_protection()
+✅ Prozess-Beendigung       → _terminate_suspicious_processes()
+✅ Standardmäßig Dry-Run    → Keine echten Änderungen in v1.0.0
 ```
 
-### 3️⃣ Permission Snapshots
+### 3️⃣ Berechtigungs-Snapshots
 
-**Atomic operations with rollback**
+**Atomare Operationen mit Rollback**
 
 ```python
-✅ Capture before modify  → _capture_permissions()
-✅ Restore on failure     → _restore_permissions()
-✅ Audit trail           → Logged to system logs
+✅ Erfassen vor Änderung    → _capture_permissions()
+✅ Wiederherstellen bei Fehler → _restore_permissions()
+✅ Audit-Trail              → In System-Logs protokolliert
 ```
 
-### 4️⃣ Authentication
+### 4️⃣ Authentifizierung
 
-**Multi-factor authentication**
+**Multi-Faktor-Authentifizierung**
 
 ```python
-✅ Passphrase            → bcrypt hashing
-✅ TOTP 2FA              → Google Authenticator compatible
-✅ UI overlay            → SecurityView component
+✅ Passphrase               → bcrypt Hashing
+✅ TOTP 2FA                 → Google Authenticator kompatibel
+✅ UI-Overlay               → SecurityView Komponente
 ```
 
-### 5️⃣ Path Validation
+### 5️⃣ Pfad-Validierung
 
-**Whitelist-based file system access**
+**Whitelist-basierter Dateisystemzugriff**
 
 ```python
-✅ Allowed directories   → Configurable whitelist
-✅ File size limits      → Enforced on read operations
-✅ Hidden file filter    → Optional exclusion
-✅ Symlink resolution    → Normalized paths
+✅ Erlaubte Verzeichnisse   → Konfigurierbare Whitelist
+✅ Dateigrößenlimits        → Bei Leseoperationen durchgesetzt
+✅ Versteckte Dateien       → Optionaler Ausschluss
+✅ Symlink-Auflösung        → Normalisierte Pfade
 ```
 
 ---
 
-## 📊 Risk Matrix
+## 📊 Risiko-Matrix
 
-| Issue | Likelihood | Impact | Exploitability | Risk Level | Status |
-|-------|:----------:|:------:|:--------------:|:----------:|:------:|
-| **Shell Injection** | 🟢 Low | 🔴 Critical | 🟢 Low | 🟡 Medium | 👁️ Monitored |
-| **File Permissions** | 🟢 Very Low | 🟡 Medium | 🟢 Very Low | 🟢 Low | ✅ OK |
-| **Process Kill** | 🟢 Very Low | 🟢 Low | 🟢 Very Low | 🟢 Low | ✅ OK |
-| **Dynamic Programs** | 🟢 Low | 🟢 Low | 🟢 Low | 🟢 Low | ✅ OK |
-| **Emergency Actions** | 🟢 Very Low | 🟡 Medium | N/A | 🟢 Low | ✅ Intended |
+| Problem | Wahrscheinlichkeit | Auswirkung | Ausnutzbarkeit | Risikostufe | Status |
+|---------|:------------------:|:----------:|:--------------:|:-----------:|:------:|
+| **Shell-Injection** | 🟢 Niedrig | 🔴 Kritisch | 🟢 Niedrig | 🟡 Mittel | 👁️ Überwacht |
+| **Dateirechte** | 🟢 Sehr niedrig | 🟡 Mittel | 🟢 Sehr niedrig | 🟢 Niedrig | ✅ OK |
+| **Prozess-Kill** | 🟢 Sehr niedrig | 🟢 Niedrig | 🟢 Sehr niedrig | 🟢 Niedrig | ✅ OK |
+| **Dynamische Programme** | 🟢 Niedrig | 🟢 Niedrig | 🟢 Niedrig | 🟢 Niedrig | ✅ OK |
+| **Notfall-Aktionen** | 🟢 Sehr niedrig | 🟡 Mittel | N/A | 🟢 Niedrig | ✅ Beabsichtigt |
 
-### Why Likelihood is LOW
+### Warum ist die Wahrscheinlichkeit NIEDRIG?
 
-- ✅ Private repository (only developer access)
-- ✅ Local-only deployment (no remote access)
-- ✅ Multiple validation layers (SecurityManager)
-- ✅ Whitelist-based command execution
-- ✅ No direct user-to-shell pipeline
+- ✅ Privates Repository (nur Entwickler-Zugriff)
+- ✅ Nur lokale Installation (kein Remote-Zugriff)
+- ✅ Mehrere Validierungsebenen (SecurityManager)
+- ✅ Whitelist-basierte Befehlsausführung
+- ✅ Keine direkte Benutzer-zu-Shell-Pipeline
 
 ---
 
-## 🗓️ Security Roadmap
+## 🗓️ Sicherheits-Roadmap
 
-### v1.0.1 - Security Hardening
-**Timeline:** 1-2 days | **Priority:** HIGH
+### v1.0.1 - Sicherheitshärtung
+**Zeitplan:** 1-2 Tage | **Priorität:** HOCH
 
-- [ ] Audit all user-input flows
-- [ ] Add persistent command execution logging
-- [ ] Verify SecurityManager whitelist coverage
-- [ ] Complete exception handling audit
+- [ ] Audit aller Benutzereingabe-Flows
+- [ ] Persistente Protokollierung der Befehlsausführung hinzufügen
+- [ ] SecurityManager Whitelist-Abdeckung verifizieren
+- [ ] Vollständiges Exception-Handling-Audit
 
-### v1.1.0 - Shell Security
-**Timeline:** 1-2 weeks | **Priority:** MEDIUM
+### v1.1.0 - Shell-Sicherheit
+**Zeitplan:** 1-2 Wochen | **Priorität:** MITTEL
 
-- [ ] Replace all `shell=True` with `shell=False`
-- [ ] Implement `SafeShell` wrapper class
-- [ ] Split `system_control.py` into secure modules
+- [ ] Alle `shell=True` durch `shell=False` ersetzen
+- [ ] `SafeShell` Wrapper-Klasse implementieren
+- [ ] `system_control.py` in sichere Module aufteilen
 
 ### v1.2.0 - Audit & Testing
-**Timeline:** 3-4 weeks | **Priority:** MEDIUM
+**Zeitplan:** 3-4 Wochen | **Priorität:** MITTEL
 
-- [ ] Implement command execution audit log
-- [ ] Unit tests for all shell operations
-- [ ] External penetration testing
-- [ ] Security regression tests
+- [ ] Audit-Log für Befehlsausführung implementieren
+- [ ] Unit-Tests für alle Shell-Operationen
+- [ ] Externe Penetrationstests
+- [ ] Sicherheits-Regressionstests
 
 ---
 
-## 🧪 Attack Vector Analysis
+## 🧪 Angriffsvektor-Analyse
 
-### Scenario 1: Malicious Voice Command
+### Szenario 1: Bösartiger Sprachbefehl
 
 ```yaml
-Attack:
-  Input: "Open program called '; rm -rf /'"
+Angriff:
+  Eingabe: "Öffne Programm namens '; rm -rf /'"
   
-Defense Chain:
+Abwehrkette:
   1. NLP Parser:       → intent='open_program', program='; rm -rf /'
   2. SecurityManager:  → ensure_command_allowed()
-  3. Whitelist Check:  → ❌ REJECTED (not in program_paths)
+  3. Whitelist-Check:  → ❌ ABGELEHNT (nicht in program_paths)
   
-Result: ✅ BLOCKED
-Risk:   🟢 SAFE
+Ergebnis: ✅ BLOCKIERT
+Risiko:   🟢 SICHER
 ```
 
-### Scenario 2: Malicious Windows Shortcut
+### Szenario 2: Bösartige Windows-Verknüpfung
 
 ```yaml
-Attack:
-  Setup:  Place malicious.lnk in Start Menu
-  Action: User says "Open malicious"
+Angriff:
+  Setup:  Platziere malicious.lnk im Startmenü
+  Aktion: Benutzer sagt "Öffne malicious"
   
-Defense Chain:
-  1. Shortcut indexed (limited to trusted dirs)
-  2. User must explicitly request by name
-  3. Social engineering required
+Abwehrkette:
+  1. Verknüpfung indexiert (begrenzt auf vertrauenswürdige Verzeichnisse)
+  2. Benutzer muss explizit nach Namen fragen
+  3. Social Engineering erforderlich
   
-Result: 🟡 PARTIAL RISK
-Risk:   🟢 LOW (requires local access + social engineering)
+Ergebnis: 🟡 TEILRISIKO
+Risiko:   🟢 NIEDRIG (erfordert lokalen Zugriff + Social Engineering)
 ```
 
-### Scenario 3: Path Injection
+### Szenario 3: Pfad-Injection
 
 ```yaml
-Attack:
-  Input: path = "file.txt & malicious_command"
+Angriff:
+  Eingabe: path = "datei.txt & bösartiger_befehl"
   
-Defense Chain:
+Abwehrkette:
   1. SecurityManager:   → ensure_write_permission(path)
-  2. Path.resolve():    → Normalizes path
-  3. Whitelist check:   → Validates against allowed dirs
-  4. Input validation:  → Rejects shell metacharacters
+  2. Path.resolve():    → Normalisiert Pfad
+  3. Whitelist-Check:   → Validiert gegen erlaubte Verzeichnisse
+  4. Eingabe-Validierung: → Lehnt Shell-Metazeichen ab
   
-Result: ✅ BLOCKED
-Risk:   🟢 SAFE
+Ergebnis: ✅ BLOCKIERT
+Risiko:   🟢 SICHER
 ```
 
 ---
 
-## 📝 Audit Metadata
+## 📝 Audit-Metadaten
 
 <details>
-<summary><b>Audit Details</b></summary>
+<summary><b>Audit-Details</b></summary>
 
-### Files Analyzed
-- `core/system_control.py` (~1600 lines)
-- `core/security_manager.py` (~800 lines)
-- `main.py` (entry point)
-- `config/settings.py` (configuration)
-- `desktop/backend/internal/bridge/jarviscore.go` (token handling)
+### Analysierte Dateien
+- `core/system_control.py` (~1600 Zeilen)
+- `core/security_manager.py` (~800 Zeilen)
+- `main.py` (Einstiegspunkt)
+- `config/settings.py` (Konfiguration)
+- `desktop/backend/internal/bridge/jarviscore.go` (Token-Handling)
 
-### Methodology
-- ✅ Manual code review
-- ✅ Static analysis (pattern matching)
-- ✅ Threat modeling
-- ✅ Attack vector simulation
-- ✅ Defense-in-depth validation
+### Methodik
+- ✅ Manuelle Code-Review
+- ✅ Statische Analyse (Mustererkennung)
+- ✅ Bedrohungsmodellierung
+- ✅ Angriffsvektor-Simulation
+- ✅ Defense-in-Depth-Validierung
 
-### Audit Duration
-**2 hours** (manual review + documentation)
+### Audit-Dauer
+**2 Stunden** (manuelle Review + Dokumentation)
 
-### Tools Used
-- GitHub code search
-- grep/regex pattern matching
-- Manual threat modeling
+### Verwendete Tools
+- GitHub Code-Suche
+- grep/regex Mustererkennung
+- Manuelle Bedrohungsmodellierung
 
 </details>
 
 ---
 
-## ✅ Final Verdict
+## ✅ Endgültiges Urteil
 
 <div align="center">
 
-### 🎯 APPROVED FOR v1.0.0 RELEASE
+### 🎯 FREIGEGEBEN FÜR v1.0.0 RELEASE
 
-**System Status:** 🟢 Secure for intended use case
+**System-Status:** 🟢 Sicher für beabsichtigten Anwendungsfall
 
 ---
 
-#### Requirements Met
+#### Erfüllte Anforderungen
 
-| Requirement | Status |
+| Anforderung | Status |
 |-------------|:------:|
-| Mark as Beta | ✅ Done |
-| Document limitations | ✅ Done |
-| Security audit | ✅ Done |
-| Roadmap for fixes | ✅ Done |
+| Als Beta markieren | ✅ Erledigt |
+| Einschränkungen dokumentieren | ✅ Erledigt |
+| Sicherheits-Audit | ✅ Erledigt |
+| Roadmap für Fixes | ✅ Erledigt |
 
 ---
 
-### 🎓 Security Posture Summary
+### 🎓 Zusammenfassung der Sicherheitslage
 
-**Strengths:**
-- ✅ Multiple validation layers (defense-in-depth)
-- ✅ Whitelist-based access control
-- ✅ No remote access vectors
-- ✅ Safe Mode with rollback capability
+**Stärken:**
+- ✅ Mehrere Validierungsebenen (Defense-in-Depth)
+- ✅ Whitelist-basierte Zugriffskontrolle
+- ✅ Keine Remote-Zugriffsvektoren
+- ✅ Safe Mode mit Rollback-Fähigkeit
 
-**Areas for Improvement:**
-- 🟡 Shell command execution (planned for v1.1.0)
-- 🟡 Command execution logging (planned for v1.0.1)
-- 🟢 Generally acceptable for local deployment
+**Verbesserungsbereiche:**
+- 🟡 Shell-Befehlsausführung (geplant für v1.1.0)
+- 🟡 Befehlsausführungs-Protokollierung (geplant für v1.0.1)
+- 🟢 Generell akzeptabel für lokale Installation
 
-**Recommendation:**  
-System is **production-ready** for single-user, local deployment.  
-Continue security hardening in upcoming releases.
+**Empfehlung:**  
+Das System ist **produktionsreif** für Einzelbenutzer, lokale Installation.  
+Fortsetzung der Sicherheitshärtung in kommenden Releases.
 
 ---
 
-<sub>Automated Security Audit + Manual Review</sub>  
+<sub>Automatisiertes Sicherheits-Audit + Manuelle Review</sub>  
 <sub>2025-12-05 14:30 CET</sub>
 
 </div>
 
 ---
 
-## 📞 Report Issues
+## 📞 Probleme melden
 
-Found a security vulnerability?
+Sicherheitslücke gefunden?
 
-- 🔒 **Private Report:** Email emeyer@fn.de
-- 🐛 **General Issues:** [GitHub Issues](https://github.com/Lautloserspieler/JarvisCore/issues)
-- 📖 **Documentation:** [Known Limitations](KNOWN_LIMITATIONS.md)
+- 🔒 **Privater Report:** Email an emeyer@fn.de
+- 🐛 **Allgemeine Probleme:** [GitHub Issues](https://github.com/Lautloserspieler/JarvisCore/issues)
+- 📖 **Dokumentation:** [Bekannte Einschränkungen](KNOWN_LIMITATIONS.md)
 
-**Please report security issues privately before public disclosure.**
+**Bitte melden Sie Sicherheitsprobleme privat vor öffentlicher Offenlegung.**

@@ -2,13 +2,6 @@
 
 > **Just A Rather Very Intelligent System** - Native Desktop AI Assistant with Advanced Capabilities
 
-[![Release](https://img.shields.io/github/v/release/Lautloserspieler/JarvisCore?label=Release)](https://github.com/Lautloserspieler/JarvisCore/releases)
-[![Downloads](https://img.shields.io/github/downloads/Lautloserspieler/JarvisCore/total?label=Downloads)](https://github.com/Lautloserspieler/JarvisCore/releases)
-[![Stars](https://img.shields.io/github/stars/Lautloserspieler/JarvisCore?style=social)](https://github.com/Lautloserspieler/JarvisCore/stargazers)
-[![Issues](https://img.shields.io/github/issues/Lautloserspieler/JarvisCore)](https://github.com/Lautloserspieler/JarvisCore/issues)
-[![Last Commit](https://img.shields.io/github/last-commit/Lautloserspieler/JarvisCore)](https://github.com/Lautloserspieler/JarvisCore/commits/main)
-
-
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8.svg)](https://golang.org)

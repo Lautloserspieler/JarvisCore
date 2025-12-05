@@ -24,11 +24,17 @@ J.A.R.V.I.S. Core v1.0 bringt eine **vollständig neue native Desktop-Anwendung*
 ## ✨ **Haupt-Features**
 
 ### **1. 💬 Intelligenter Chat**
-- **Multi-Model Support**: GPT-4, Claude, Gemini, Ollama (lokale LLMs)
+- **Lokale LLM-Modelle**: 3 Modelle von Hugging Face
+  - **LLaMA 3 (8B)** - Conversation & Creative
+  - **Mistral/Hermes (7B)** - Code & Technical
+  - **DeepSeek R1 (8B)** - Analysis & Research
+- **Intelligente Modellwahl**: Automatisch basierend auf Task-Type
 - **Voice Input**: Sprachsteuerung via Whisper
 - **Audio Visualizer**: Echtzeit-Waveform während Aufnahme
 - **Streaming Responses**: Token-by-Token Antworten
 - **Context-Aware**: Berücksichtigt Conversation History
+- **GPU-Acceleration**: CUDA Support für schnelle Inference
+- **Komplett offline**: Keine API Keys erforderlich!
 
 ### **2. 📊 System Monitor**
 - **Live Metriken**: CPU, RAM, GPU, Disk Usage
@@ -37,10 +43,11 @@ J.A.R.V.I.S. Core v1.0 bringt eine **vollständig neue native Desktop-Anwendung*
 - **History Graphs**: Performance über Zeit (geplant v1.1)
 
 ### **3. 🧠 Model Manager**
+- **Download-Interface**: Modelle direkt von Hugging Face laden
 - **Dynamisches Loading**: Modelle zur Laufzeit laden/entladen
-- **Memory Usage**: VRAM-Nutzung pro Modell
-- **Model Library**: Support für 20+ LLMs
-- **Custom Models**: Eigene Ollama-Modelle hinzufügen
+- **Memory Usage**: RAM/VRAM-Nutzung pro Modell
+- **Model Library**: 3 vorinstallierte Modelle (llama3, mistral, deepseek)
+- **Cache Management**: Bis zu 2 Modelle im RAM halten
 
 ### **4. 🔌 Plugin System**
 - **Hot-Loading**: Plugins ohne Neustart aktivieren
@@ -80,7 +87,7 @@ J.A.R.V.I.S. Core v1.0 bringt eine **vollständig neue native Desktop-Anwendung*
 
 ### **10. ⚙️ Settings**
 - **Audio Devices**: Mikrofon-Auswahl mit Level-Meter
-- **API Keys**: Zentrale Verwaltung aller API-Keys
+- **LLM Configuration**: Model Selection, GPU Settings
 - **Theme Settings**: Dark/Light Mode (Dark als Default)
 - **Backend Config**: Ports, WebSocket, Logging
 
@@ -103,6 +110,7 @@ J.A.R.V.I.S. Core v1.0 bringt eine **vollständig neue native Desktop-Anwendung*
 | **System Metrics** | System Monitor | `GetSystemStatus()` | ✅ Live-Updates |
 | **Model List** | Model Manager | `ListModels()` | ✅ Funktioniert |
 | **Model Loading** | Load/Unload Buttons | `LoadModel(modelKey)` | ✅ Funktioniert |
+| **Model Download** | Download Button | `DownloadModel(modelKey)` | ✅ Funktioniert |
 | **Plugin List** | Plugin Manager | `GetPlugins()` | ✅ Funktioniert |
 | **Plugin Toggle** | Enable/Disable Switches | `TogglePlugin(name, enabled)` | ✅ Funktioniert |
 | **Knowledge Stats** | Knowledge View | `GetKnowledgeStats()` | ✅ Funktioniert |
@@ -124,7 +132,7 @@ J.A.R.V.I.S. Core v1.0 bringt eine **vollständig neue native Desktop-Anwendung*
 | **Security Challenge** | Passphrase/TOTP Prompt | WebSocket Event | ✅ Funktioniert |
 | **WebSocket Live Updates** | Alle Views | WebSocket Hub | ✅ Funktioniert |
 
-**Ergebnis:** 🎉 **25/25 Features vollständig steuerbar via UI** (100%)
+**Ergebnis:** 🎉 **26/26 Features vollständig steuerbar via UI** (100%)
 
 ---
 
@@ -195,6 +203,8 @@ J.A.R.V.I.S. Core v1.0 bringt eine **vollständig neue native Desktop-Anwendung*
 | **View Switch** | 200ms | 50ms | ⚡ **-75%** |
 | **WebSocket Latency** | 100ms | 20ms | 📡 **-80%** |
 | **Binary Size** | - | 28 MB | 📦 **Single File** |
+| **LLM Inference (CPU)** | - | ~50 tokens/s | 🧠 **Neu** |
+| **LLM Inference (GPU)** | - | ~200 tokens/s | 🚀 **Neu** |
 
 ---
 
@@ -314,6 +324,7 @@ make build
 - API Docs mit Go Bridge Endpoints
 - Troubleshooting für Desktop UI
 - Development Workflow
+- LLM Model Manager Dokumentation
 
 ---
 
@@ -343,6 +354,10 @@ make build
 JarvisCore/
 ├── main.py                      # Backend Entry Point
 ├── core/                        # Python Core Logic
+│   ├── llm_manager.py           # LLM Manager (3 Models)
+│   ├── llm_router.py            # Intelligente Modellwahl
+│   └── ...
+├── models/llm/                  # LLM Download-Ordner
 ├── plugins/                     # Plugin System
 └── desktop/                     # Desktop UI
     ├── main.go                  # Go Entry Point
@@ -384,12 +399,14 @@ make test
 - Screen Capture & Analysis
 - Calendar Integration
 - Smart Home Integration
+- Mehr LLM Modelle (Qwen, Phi-3)
 
 ### **v2.0 (Q3 2026)** - Enterprise
 - Distributed Architecture
 - Browser Extension
 - Plugin Marketplace
 - Team Management
+- Optional: Cloud-LLM Support (OpenAI, Anthropic)
 
 ---
 
@@ -407,7 +424,6 @@ make test
 
 - **GitHub Issues**: [Issues öffnen](https://github.com/Lautloserspieler/JarvisCore/issues/new)
 - **Email**: emeyer@fn.de
-- **Discord**: [Link einfügen]
 
 ---
 
@@ -415,7 +431,7 @@ make test
 
 **Entwickelt von:** Lautloserspieler  
 **Release Manager:** Lautloserspieler  
-**Tech Stack:** Python, Go, Vue 3, Wails, OpenAI, Anthropic, Sentence-BERT
+**Tech Stack:** Python, Go, Vue 3, Wails, llama-cpp-python, Hugging Face, Sentence-BERT
 
 ---
 
@@ -431,7 +447,7 @@ Dieses Projekt ist privat. Kommerzielle Nutzung nur nach schriftlicher Genehmigu
 
 ## 🎉 **Vielen Dank für die Nutzung von J.A.R.V.I.S. Core!**
 
-**Built with ❤️ using Python, Go, Vue 3, and Wails**
+**Built with ❤️ using Python, Go, Vue 3, Wails, and llama.cpp**
 
 ⭐ **Star this project on GitHub!**
 

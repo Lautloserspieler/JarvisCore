@@ -1,0 +1,16 @@
+{
+  "api": {
+    "token": "GENERATE_NEW_TOKEN_ON_FIRST_START",
+    "backend_url": "http://127.0.0.1:5050",
+    "websocket_url": "ws://127.0.0.1:8765"
+  },
+  "ui": {
+    "theme": "dark",
+    "language": "de",
+    "notifications": true
+  },
+  "updates": {
+    "auto_check": true,
+    "check_interval": "daily"
+  }
+}

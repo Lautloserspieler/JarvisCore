@@ -1,7 +1,7 @@
 {
   "listen_host": "127.0.0.1",
   "listen_port": 8090,
-  "api_key": "142536",
+  "api_key": "",
   "data_dir": "data/crawler",
   "db_path": "data/crawler/crawler.db",
   "max_workers": 2,

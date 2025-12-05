@@ -22,7 +22,16 @@ CONFIG = load_config()
 storage.init_db(CONFIG.db_file)
 GUARD = SecurityGuard(CONFIG)
 WORKER = CrawlerWorker(CONFIG, GUARD)
-WORKER.start()
+
+
+@app.on_event("startup")
+def _start_workers() -> None:
+    WORKER.start()
+
+
+@app.on_event("shutdown")
+def _stop_workers() -> None:
+    WORKER.stop()
 
 
 class JobCreateRequest(BaseModel):
@@ -73,8 +82,17 @@ class DocumentAckRequest(BaseModel):
     ids: List[int]
 
 
-def verify_api_key(x_api_key: str = Header(..., alias="X-API-Key")) -> None:
-    if CONFIG.api_key and x_api_key != CONFIG.api_key:
+def verify_api_key(x_api_key: Optional[str] = Header(default=None, alias="X-API-Key")) -> None:
+    """Validates the API key header if a key is configured.
+
+    The header stays optional when no API key is set in the config to keep
+    the service usable in trusted local setups.
+    """
+    if not CONFIG.api_key:
+        return
+    if not x_api_key:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing API key")
+    if x_api_key != CONFIG.api_key:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
 
 

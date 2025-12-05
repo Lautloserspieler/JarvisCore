@@ -29,6 +29,7 @@ soundfile>=0.12.1
 tts>=0.21.3
 simpleaudio>=1.0.4
 ttkbootstrap>=1.10.1
+pywebview>=4.4.1
 
 # Torch stack (exact wheels installed via scripts/setup_env.py)
 torch>=2.1.0
@@ -70,3 +71,4 @@ pyjwt>=2.7.0
 python-multipart>=0.0.6
 pyotp>=2.9.0
 qrcode[pil]>=7.4
+cryptography>=41.0.0

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -54,7 +55,7 @@ def _build_config(payload: Dict[str, Any]) -> CrawlerConfig:
     config = CrawlerConfig(
         listen_host=str(payload.get("listen_host", "127.0.0.1")),
         listen_port=int(payload.get("listen_port", 8090)),
-        api_key=str(payload.get("api_key", "")),
+        api_key=str(payload.get("api_key", "")).strip(),
         data_dir=str(payload.get("data_dir", "data/crawler")),
         db_path=str(payload.get("db_path", "data/crawler/crawler.db")),
         max_workers=max(1, int(payload.get("max_workers", 1))),
@@ -82,6 +83,9 @@ def load_config(path: Optional[str | Path] = None) -> CrawlerConfig:
     if cfg_path.exists():
         payload = json.loads(cfg_path.read_text(encoding="utf-8"))
     config = _build_config(payload)
+    env_key = os.environ.get("JARVIS_CRAWLER_API_KEY")
+    if env_key:
+        config.api_key = env_key.strip()
     config.data_path.mkdir(parents=True, exist_ok=True)
     config.db_file.parent.mkdir(parents=True, exist_ok=True)
     return config

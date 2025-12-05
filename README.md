@@ -3,7 +3,7 @@
 > **Just A Rather Very Intelligent System** - Native Desktop AI Assistant with Advanced Capabilities
 
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8.svg)](https://golang.org)
 [![Wails](https://img.shields.io/badge/Wails-v2-673ab8.svg)](https://wails.io)
 [![Vue](https://img.shields.io/badge/Vue-3.0-42b883.svg)](https://vuejs.org)

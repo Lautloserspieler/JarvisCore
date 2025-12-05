@@ -1,0 +1,152 @@
+name: Build and Release
+
+# Trigger: Wird ausgelöst bei Git Tags (z.B. v1.0.1)
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    name: Build Desktop App
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            ext: ''
+          - os: windows-latest
+            platform: windows
+            ext: '.exe'
+          - os: macos-latest
+            platform: darwin
+            ext: '.app'
+    
+    steps:
+      # 1. Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      # 2. Setup Go
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      # 3. Setup Node.js (für Frontend)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      # 4. Install Wails CLI
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      
+      # 5. Install Dependencies
+      - name: Install Go Dependencies
+        working-directory: desktop
+        run: |
+          go mod download
+          go mod tidy
+      
+      - name: Install Frontend Dependencies
+        working-directory: desktop/frontend
+        run: npm install
+      
+      # 6. Build Binary mit Version-Injection
+      - name: Build Desktop App
+        working-directory: desktop
+        run: |
+          wails build -ldflags "-X 'github.com/Lautloserspieler/JarvisCore/desktop/backend/internal/app.Version=${{ github.ref_name }}'"
+      
+      # 7. Rename Binary (plattform-spezifisch)
+      - name: Rename Binary (Linux)
+        if: matrix.platform == 'linux'
+        working-directory: desktop/build/bin
+        run: |
+          mv jarvis-desktop jarvis-desktop-linux-amd64
+      
+      - name: Rename Binary (Windows)
+        if: matrix.platform == 'windows'
+        working-directory: desktop/build/bin
+        shell: pwsh
+        run: |
+          Rename-Item jarvis-desktop.exe jarvis-desktop-windows-amd64.exe
+      
+      - name: Rename Binary (macOS)
+        if: matrix.platform == 'darwin'
+        working-directory: desktop/build/bin
+        run: |
+          mv jarvis-desktop.app jarvis-desktop-darwin-amd64.app
+      
+      # 8. Upload Binary als Artifact
+      - name: Upload Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: jarvis-desktop-${{ matrix.platform }}
+          path: |
+            desktop/build/bin/jarvis-desktop-linux-amd64
+            desktop/build/bin/jarvis-desktop-windows-amd64.exe
+            desktop/build/bin/jarvis-desktop-darwin-amd64.app
+          retention-days: 7
+  
+  # Job 2: Release erstellen
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      # 1. Download alle Binaries
+      - name: Download Linux Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: jarvis-desktop-linux
+          path: ./release
+      
+      - name: Download Windows Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: jarvis-desktop-windows
+          path: ./release
+      
+      - name: Download macOS Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: jarvis-desktop-darwin
+          path: ./release
+      
+      # 2. Erstelle Release
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## 🎉 J.A.R.V.I.S. Core Desktop ${{ github.ref_name }}
+            
+            ### 📥 Downloads
+            - **Windows**: jarvis-desktop-windows-amd64.exe
+            - **Linux**: jarvis-desktop-linux-amd64
+            - **macOS**: jarvis-desktop-darwin-amd64.app
+            
+            ### 🔧 Installation
+            1. Binary herunterladen
+            2. Python Backend starten: `python main.py`
+            3. Desktop App starten
+            
+            ### ✨ Was ist neu?
+            Siehe [Changelog](https://github.com/Lautloserspieler/JarvisCore/blob/main/CHANGELOG.md)
+          draft: false
+          prerelease: false
+          files: |
+            ./release/jarvis-desktop-linux-amd64
+            ./release/jarvis-desktop-windows-amd64.exe
+            ./release/jarvis-desktop-darwin-amd64.app
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

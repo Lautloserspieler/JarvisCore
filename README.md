@@ -3,7 +3,7 @@
 > **Just A Rather Very Intelligent System** - Native Desktop AI Assistant with Advanced Capabilities
 
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8.svg)](https://golang.org)
 [![Wails](https://img.shields.io/badge/Wails-v2-673ab8.svg)](https://wails.io)
 [![Vue](https://img.shields.io/badge/Vue-3.0-42b883.svg)](https://vuejs.org)
@@ -170,25 +170,77 @@ vim config/settings.py  # API Keys hinzufügen
 
 ## 🚀 **Schnellstart**
 
-### **Development Mode**
+### **⭐ Empfohlen: Unified Launcher (1 Befehl!)**
 
 ```bash
-# Terminal 1: Python Backend
+# 🚀 EINFACHSTE METHODE - Startet Backend + Desktop UI automatisch
+
+# Windows:
+start_jarvis.bat
+
+# Linux/macOS:
+chmod +x start_jarvis.sh
+./start_jarvis.sh
+
+# Oder direkt mit Python:
+python start_jarvis.py
+
+# Optionen:
+python start_jarvis.py --dev      # Development Mode (Hot-Reload)
+python start_jarvis.py --build    # Desktop Binary bauen
+python start_jarvis.py --backend  # Nur Backend (kein UI)
+```
+
+**Das war's! 🎉 Backend + Desktop UI starten automatisch.**
+
+---
+
+### **Alternative: Manueller Start (2 Terminals)**
+
+#### **Terminal 1: Python Backend**
+```bash
 cd JarvisCore
 python main.py
 
-# Terminal 2: Desktop UI
+# Warte auf:
+# ✅ API: http://127.0.0.1:5050
+# ✅ WebSocket: ws://127.0.0.1:8765
+```
+
+#### **Terminal 2: Desktop UI**
+```bash
 cd desktop
 make dev
 # oder: wails dev
+
+# ✅ App öffnet automatisch
 ```
+
+---
 
 ### **Production Build**
 
 ```bash
+# Desktop Binary bauen
+python start_jarvis.py --build
+
+# Oder manuell:
 cd desktop
 make build
-# Output: build/bin/jarvis-desktop.exe (~28MB)
+
+# Output:
+# ✅ Windows: build/bin/jarvis-desktop.exe (~28MB)
+# ✅ Linux:   build/bin/jarvis-desktop
+# ✅ macOS:   build/bin/jarvis-desktop.app
+```
+
+**Deployment:**
+```bash
+# Backend muss laufen
+python main.py &
+
+# Binary starten
+./desktop/build/bin/jarvis-desktop
 ```
 
 ---
@@ -303,6 +355,9 @@ LOG_LEVEL = "INFO"
 
 ```
 JarvisCore/
+├── start_jarvis.py              # ⭐ Unified Launcher
+├── start_jarvis.bat             # Windows Launcher
+├── start_jarvis.sh              # Linux/macOS Launcher
 ├── main.py                      # Backend Entry
 ├── config/settings.py           # Configuration
 ├── core/                        # Core Logic
@@ -319,19 +374,21 @@ JarvisCore/
 ### **Development Commands**
 
 ```bash
+# Unified Launcher (empfohlen)
+python start_jarvis.py --dev
+
+# Oder manuell:
 # Backend
 python main.py
 
 # Frontend (Standalone)
-cd desktop/frontend
-npm run dev
+cd desktop/frontend && npm run dev
 
 # Full Desktop (Wails)
-cd desktop
-make dev
+cd desktop && make dev
 
 # Production Build
-make build
+python start_jarvis.py --build
 ```
 
 ---
@@ -344,35 +401,53 @@ Siehe [MIGRATION.md](MIGRATION.md) für Details.
 
 **Kurz:**
 ```bash
-# ALT
+# ALT (Web UI)
 python main.py  # → Browser öffnet auf :8080
 
-# NEU
-python main.py              # Backend only
-cd desktop && make dev      # Desktop App
+# NEU (Desktop UI)
+python start_jarvis.py  # → Backend + Desktop starten automatisch
 ```
 
 ---
 
 ## 🐛 **Troubleshooting**
 
-### **Backend startet nicht**
+### **"Backend startet nicht"**
 ```bash
 pip install -r requirements.txt
-lsof -ti:5050 | xargs kill -9  # Port freigeben
+lsof -ti:5050 | xargs kill -9  # Port freigeben (Linux/macOS)
+netstat -ano | findstr :5050   # Port prüfen (Windows)
 ```
 
-### **Desktop UI startet nicht**
+### **"Desktop UI startet nicht"**
 ```bash
+# Wails installieren
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# Frontend Dependencies
 cd desktop/frontend && npm install
+
+# Binary fehlt? Baue neu:
+python start_jarvis.py --build
 ```
 
-### **WebSocket Connection Failed**
+### **"WebSocket Connection Failed"**
 ```bash
-# Check Backend
+# Backend läuft?
 curl http://127.0.0.1:5050/api/status
+
+# WebSocket Port frei?
 netstat -an | grep 8765
+```
+
+### **"Unified Launcher crashed"**
+```bash
+# Dependencies prüfen
+python start_jarvis.py --backend  # Test nur Backend
+
+# Manueller Start als Fallback
+python main.py              # Terminal 1
+cd desktop && make dev      # Terminal 2
 ```
 
 ---
@@ -431,7 +506,7 @@ Dieses Projekt ist privat. Kommerzielle Nutzung nur nach Genehmigung.
 ## 📞 **Support**
 
 - **Issues:** [GitHub Issues](https://github.com/Lautloserspieler/JarvisCore/issues)
-
+- **Email:** emeyer@fn.de
 
 ---
 

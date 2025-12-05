@@ -32,10 +32,16 @@
 
 ### **🎯 Core Capabilities**
 
-- **🧠 Multi-Model AI System**
-  - Support für OpenAI GPT-4, Claude, Gemini, Local LLMs (Ollama)
-  - Dynamisches Model-Loading/Unloading zur Laufzeit
-  - Context-aware Response Generation
+- **🧠 Local LLM System**
+  - 3 lokale Sprachmodelle von Hugging Face
+  - **LLaMA 3 (8B)** - Conversation & Creative Tasks
+  - **Mistral/Hermes (7B)** - Code & Technical Tasks
+  - **DeepSeek R1 (8B)** - Analysis & Research
+  - Automatischer Download über Model Manager UI
+  - GGUF Format mit llama-cpp-python
+  - GPU-Acceleration Support (CUDA)
+  - Intelligente Modellwahl basierend auf Task-Type
+  - **Komplett offline & kostenlos** (keine API Keys)
 
 - **📚 Knowledge Base System**
   - Automatisches Web-Crawling & Indexierung
@@ -94,7 +100,7 @@
           │  ┌────────────────────────┐ │
           │  │ JarvisCore Engine      │ │
           │  │ - NLP Processing       │ │
-          │  │ - LLM Integration      │ │
+          │  │ - Local LLM Manager    │ │
           │  │ - Knowledge Manager    │ │
           │  │ - Memory System        │ │
           │  │ - Plugin Orchestrator  │ │
@@ -112,7 +118,7 @@
 | **Frontend** | Vue 3, TypeScript, Vite, Axios, WebSocket API |
 | **Desktop Bridge** | Go 1.21+, Wails v2, Gorilla WebSocket |
 | **Backend** | Python 3.10+, asyncio, aiohttp, FastAPI |
-| **AI/ML** | OpenAI API, Anthropic Claude, Google Gemini, Ollama, Sentence-BERT |
+| **AI/ML** | llama-cpp-python, Hugging Face Models (GGUF), Sentence-BERT |
 | **Database** | JSON-based Storage (Memory, Knowledge, Training Data) |
 | **Voice** | Whisper (OpenAI), Web Audio API |
 | **Security** | bcrypt, pyotp (TOTP) |
@@ -163,7 +169,7 @@ cd ../..
 
 # 4. Konfiguration
 cp config/settings.example.py config/settings.py
-vim config/settings.py  # API Keys hinzufügen
+vim config/settings.py  # Einstellungen anpassen
 ```
 
 ---
@@ -253,14 +259,14 @@ python main.py &
 |------|------|----------|
 | **Chat** | 💬 | Text & Voice Input, Streaming, Visualizer |
 | **System** | 📊 | CPU/RAM/GPU Monitoring, Live-Updates |
-| **Models** | 🧠 | LLM Management, Load/Unload |
+| **Models** | 🧠 | LLM Download, Load/Unload, 3 Models |
 | **Plugins** | 🔌 | Enable/Disable, Configuration |
 | **Knowledge** | 📚 | Crawling Feed, Stats, Search |
 | **Memory** | 🧠 | Timeline, Search, Export |
 | **Logs** | 📋 | Real-time Streaming, Filters |
 | **Training** | 🎯 | RL Stats, Top Commands |
 | **Commands** | 🎮 | Pattern Editor, Testing |
-| **Settings** | ⚙️ | Audio, API Keys, Config |
+| **Settings** | ⚙️ | Audio, Config |
 | **Security** | 🔒 | Passphrase/TOTP Overlay (Global) |
 
 ---
@@ -278,8 +284,9 @@ GET  /api/system/metrics      # CPU/RAM/GPU
 POST /api/command             # Send Message
 
 # Models
-GET  /api/models              # List Models
+GET  /api/models              # List Models (llama3, mistral, deepseek)
 POST /api/models/load         # Load Model
+POST /api/models/download     # Download Model from Hugging Face
 
 # Knowledge
 GET  /api/knowledge/stats     # KB Stats
@@ -318,6 +325,7 @@ ws://127.0.0.1:8765
 - security_challenge  // 2FA Prompt
 - log_entry           // New Log
 - training_progress   // RL Updates
+- model_download      // Model Download Progress
 ```
 
 ---
@@ -327,12 +335,12 @@ ws://127.0.0.1:8765
 **config/settings.py:**
 
 ```python
-# API Keys
-OPENAI_API_KEY = "sk-proj-..."
-ANTHROPIC_API_KEY = "sk-ant-..."
-
-# Model Settings
-DEFAULT_MODEL = "gpt-4"
+# LLM Settings
+DEFAULT_MODEL = "llama3"  # oder "mistral", "deepseek"
+LLM_MAX_CACHED_MODELS = 2  # Wie viele Modelle im RAM halten
+LLM_CPU_THREADS = 8        # CPU Threads für Inference
+LLAMA_USE_GPU = 1          # GPU aktivieren (CUDA)
+LLAMA_GPU_LAYERS = -1      # -1 = alle Layer auf GPU
 
 # Backend
 API_HOST = "127.0.0.1"
@@ -360,7 +368,11 @@ JarvisCore/
 ├── start_jarvis.sh              # Linux/macOS Launcher
 ├── main.py                      # Backend Entry
 ├── config/settings.py           # Configuration
-├── core/                        # Core Logic
+├── core/
+│   ├── llm_manager.py           # LLM Manager (3 Models)
+│   ├── llm_router.py            # Intelligente Modellwahl
+│   └── ...
+├── models/llm/                  # LLM Download-Ordner
 ├── plugins/                     # Plugin System
 ├── data/                        # Storage
 └── desktop/                     # Desktop UI
@@ -431,6 +443,14 @@ cd desktop/frontend && npm install
 python start_jarvis.py --build
 ```
 
+### **"LLM Modell lädt nicht"**
+```bash
+# Modell herunterladen über UI: Models View → Download Button
+# Oder manuell von Hugging Face:
+# https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct-GGUF
+# Datei nach models/llm/ kopieren
+```
+
 ### **"WebSocket Connection Failed"**
 ```bash
 # Backend läuft?
@@ -438,16 +458,6 @@ curl http://127.0.0.1:5050/api/status
 
 # WebSocket Port frei?
 netstat -an | grep 8765
-```
-
-### **"Unified Launcher crashed"**
-```bash
-# Dependencies prüfen
-python start_jarvis.py --backend  # Test nur Backend
-
-# Manueller Start als Fallback
-python main.py              # Terminal 1
-cd desktop && make dev      # Terminal 2
 ```
 
 ---
@@ -460,14 +470,15 @@ cd desktop && make dev      # Terminal 2
 |------------|---------|------------|
 | **CPU** | 4 Cores @ 2.5 GHz | 8 Cores @ 3.5 GHz |
 | **RAM** | 8 GB | 16 GB |
-| **GPU** | - | NVIDIA RTX 3060+ |
-| **Disk** | 10 GB | 50 GB |
+| **GPU** | - | NVIDIA RTX 3060+ (für GPU-Acceleration) |
+| **Disk** | 10 GB (+ 5-7GB pro LLM) | 50 GB |
 
 ### **Benchmarks**
 ```
-Startup:     2-3s (Desktop) + 3-5s (Backend)
-Memory:      120 MB (Desktop) + 400 MB (Backend)
-Binary Size: 28 MB
+Startup:         2-3s (Desktop) + 3-5s (Backend)
+Memory:          120 MB (Desktop) + 400 MB (Backend)
+Binary Size:     28 MB
+LLM Inference:   ~50 tokens/s (CPU), ~200 tokens/s (GPU)
 ```
 
 ---
@@ -486,12 +497,14 @@ Binary Size: 28 MB
 - [ ] Screen Capture & Analysis
 - [ ] Calendar Integration
 - [ ] Smart Home Integration
+- [ ] Mehr LLM Modelle (Qwen, Phi-3)
 
 ### **v2.0 (Q3 2026)**
 - [ ] Distributed Architecture
 - [ ] Browser Extension
 - [ ] Plugin Marketplace
 - [ ] Enterprise Features
+- [ ] Cloud-LLM Option (OpenAI, Anthropic)
 
 ---
 
@@ -512,7 +525,7 @@ Dieses Projekt ist privat. Kommerzielle Nutzung nur nach Genehmigung.
 
 <div align="center">
 
-**Built with ❤️ using Python, Go, Vue 3, and Wails**
+**Built with ❤️ using Python, Go, Vue 3, Wails, and llama.cpp**
 
 ⭐ **Star this project if you like it!**
 

@@ -2,10 +2,13 @@ package bridge
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -16,14 +19,33 @@ type JarvisCoreBridge struct {
 	token   string
 }
 
+// generateRandomToken erzeugt sicheren zufälligen Token
+func generateRandomToken() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback zu weniger sicherem Token bei Fehler
+		return fmt.Sprintf("fallback-%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(b)
+}
+
 // NewJarvisCoreBridge erstellt neue Bridge-Instanz
 func NewJarvisCoreBridge(baseURL string) *JarvisCoreBridge {
+	// Token aus Environment Variable oder generieren
+	token := os.Getenv("JARVIS_API_TOKEN")
+	if token == "" {
+		// Generiere sicheren zufälligen Token
+		token = generateRandomToken()
+		// TODO: In v1.0.1 aus Config-Datei laden
+		// TODO: In v1.1.0 Token-Pairing über UI
+	}
+	
 	return &JarvisCoreBridge{
 		baseURL: baseURL,
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		token: "12345678", // Default Token, TODO: aus Config laden
+		token: token,
 	}
 }
 

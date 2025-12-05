@@ -30,14 +30,8 @@
     </div>
     
     <div class="input-area">
-      <button 
-        class="voice-btn"
-        :class="{ active: isListening }"
-        @click="toggleListening"
-        title="Spracherkennung"
-      >
-        🎤
-      </button>
+      <!-- Voice Recording Button -->
+      <VoiceRecordingButton @transcription="handleTranscription" />
       
       <input 
         type="text"
@@ -61,27 +55,30 @@
 <script>
 import { ref, nextTick, onMounted } from 'vue'
 import { useWails } from '../composables/useWails'
+import VoiceRecordingButton from './VoiceRecordingButton.vue'
 
 export default {
   name: 'Chat',
+  components: {
+    VoiceRecordingButton
+  },
   setup() {
     const { api, isDevelopment } = useWails()
     
     const messages = ref([])
     const userInput = ref('')
     const isProcessing = ref(false)
-    const isListening = ref(false)
     const messagesContainer = ref(null)
     
-    const sendMessage = async () => {
-      const text = userInput.value.trim()
-      if (!text || isProcessing.value) return
+    const sendMessage = async (text = null) => {
+      const messageText = text || userInput.value.trim()
+      if (!messageText || isProcessing.value) return
       
       // User-Message hinzufügen
       messages.value.push({
         id: Date.now(),
         role: 'user',
-        text: text,
+        text: messageText,
         timestamp: Date.now()
       })
       
@@ -91,7 +88,7 @@ export default {
       
       try {
         // ✅ Wails API Call (mit Fallback)
-        const response = await api.ProcessCommand(text)
+        const response = await api.ProcessCommand(messageText)
         
         // Assistant-Antwort hinzufügen
         messages.value.push({
@@ -114,6 +111,14 @@ export default {
       }
     }
     
+    // Voice Recording Handler
+    const handleTranscription = (transcription) => {
+      if (transcription && transcription.trim()) {
+        // Direkt senden
+        sendMessage(transcription)
+      }
+    }
+    
     const loadHistory = async () => {
       try {
         const history = await api.GetConversationHistory(50)
@@ -128,11 +133,6 @@ export default {
       } catch (error) {
         console.error('Fehler beim Laden des Verlaufs:', error)
       }
-    }
-    
-    const toggleListening = () => {
-      isListening.value = !isListening.value
-      // TODO: Voice Recording implementieren
     }
     
     const scrollToBottom = () => {
@@ -171,11 +171,10 @@ export default {
       messages,
       userInput,
       isProcessing,
-      isListening,
       messagesContainer,
       isDevelopment,
       sendMessage,
-      toggleListening,
+      handleTranscription,
       formatTime
     }
   }
@@ -275,34 +274,6 @@ export default {
   padding: 20px;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
-}
-
-.voice-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-  background: transparent;
-  color: var(--accent);
-  font-size: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.voice-btn:hover {
-  background: var(--accent);
-  color: white;
-}
-
-.voice-btn.active {
-  background: var(--accent);
-  color: white;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 var(--accent); }
-  50% { box-shadow: 0 0 0 10px rgba(0, 180, 216, 0); }
 }
 
 input {

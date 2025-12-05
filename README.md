@@ -431,7 +431,7 @@ Dieses Projekt ist privat. Kommerzielle Nutzung nur nach Genehmigung.
 ## 📞 **Support**
 
 - **Issues:** [GitHub Issues](https://github.com/Lautloserspieler/JarvisCore/issues)
-- **Email:** emeyer@fn.de
+
 
 ---
 

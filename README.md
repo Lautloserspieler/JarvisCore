@@ -15,7 +15,11 @@
 - [✨ Features](#-features)
 - [🏗️ Architektur](#-architektur)
 - [📦 Installation](#-installation)
+  - [👤 Windows](#-windows-installation)
+  - [🐧 Linux / macOS](#-linux--macos-installation)
 - [🚀 Schnellstart](#-schnellstart)
+  - [👤 Windows Start](#-windows-start)
+  - [🐧 Linux / macOS Start](#-linux--macos-start)
 - [🎨 Desktop UI](#-desktop-ui-features)
 - [📡 Backend API](#-backend-api)
 - [⚙️ Konfiguration](#-konfiguration)
@@ -132,85 +136,252 @@
 
 ## 📦 **Installation**
 
-### **Voraussetzungen**
+### 👤 **Windows Installation**
 
-#### **Python Backend**
-```bash
-# Python 3.10 oder höher
+#### **1. Voraussetzungen prüfen**
+
+```cmd
+# Python 3.10+ installieren
 python --version
 
-# Empfohlen: Virtual Environment
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate     # Windows
-```
-
-#### **Desktop UI (Go + Wails)**
-```bash
-# Go 1.21 oder höher
+# Go 1.21+ installieren
 go version
 
-# Node.js 18+ (für Frontend)
+# Node.js 18+ installieren
 node --version
-
-# Wails CLI installieren
-go install github.com/wailsapp/wails/v2/cmd/wails@latest
 ```
 
-### **Installation Schritte**
+#### **2. Repository klonen**
 
-```bash
-# 1. Repository klonen
+```cmd
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
+```
 
-# 2. Python Dependencies
+#### **3. Python Virtual Environment erstellen**
+
+```cmd
+# Virtual Environment erstellen
+python -m venv venv
+
+# Aktivieren
+venv\Scripts\activate
+
+# Dependencies installieren
 pip install -r requirements.txt
+```
 
-# 3. Desktop UI Dependencies (optional)
+#### **4. Wails CLI installieren**
+
+```cmd
+# Wails installieren
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# Path prüfen (falls wails nicht gefunden wird)
+# Füge hinzu: %USERPROFILE%\go\bin zu PATH
+```
+
+#### **5. Desktop UI Dependencies**
+
+```cmd
+# In desktop/frontend Ordner
+cd desktop\frontend
+npm install
+cd ..\..
+```
+
+#### **6. Konfiguration**
+
+```cmd
+# Settings kopieren
+copy config\settings.example.py config\settings.py
+
+# Einstellungen anpassen (optional)
+notepad config\settings.py
+```
+
+**✅ Installation abgeschlossen!**
+
+---
+
+### 🐧 **Linux / macOS Installation**
+
+#### **1. Voraussetzungen prüfen**
+
+```bash
+# Python 3.10+ installieren
+python3 --version
+
+# Go 1.21+ installieren
+go version
+
+# Node.js 18+ installieren
+node --version
+```
+
+**Falls nicht installiert:**
+
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install python3 python3-venv golang nodejs npm
+
+# macOS (Homebrew)
+brew install python@3.10 go node
+
+# Fedora
+sudo dnf install python3 golang nodejs npm
+```
+
+#### **2. Repository klonen**
+
+```bash
+git clone https://github.com/Lautloserspieler/JarvisCore.git
+cd JarvisCore
+```
+
+#### **3. Python Virtual Environment erstellen**
+
+```bash
+# Virtual Environment erstellen
+python3 -m venv venv
+
+# Aktivieren
+source venv/bin/activate
+
+# Dependencies installieren
+pip install -r requirements.txt
+```
+
+#### **4. Wails CLI installieren**
+
+```bash
+# Wails installieren
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# Path prüfen
+which wails
+
+# Falls nicht gefunden, zu .bashrc/.zshrc hinzufügen:
+echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### **5. Desktop UI Dependencies**
+
+```bash
+# In desktop/frontend Ordner
 cd desktop/frontend
 npm install
 cd ../..
-
-# 4. Konfiguration
-cp config/settings.example.py config/settings.py
-vim config/settings.py  # Einstellungen anpassen
 ```
+
+#### **6. Konfiguration**
+
+```bash
+# Settings kopieren
+cp config/settings.example.py config/settings.py
+
+# Einstellungen anpassen (optional)
+vim config/settings.py  # oder nano/gedit
+```
+
+**✅ Installation abgeschlossen!**
 
 ---
 
 ## 🚀 **Schnellstart**
 
-### **⭐ Empfohlen: Unified Launcher (1 Befehl!)**
+### 👤 **Windows Start**
 
-```bash
-# 🚀 EINFACHSTE METHODE - Startet Backend + Desktop UI automatisch
+#### **⭐ Empfohlen: Unified Launcher (1 Klick!)**
 
-# Windows:
+```cmd
+# Methode 1: Batch-Datei (Doppelklick)
 start_jarvis.bat
 
-# Linux/macOS:
-chmod +x start_jarvis.sh
-./start_jarvis.sh
-
-# Oder direkt mit Python:
+# Methode 2: Python-Launcher
 python start_jarvis.py
 
-# Optionen:
-python start_jarvis.py --dev      # Development Mode (Hot-Reload)
-python start_jarvis.py --build    # Desktop Binary bauen
-python start_jarvis.py --backend  # Nur Backend (kein UI)
+# Mit Optionen:
+python start_jarvis.py --dev      REM Development Mode
+python start_jarvis.py --build    REM Binary bauen
+python start_jarvis.py --backend  REM Nur Backend
 ```
 
 **Das war's! 🎉 Backend + Desktop UI starten automatisch.**
 
 ---
 
-### **Alternative: Manueller Start (2 Terminals)**
+#### **Alternative: Manueller Start (2 Terminals)**
 
-#### **Terminal 1: Python Backend**
+**Terminal 1: Backend starten**
+```cmd
+cd JarvisCore
+venv\Scripts\activate
+python main.py
+
+REM Warte auf:
+REM ✅ API: http://127.0.0.1:5050
+REM ✅ WebSocket: ws://127.0.0.1:8765
+```
+
+**Terminal 2: Desktop UI starten**
+```cmd
+cd JarvisCore\desktop
+wails dev
+
+REM ✅ App öffnet automatisch
+```
+
+---
+
+#### **Production Binary bauen**
+
+```cmd
+REM Automatisch bauen
+python start_jarvis.py --build
+
+REM Manuell bauen
+cd desktop
+wails build
+
+REM Binary starten
+.\build\bin\jarvis-desktop.exe
+```
+
+**Output:** `desktop/build/bin/jarvis-desktop.exe` (~28MB)
+
+---
+
+### 🐧 **Linux / macOS Start**
+
+#### **⭐ Empfohlen: Unified Launcher (1 Befehl!)**
+
+```bash
+# Methode 1: Shell-Script
+chmod +x start_jarvis.sh
+./start_jarvis.sh
+
+# Methode 2: Python-Launcher
+python start_jarvis.py
+
+# Mit Optionen:
+python start_jarvis.py --dev      # Development Mode
+python start_jarvis.py --build    # Binary bauen
+python start_jarvis.py --backend  # Nur Backend
+```
+
+**Das war's! 🎉 Backend + Desktop UI starten automatisch.**
+
+---
+
+#### **Alternative: Manueller Start (2 Terminals)**
+
+**Terminal 1: Backend starten**
 ```bash
 cd JarvisCore
+source venv/bin/activate
 python main.py
 
 # Warte auf:
@@ -218,41 +389,34 @@ python main.py
 # ✅ WebSocket: ws://127.0.0.1:8765
 ```
 
-#### **Terminal 2: Desktop UI**
+**Terminal 2: Desktop UI starten**
 ```bash
-cd desktop
-make dev
-# oder: wails dev
+cd JarvisCore/desktop
+wails dev
 
 # ✅ App öffnet automatisch
 ```
 
 ---
 
-### **Production Build**
+#### **Production Binary bauen**
 
 ```bash
-# Desktop Binary bauen
+# Automatisch bauen
 python start_jarvis.py --build
 
-# Oder manuell:
+# Manuell bauen
 cd desktop
-make build
-
-# Output:
-# ✅ Windows: build/bin/jarvis-desktop.exe (~28MB)
-# ✅ Linux:   build/bin/jarvis-desktop
-# ✅ macOS:   build/bin/jarvis-desktop.app
-```
-
-**Deployment:**
-```bash
-# Backend muss laufen
-python main.py &
+wails build
 
 # Binary starten
-./desktop/build/bin/jarvis-desktop
+./build/bin/jarvis-desktop         # Linux
+open ./build/bin/jarvis-desktop.app  # macOS
 ```
+
+**Output:**
+- **Linux:** `desktop/build/bin/jarvis-desktop`
+- **macOS:** `desktop/build/bin/jarvis-desktop.app`
 
 ---
 
@@ -271,7 +435,7 @@ python main.py &
 | **Logs** | 📋 | Real-time Streaming, Filters |
 | **Training** | 🎯 | RL Stats, Top Commands |
 | **Commands** | 🎮 | Pattern Editor, Testing |
-| **Settings** | ⚙️ | Audio, Config |
+| **Settings** | ⚙️ | Audio, Config, Updates |
 | **Security** | 🔒 | Passphrase/TOTP Overlay (Global) |
 
 ---
@@ -405,7 +569,7 @@ python main.py
 cd desktop/frontend && npm run dev
 
 # Full Desktop (Wails)
-cd desktop && make dev
+cd desktop && wails dev
 
 # Production Build
 python start_jarvis.py --build
@@ -519,34 +683,72 @@ python start_jarvis.py  # → Backend + Desktop starten automatisch
 
 ## 🐛 **Troubleshooting**
 
-### **"Backend startet nicht"**
-```bash
+### **Windows**
+
+#### **"Backend startet nicht"**
+```cmd
+# Dependencies neu installieren
 pip install -r requirements.txt
-lsof -ti:5050 | xargs kill -9  # Port freigeben (Linux/macOS)
-netstat -ano | findstr :5050   # Port prüfen (Windows)
+
+# Port freigeben
+netstat -ano | findstr :5050
+taskkill /PID <PID> /F
 ```
 
-### **"Desktop UI startet nicht"**
-```bash
-# Wails installieren
-go install github.com/wailsapp/wails/v2/cmd/wails@latest
+#### **"Desktop UI startet nicht"**
+```cmd
+# Wails prüfen
+wails doctor
 
 # Frontend Dependencies
-cd desktop/frontend && npm install
+cd desktop\frontend
+npm install
 
-# Binary fehlt? Baue neu:
+# Binary neu bauen
 python start_jarvis.py --build
 ```
 
-### **"LLM Modell lädt nicht"**
+#### **"LLM Modell lädt nicht"**
+```cmd
+# Über UI herunterladen: Models View → Download Button
+# Oder manuell: https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct-GGUF
+# Datei nach models\llm\ kopieren
+```
+
+---
+
+### **Linux / macOS**
+
+#### **"Backend startet nicht"**
 ```bash
-# Modell herunterladen über UI: Models View → Download Button
-# Oder manuell von Hugging Face:
-# https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct-GGUF
+# Dependencies neu installieren
+pip install -r requirements.txt
+
+# Port freigeben
+lsof -ti:5050 | xargs kill -9
+```
+
+#### **"Desktop UI startet nicht"**
+```bash
+# Wails prüfen
+wails doctor
+
+# Frontend Dependencies
+cd desktop/frontend
+npm install
+
+# Binary neu bauen
+python start_jarvis.py --build
+```
+
+#### **"LLM Modell lädt nicht"**
+```bash
+# Über UI herunterladen: Models View → Download Button
+# Oder manuell: https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct-GGUF
 # Datei nach models/llm/ kopieren
 ```
 
-### **"WebSocket Connection Failed"**
+#### **"WebSocket Connection Failed"**
 ```bash
 # Backend läuft?
 curl http://127.0.0.1:5050/api/status

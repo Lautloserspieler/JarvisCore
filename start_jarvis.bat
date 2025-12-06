@@ -1,43 +1,35 @@
 @echo off
-REM J.A.R.V.I.S. Core - Windows Launcher
-REM Startet automatisch Backend + Desktop UI
+REM J.A.R.V.I.S. Core - Windows Starter
+REM Automatischer Start mit ImGui Desktop-UI
 
-title J.A.R.V.I.S. Core Launcher
-
-echo.
-echo ============================================================
-echo              J.A.R.V.I.S. Core Launcher v1.0.0
-echo ============================================================
+echo ========================================
+echo  J.A.R.V.I.S. Core - Starter
+echo ========================================
 echo.
 
-REM Check if Python is installed
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] Python nicht gefunden!
-    echo [INFO] Bitte Python 3.10+ installieren: https://www.python.org
+REM Prüfe ob venv existiert
+if not exist "venv\Scripts\activate.bat" (
+    echo [FEHLER] Virtuelle Umgebung nicht gefunden!
+    echo Bitte zuerst Setup ausführen: python setup.py
     pause
     exit /b 1
 )
 
-REM Check if start_jarvis.py exists
-if not exist "start_jarvis.py" (
-    echo [ERROR] start_jarvis.py nicht gefunden!
-    echo [INFO] Bitte im JarvisCore-Verzeichnis ausfuehren
-    pause
-    exit /b 1
-)
+REM Aktiviere venv
+echo [INFO] Aktiviere virtuelle Umgebung...
+call venv\Scripts\activate.bat
 
-REM Start unified launcher
-echo [INFO] Starte J.A.R.V.I.S. Core...
+REM Setze Environment Variable
+set JARVIS_DESKTOP=1
+
+REM Starte JARVIS
+echo [INFO] Starte J.A.R.V.I.S. mit ImGui Desktop-UI...
 echo.
-python start_jarvis.py %*
+python main.py
 
-REM Exit code handling
-if errorlevel 1 (
-    echo.
-    echo [ERROR] Fehler beim Starten!
-    pause
-    exit /b 1
-)
+REM Deaktiviere venv
+deactivate
 
+echo.
+echo [INFO] J.A.R.V.I.S. wurde beendet.
 pause

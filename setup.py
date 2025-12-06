@@ -1,321 +1,313 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-JarvisCore - Automatisches Setup
-Installiert alle Dependencies inklusive automatischer CUDA-Erkennung
+J.A.R.V.I.S. Core - Vollautomatisches Setup-Script
+Ein-Klick-Installation mit ImGui Desktop-UI
 """
 
-import os
 import sys
+import os
 import subprocess
 import platform
+import json
 from pathlib import Path
 
 
-class JarvisCoreSetup:
-    """Vollautomatisches Setup für JarvisCore"""
+class Colors:
+    """ANSI Color Codes für Terminal"""
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    END = '\033[0m'
 
+
+class JarvisSetup:
+    """Automatisches Setup für J.A.R.V.I.S. Core"""
+    
     def __init__(self):
-        self.project_root = Path(__file__).parent
-        self.requirements_file = self.project_root / "requirements.txt"
-        self.venv_dir = self.project_root / "venv"
-        self.use_venv = "--no-venv" not in sys.argv
-
-    def print_banner(self):
-        """Banner ausgeben"""
-        print("\n" + "=" * 70)
-        print("🤖 J.A.R.V.I.S. Core - Automatisches Setup")
-        print("=" * 70)
-        print("Just A Rather Very Intelligent System")
-        print("Version: 1.0.0 - Desktop Edition")
-        print("=" * 70 + "\n")
-
-    def check_python_version(self) -> bool:
+        self.root = Path(__file__).parent
+        self.venv_path = self.root / "venv"
+        self.data_path = self.root / "data"
+        self.logs_path = self.root / "logs"
+        self.models_path = self.root / "models"
+        self.settings_file = self.data_path / "settings.json"
+        self.os_type = platform.system()
+        
+    def print_header(self):
+        """Zeigt Banner"""
+        print(f"{Colors.CYAN}{Colors.BOLD}")
+        print("="*60)
+        print("🤖  J.A.R.V.I.S. Core - Automatisches Setup")
+        print("="*60)
+        print(f"{Colors.END}")
+        print(f"{Colors.GREEN}Willkommen zum automatischen Setup!{Colors.END}")
+        print(f"Dieses Script installiert alles für dich.\n")
+    
+    def check_python_version(self):
         """Prüft Python-Version"""
-        print("🔍 Prüfe Python-Version...")
+        print(f"{Colors.CYAN}➤ Prüfe Python-Version...{Colors.END}")
         version = sys.version_info
-
-        if version.major < 3 or (version.major == 3 and version.minor < 10):
-            print(f"❌ Python {version.major}.{version.minor} ist zu alt!")
-            print("✅ Erforderlich: Python 3.10 oder höher")
-            print("   Download: https://www.python.org/downloads/")
-            return False
-
-        print(f"✅ Python {version.major}.{version.minor}.{version.micro}")
-        return True
-
-    def create_virtualenv(self) -> bool:
-        """Erstellt Virtual Environment"""
-        if not self.use_venv:
-            print("⚠️  Virtual Environment übersprungen (--no-venv)")
-            return True
-
-        print("\n📦 Erstelle Virtual Environment...")
-
-        if self.venv_dir.exists():
-            print(f"ℹ️  venv existiert bereits: {self.venv_dir}")
-            response = input("   Neu erstellen? (j/n): ").lower()
-            if response == 'j':
-                import shutil
-                print("   Lösche altes venv...")
-                shutil.rmtree(self.venv_dir)
-            else:
-                print("✅ Verwende existierendes venv")
-                return True
-
+        
+        if version.major < 3 or (version.major == 3 and version.minor < 11):
+            print(f"{Colors.RED}❌ Python 3.11+ benötigt! (Aktuell: {version.major}.{version.minor}){Colors.END}")
+            sys.exit(1)
+        
+        print(f"{Colors.GREEN}✅ Python {version.major}.{version.minor}.{version.micro} gefunden{Colors.END}\n")
+    
+    def create_directories(self):
+        """Erstellt notwendige Verzeichnisse"""
+        print(f"{Colors.CYAN}➤ Erstelle Verzeichnisse...{Colors.END}")
+        
+        dirs = [
+            self.data_path,
+            self.logs_path,
+            self.models_path,
+            self.models_path / "llm",
+            self.models_path / "stt",
+            self.models_path / "tts",
+            self.data_path / "secure",
+            self.root / "backups"
+        ]
+        
+        for d in dirs:
+            d.mkdir(parents=True, exist_ok=True)
+            print(f"  📁 {d.name}/")
+        
+        print(f"{Colors.GREEN}✅ Verzeichnisse erstellt{Colors.END}\n")
+    
+    def create_venv(self):
+        """Erstellt virtuelle Umgebung"""
+        if self.venv_path.exists():
+            print(f"{Colors.YELLOW}⚠️  Virtuelle Umgebung existiert bereits (venv/)\n{Colors.END}")
+            return
+        
+        print(f"{Colors.CYAN}➤ Erstelle virtuelle Umgebung (venv/)...{Colors.END}")
+        
         try:
             subprocess.run(
-                [sys.executable, "-m", "venv", str(self.venv_dir)],
+                [sys.executable, "-m", "venv", str(self.venv_path)],
                 check=True,
+                capture_output=True
             )
-            print(f"✅ Virtual Environment erstellt: {self.venv_dir}")
-            print("\n💡 Aktivierung:")
-            if platform.system() == "Windows":
-                print(f"   {self.venv_dir}\\Scripts\\activate")
-            else:
-                print(f"   source {self.venv_dir}/bin/activate")
-            return True
+            print(f"{Colors.GREEN}✅ Virtuelle Umgebung erstellt{Colors.END}\n")
         except subprocess.CalledProcessError as e:
-            print(f"❌ Fehler beim Erstellen des venv: {e}")
-            return False
-
-    def get_pip_executable(self) -> str:
-        """Findet pip in venv oder system"""
-        if self.use_venv and self.venv_dir.exists():
-            if platform.system() == "Windows":
-                pip = self.venv_dir / "Scripts" / "pip.exe"
-            else:
-                pip = self.venv_dir / "bin" / "pip"
-
-            if pip.exists():
-                return str(pip)
-
-        # Fallback zu system pip
-        return "pip"
-
-    def install_base_requirements(self) -> bool:
-        """Installiert Basis-Requirements (ohne llama-cpp-python)"""
-        print("\n📦 Installiere Basis-Dependencies...")
-
-        if not self.requirements_file.exists():
-            print(f"❌ requirements.txt nicht gefunden: {self.requirements_file}")
-            return False
-
-        # requirements.txt lesen und llama-cpp-python ausschließen
-        with open(self.requirements_file, 'r') as f:
-            requirements = [
-                line.strip()
-                for line in f
-                if line.strip()
-                and not line.strip().startswith('#')
-                and 'llama-cpp-python' not in line.lower()
-            ]
-
-        # Temporäre requirements ohne llama-cpp-python
-        temp_requirements = self.project_root / "requirements_base.tmp"
-        with open(temp_requirements, 'w') as f:
-            f.write('\n'.join(requirements))
-
+            print(f"{Colors.RED}❌ Fehler beim Erstellen der venv: {e}{Colors.END}")
+            sys.exit(1)
+    
+    def get_pip_path(self):
+        """Gibt Pfad zu pip in venv zurük"""
+        if self.os_type == "Windows":
+            return self.venv_path / "Scripts" / "pip.exe"
+        return self.venv_path / "bin" / "pip"
+    
+    def get_python_path(self):
+        """Gibt Pfad zu Python in venv zurük"""
+        if self.os_type == "Windows":
+            return self.venv_path / "Scripts" / "python.exe"
+        return self.venv_path / "bin" / "python"
+    
+    def install_dependencies(self):
+        """Installiert Dependencies"""
+        print(f"{Colors.CYAN}➤ Installiere Dependencies...{Colors.END}")
+        print(f"{Colors.YELLOW}(Dies kann einige Minuten dauern){Colors.END}\n")
+        
+        pip = str(self.get_pip_path())
+        requirements = self.root / "requirements.txt"
+        
+        if not requirements.exists():
+            print(f"{Colors.RED}❌ requirements.txt nicht gefunden!{Colors.END}")
+            sys.exit(1)
+        
         try:
-            pip = self.get_pip_executable()
-            print(f"   Verwende pip: {pip}")
-            print("   (Das kann einige Minuten dauern...)\n")
-
+            # Upgrade pip
+            print("  🔄 Aktualisiere pip...")
             subprocess.run(
                 [pip, "install", "--upgrade", "pip"],
                 check=True,
+                capture_output=True
             )
-
+            
+            # Install requirements
+            print("  📦 Installiere Pakete...")
             subprocess.run(
-                [pip, "install", "-r", str(temp_requirements)],
-                check=True,
+                [pip, "install", "-r", str(requirements)],
+                check=True
             )
-
-            temp_requirements.unlink()  # Temp-Datei löschen
-            print("✅ Basis-Dependencies installiert")
-            return True
-
+            
+            print(f"\n{Colors.GREEN}✅ Dependencies installiert{Colors.END}\n")
         except subprocess.CalledProcessError as e:
-            print(f"❌ Installation fehlgeschlagen: {e}")
-            if temp_requirements.exists():
-                temp_requirements.unlink()
-            return False
-
-    def install_cuda_and_llama(self) -> bool:
-        """Ruft setup_cuda.py für automatische CUDA-Erkennung auf"""
-        print("\n🚀 Starte automatische CUDA-Erkennung...")
-
-        setup_cuda_script = self.project_root / "scripts" / "setup_cuda.py"
-
-        if not setup_cuda_script.exists():
-            print(f"⚠️  setup_cuda.py nicht gefunden: {setup_cuda_script}")
-            print("   Installiere llama-cpp-python ohne CUDA...")
+            print(f"{Colors.RED}❌ Fehler bei der Installation: {e}{Colors.END}")
+            print(f"{Colors.YELLOW}Versuche manuell: pip install -r requirements.txt{Colors.END}")
+            sys.exit(1)
+    
+    def configure_settings(self):
+        """Erstellt/Aktualisiert settings.json"""
+        print(f"{Colors.CYAN}➤ Konfiguriere settings.json...{Colors.END}")
+        
+        # Default Settings
+        default_settings = {
+            "language": "de",
+            "desktop_app": {
+                "enabled": True,
+                "width": 1920,
+                "height": 1080,
+                "fullscreen": False,
+                "vsync": True,
+                "theme": "ue5"
+            },
+            "llm": {
+                "enabled": True,
+                "default_model": "mistral",
+                "context_length": 2048,
+                "temperature": 0.7,
+                "auto_load": False
+            },
+            "speech": {
+                "wake_word_enabled": True,
+                "stream_tts": True,
+                "min_command_words": 3
+            },
+            "web_interface": {
+                "enabled": False
+            },
+            "remote_control": {
+                "enabled": False,
+                "host": "127.0.0.1",
+                "port": 8765
+            },
+            "go_services": {
+                "auto_start": False
+            },
+            "security": {
+                "safe_mode": True,
+                "require_auth": False
+            },
+            "knowledge": {
+                "auto_update": True,
+                "scan_interval_hours": 24
+            }
+        }
+        
+        # Load existing or create new
+        if self.settings_file.exists():
             try:
-                pip = self.get_pip_executable()
-                subprocess.run(
-                    [pip, "install", "llama-cpp-python"],
-                    check=True,
-                )
-                return True
-            except subprocess.CalledProcessError:
-                return False
-
+                with open(self.settings_file, 'r', encoding='utf-8') as f:
+                    existing = json.load(f)
+                
+                # Merge with defaults (update nur desktop_app)
+                existing["desktop_app"] = default_settings["desktop_app"]
+                settings = existing
+                print(f"  📄 Bestehende Settings aktualisiert")
+            except Exception as e:
+                print(f"  ⚠️  Fehler beim Laden: {e}")
+                settings = default_settings
+        else:
+            settings = default_settings
+            print(f"  ✨ Neue Settings erstellt")
+        
+        # Save
         try:
-            # Python executable ermitteln (venv falls vorhanden)
-            if self.use_venv and self.venv_dir.exists():
-                if platform.system() == "Windows":
-                    python_exe = str(self.venv_dir / "Scripts" / "python.exe")
-                else:
-                    python_exe = str(self.venv_dir / "bin" / "python")
-            else:
-                python_exe = sys.executable
-
-            # setup_cuda.py ausführen
-            result = subprocess.run(
-                [python_exe, str(setup_cuda_script)],
-                check=False,  # Ignoriere Exit-Code, da auch CPU-Install OK ist
-            )
-
-            return True  # Erfolgreich, auch wenn CPU-only
-
+            with open(self.settings_file, 'w', encoding='utf-8') as f:
+                json.dump(settings, f, indent=2, ensure_ascii=False)
+            
+            print(f"{Colors.GREEN}✅ Settings konfiguriert{Colors.END}")
+            print(f"  📁 Datei: {self.settings_file}\n")
         except Exception as e:
-            print(f"❌ CUDA Setup fehlgeschlagen: {e}")
-            return False
-
-    def create_config_if_needed(self) -> bool:
-        """Erstellt settings.py aus Example falls nicht vorhanden"""
-        print("\n⚙️  Prüfe Konfiguration...")
-
-        config_dir = self.project_root / "config"
-        settings_file = config_dir / "settings.py"
-        example_file = config_dir / "settings.example.py"
-
-        if settings_file.exists():
-            print(f"✅ Konfiguration existiert: {settings_file}")
-            return True
-
-        if not example_file.exists():
-            print(f"⚠️  Weder settings.py noch settings.example.py gefunden")
-            return True  # Nicht kritisch
-
-        try:
-            import shutil
-            shutil.copy(example_file, settings_file)
-            print(f"✅ Konfiguration erstellt: {settings_file}")
-            print("💡 Bitte settings.py anpassen (API Keys, Pfade, etc.)")
-            return True
-        except Exception as e:
-            print(f"❌ Fehler beim Erstellen der Konfiguration: {e}")
-            return False
-
-    def create_directories(self) -> bool:
-        """Erstellt benötigte Verzeichnisse"""
-        print("\n📂 Erstelle Verzeichnisstruktur...")
-
-        directories = [
-            "data",
-            "data/memory",
-            "data/knowledge",
-            "data/training",
-            "logs",
-            "models/llm",
-            "plugins",
-        ]
-
-        for dir_name in directories:
-            dir_path = self.project_root / dir_name
-            if not dir_path.exists():
-                dir_path.mkdir(parents=True, exist_ok=True)
-                print(f"   ✅ {dir_name}/")
-            else:
-                print(f"   ✓ {dir_name}/ (existiert)")
-
-        return True
-
+            print(f"{Colors.RED}❌ Fehler beim Speichern: {e}{Colors.END}")
+    
     def print_next_steps(self):
-        """Gibt nächste Schritte aus"""
-        print("\n" + "=" * 70)
-        print("🎉 Setup abgeschlossen!")
-        print("=" * 70)
-        print("\n🚀 Nächste Schritte:\n")
-
-        if self.use_venv:
-            print("1️⃣ Virtual Environment aktivieren:")
-            if platform.system() == "Windows":
-                print(f"   {self.venv_dir}\\Scripts\\activate")
-            else:
-                print(f"   source {self.venv_dir}/bin/activate")
+        """Zeigt nächste Schritte"""
+        print(f"\n{Colors.CYAN}{Colors.BOLD}="*60)
+        print("✅ SETUP ABGESCHLOSSEN!")
+        print(f"="*60{Colors.END}\n")
+        
+        print(f"{Colors.GREEN}{Colors.BOLD}NÄCHSTE SCHRITTE:{Colors.END}\n")
+        
+        if self.os_type == "Windows":
+            activate_cmd = "venv\\Scripts\\activate"
+        else:
+            activate_cmd = "source venv/bin/activate"
+        
+        print(f"1️⃣  Aktiviere virtuelle Umgebung:")
+        print(f"   {Colors.CYAN}{activate_cmd}{Colors.END}\n")
+        
+        print(f"2️⃣  Starte J.A.R.V.I.S.:")
+        print(f"   {Colors.CYAN}python main.py{Colors.END}\n")
+        
+        print(f"{Colors.YELLOW}💡 TIPPS:{Colors.END}")
+        print(f"  • ImGui Desktop-UI startet automatisch")
+        print(f"  • Settings: data/settings.json")
+        print(f"  • Logs: logs/jarvis.log")
+        print(f"  • Doku: docs/IMGUI_SETUP.md\n")
+        
+        print(f"{Colors.CYAN}🚀 Viel Spaß mit J.A.R.V.I.S.!{Colors.END}\n")
+    
+    def ask_auto_start(self):
+        """Fragt ob automatisch starten"""
+        print(f"{Colors.YELLOW}Möchtest du J.A.R.V.I.S. jetzt starten? (y/n): {Colors.END}", end="")
+        
+        try:
+            response = input().strip().lower()
+            return response in ['y', 'yes', 'j', 'ja']
+        except (EOFError, KeyboardInterrupt):
             print()
-
-        print("2️⃣ Konfiguration anpassen:")
-        print("   vim config/settings.py")
-        print()
-
-        print("3️⃣ J.A.R.V.I.S. starten:")
-        print("   python start_jarvis.py")
-        print("   # oder")
-        print("   python main.py              # Backend")
-        print("   cd desktop && make dev      # Desktop UI")
-        print()
-
-        print("4️⃣ LLM-Modelle herunterladen:")
-        print("   - Über Desktop UI: Models View → Download Button")
-        print("   - Oder manuell von Hugging Face:")
-        print("     https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct-GGUF")
-        print("     Dateien nach models/llm/ kopieren")
-        print()
-
-        print("📚 Dokumentation:")
-        print("   README.md - Vollständige Übersicht")
-        print("   desktop/README.md - Desktop UI Details")
-        print("   MIGRATION.md - Web UI → Desktop Migration")
-        print()
-
-    def run(self) -> int:
-        """Führt Setup aus"""
-        self.print_banner()
-
-        # 1. Python Version prüfen
-        if not self.check_python_version():
-            return 1
-
-        # 2. Virtual Environment erstellen
-        if not self.create_virtualenv():
-            return 1
-
-        # 3. Basis-Requirements installieren
-        if not self.install_base_requirements():
-            return 1
-
-        # 4. CUDA + llama-cpp-python (automatisch)
-        if not self.install_cuda_and_llama():
-            print("⚠️  CUDA Setup hatte Probleme, aber fortfahren...")
-
-        # 5. Konfiguration erstellen
-        self.create_config_if_needed()
-
-        # 6. Verzeichnisse erstellen
-        self.create_directories()
-
-        # 7. Nächste Schritte
-        self.print_next_steps()
-
-        return 0
+            return False
+    
+    def start_jarvis(self):
+        """Startet JARVIS"""
+        print(f"\n{Colors.CYAN}➤ Starte J.A.R.V.I.S...{Colors.END}\n")
+        
+        python = str(self.get_python_path())
+        main_py = self.root / "main.py"
+        
+        if not main_py.exists():
+            print(f"{Colors.RED}❌ main.py nicht gefunden!{Colors.END}")
+            return
+        
+        try:
+            # Set environment variable
+            env = os.environ.copy()
+            env["JARVIS_DESKTOP"] = "1"
+            
+            # Start JARVIS
+            subprocess.run([python, str(main_py)], env=env)
+        except KeyboardInterrupt:
+            print(f"\n{Colors.YELLOW}⚠️  J.A.R.V.I.S. wurde beendet{Colors.END}")
+        except Exception as e:
+            print(f"{Colors.RED}❌ Fehler beim Start: {e}{Colors.END}")
+    
+    def run(self):
+        """Führt vollständiges Setup durch"""
+        try:
+            self.print_header()
+            self.check_python_version()
+            self.create_directories()
+            self.create_venv()
+            self.install_dependencies()
+            self.configure_settings()
+            self.print_next_steps()
+            
+            # Auto-start fragen
+            if self.ask_auto_start():
+                self.start_jarvis()
+        
+        except KeyboardInterrupt:
+            print(f"\n\n{Colors.YELLOW}⚠️  Setup abgebrochen{Colors.END}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"\n{Colors.RED}❌ Unerwarteter Fehler: {e}{Colors.END}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
 
 
 def main():
-    """Hauptfunktion"""
-    try:
-        setup = JarvisCoreSetup()
-        return setup.run()
-    except KeyboardInterrupt:
-        print("\n\n⚠️  Setup abgebrochen durch Benutzer")
-        return 1
-    except Exception as e:
-        print(f"\n❌ Unerwarteter Fehler: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1
+    """Entry Point"""
+    setup = JarvisSetup()
+    setup.run()
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

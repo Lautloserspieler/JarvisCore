@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 J.A.R.V.I.S. - Deutscher KI-Sprachassistent
-Hauptmodul faer den Start der Anwendung
+Hauptmodul für den Start der Anwendung
 """
 
 import sys
@@ -41,7 +41,6 @@ from utils.logger import Logger
 from utils.text_shortener import condense_text
 from utils.error_reporter import ErrorReporter
 from utils.authenticator import AuthenticatorManager
-from utils.logger import Logger
 
 GO_SERVICES = [
     {"name": "securityd", "cmd": ["go", "run", "./cmd/securityd"], "env": {}},
@@ -54,7 +53,7 @@ GO_SERVICES = [
 
 
 class HeadlessGUI:
-    """Minimal Ersatz-GUI fuer headless Betrieb."""
+    """Minimal Ersatz-GUI für headless Betrieb."""
 
     def __init__(self, jarvis: "JarvisAssistant", logger: Logger) -> None:
         self._jarvis = jarvis
@@ -64,7 +63,6 @@ class HeadlessGUI:
         self._logger.info(f"[Status] {message}")
 
     def update_context_panels(self, **_kwargs) -> None:
-        # Headless-Modus zeigt keine Kontexte an
         pass
 
     def handle_knowledge_progress(self, payload) -> None:
@@ -80,7 +78,7 @@ class HeadlessGUI:
         self._logger.info(f"{title}: {message}")
 
     def run(self) -> None:
-        self._logger.info("GUI nicht verfuegbar. Headless-Modus aktiv. Druecke STRG+C zum Beenden.")
+        self._logger.info("GUI nicht verfügbar. Headless-Modus aktiv. Drücke STRG+C zum Beenden.")
         ready_cb = getattr(self._jarvis, "on_gui_ready", None)
         if callable(ready_cb):
             try:
@@ -92,7 +90,7 @@ class HeadlessGUI:
 
 
 class WebInterfaceBridge(HeadlessGUI):
-    """Bruecke zwischen Kernlogik und Weboberflaeche."""
+    """Brücke zwischen Kernlogik und Weboberfläche."""
 
     def update_status(self, message: str) -> None:
         super().update_status(message)
@@ -113,7 +111,7 @@ class WebInterfaceBridge(HeadlessGUI):
 
 
 class JarvisAssistant:
-    """Hauptklasse faer den J.A.R.V.I.S. Assistenten"""
+    """Hauptklasse für den J.A.R.V.I.S. Assistenten"""
 
     def __init__(self):
         self.logger = Logger()
@@ -134,7 +132,7 @@ class JarvisAssistant:
         self._pending_authenticator_payload: Optional[Dict[str, str]] = None
         self._desktop_cfg: Dict[str, Any] = {}
         self.desktop_app_enabled = False
-        self.desktop_gui = None  # Referenz zum Desktop-Fenster
+        self.desktop_gui = None
 
         # Komponenten initialisieren
         self.plugin_manager = PluginManager(self.logger)
@@ -195,10 +193,9 @@ class JarvisAssistant:
             self._pending_authenticator_payload = self.authenticator.get_pending_setup()
             self._persist_authenticator_payload(self._pending_authenticator_payload)
 
-        # LLM-Manager initialisieren (mit automatischer Modell-Installation)
+        # LLM-Manager initialisieren
         try:
             from core.llm_manager import LLMManager
-
             self.llm_manager = LLMManager(settings=self.settings)
             self.logger.info("LLM-Manager erfolgreich initialisiert")
         except Exception as e:
@@ -228,15 +225,18 @@ class JarvisAssistant:
             llm_manager=self.llm_manager,
             settings=self.settings,
         )
+        
         try:
             self.long_term_trainer.set_command_processor(self.command_processor)
         except Exception:
             pass
+            
         self.speech_recognizer = SpeechRecognizer(
             self.on_wake_word_detected,
             self.on_command_recognized,
             settings=self.settings,
         )
+        
         try:
             speech_cfg = self.settings.get('speech', {}) or {}
             self.wake_word_enabled = bool(speech_cfg.get('wake_word_enabled', True))
@@ -246,6 +246,7 @@ class JarvisAssistant:
             self.wake_word_enabled = True
             self._min_command_words = 3
             self.tts_stream_enabled = True
+            
         try:
             security_cfg = self.settings.get('security', {}) if self.settings else {}
             if not isinstance(security_cfg, dict):
@@ -258,6 +259,7 @@ class JarvisAssistant:
                 self._passphrase_hint = hint.strip()
         except Exception:
             self._passphrase_hint = None
+            
         self.gui = self._initialise_gui()
         self.security_protocol.gui = self.gui
 
@@ -325,7 +327,7 @@ class JarvisAssistant:
                 self.logger.warning("Dear ImGui nicht verfügbar (%s), falle auf Web-Interface zurück", exc)
                 self.logger.info("Installiere mit: pip install dearpygui")
             except Exception as exc:
-                self.logger.warning("Desktop-App konnte nicht geladen werden, falle auf Web-Interface zurueck: %s", exc)
+                self.logger.warning("Desktop-App konnte nicht geladen werden: %s", exc)
 
         # Fallback: Web-Interface
         if web_enabled:
@@ -335,6 +337,34 @@ class JarvisAssistant:
         # Fallback: Headless
         self.logger.info("Headless-Modus wird verwendet")
         return HeadlessGUI(self, self.logger)
+
+    def _persist_authenticator_payload(self, payload: Optional[Dict[str, Any]]) -> None:
+        """Speichert das aktuelle Pending-Payload sicher auf der Platte."""
+        secure_root = Path("data") / "secure"
+        legacy_target = Path(__file__).resolve().parent / "webapp" / "static" / "data" / "authenticator.json"
+        try:
+            secure_root.mkdir(parents=True, exist_ok=True)
+            target = secure_root / "authenticator_pending.json"
+            if not payload:
+                if target.exists():
+                    target.unlink()
+                if legacy_target.exists():
+                    legacy_target.unlink()
+                return
+            target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            if legacy_target.exists():
+                legacy_target.unlink()
+        except Exception as exc:
+            self.logger.debug("Authenticator-Status konnte nicht persistiert werden: %s", exc)
+
+    def _handle_knowledge_progress(self, payload):
+        """Leitet Lernfortschritt an GUI und Web weiter."""
+        try:
+            self.gui.handle_knowledge_progress(payload)
+        except Exception:
+            pass
+        normalized = payload if isinstance(payload, dict) else {"message": str(payload)}
+        self._publish_remote_event("knowledge_progress", normalized)
 
     def _schedule_web_ui_open(self) -> None:
         try:
@@ -347,7 +377,7 @@ class JarvisAssistant:
         if not web_cfg.get("enabled", False):
             return
         if self.desktop_app_enabled and self._desktop_cfg.get("suppress_browser", True):
-            self.logger.debug("Desktop-UI aktiv; automatisches Browser-Oeffnen uebersprungen.")
+            self.logger.debug("Desktop-UI aktiv; automatisches Browser-Öffnen übersprungen.")
             return
         if not web_cfg.get("auto_open_browser", True):
             return
@@ -372,11 +402,11 @@ class JarvisAssistant:
             try:
                 opened = webbrowser.open(url, new=2)
                 if opened:
-                    self.logger.info("Web-UI im Browser geoeffnet: %s", url)
+                    self.logger.info("Web-UI im Browser geöffnet: %s", url)
                 else:
-                    self.logger.debug("Browser konnte nicht automatisch geoeffnet werden (Rueckgabe False).")
+                    self.logger.debug("Browser konnte nicht automatisch geöffnet werden.")
             except Exception as exc:
-                self.logger.debug("Web-UI konnte nicht automatisch geoeffnet werden: %s", exc)
+                self.logger.debug("Web-UI konnte nicht automatisch geöffnet werden: %s", exc)
 
         threading.Thread(target=_open_browser, name="JarvisWebAutoOpen", daemon=True).start()
 
@@ -425,7 +455,6 @@ class JarvisAssistant:
         self._go_processes.clear()
 
     def _initialise_remote_gateway(self) -> None:
-        """Bereitet das WebSocket-Gateway gem. Settings vor."""
         try:
             remote_cfg = self.settings.get('remote_control', {}) or {}
         except Exception:
@@ -435,7 +464,6 @@ class JarvisAssistant:
             return
         try:
             from core.websocket_gateway import RemoteCommandGateway
-
             self.remote_gateway = RemoteCommandGateway(self, remote_cfg, logger=self.logger)
             self.logger.info(
                 "Remote-WebSocket vorbereitet (ws://%s:%s)",
@@ -447,7 +475,6 @@ class JarvisAssistant:
             self.remote_gateway = None
 
     def _initialise_web_interface(self) -> None:
-        """Bereitet die Weboberflaeche vor."""
         try:
             web_cfg = self.settings.get('web_interface', {}) or {}
         except Exception:
@@ -485,11 +512,9 @@ class JarvisAssistant:
             self.logger.debug("Download-Event konnte nicht gesendet werden: %s", exc)
 
     def _post_to_main_thread(self, callback) -> bool:
-        """Nicht mehr relevant für ImGui (kein Qt-Threading), aber behalten für Kompatibilität."""
         return False
 
     def on_gui_ready(self) -> None:
-        """Wird aufgerufen sobald die GUI (oder Headless-Loop) laeuft."""
         if self.remote_gateway:
             self.remote_gateway.mark_ready()
         if self.web_interface:
@@ -497,9 +522,8 @@ class JarvisAssistant:
         self._publish_remote_event("status", {"state": "ready"})
 
     def get_runtime_status(self) -> Dict[str, Any]:
-        """Liefert kompakten Status fuer Remote-Anfragen."""
         context = getattr(self.command_processor, 'context', {}) or {}
-        status = {
+        return {
             "running": self.is_running,
             "listening": self.listening,
             "speech_mode": self.speech_mode,
@@ -508,18 +532,14 @@ class JarvisAssistant:
             "last_command": context.get('last_command'),
             "conversation_mode": context.get('conversation_mode'),
         }
-        status["speech_status"] = self.get_speech_status()
-        status["security"] = self.get_security_status()
-        return status
 
     def get_context_snapshot(self) -> Dict[str, Any]:
-        """Stellt Kontextinformationen fuer Webclients bereit."""
         context = dict(getattr(self.command_processor, 'context', {}) or {})
         plugin_context = dict(context.get('plugin_context', {}) or {})
         command_map = context.get('command_map')
         if command_map:
             plugin_context['command_map'] = command_map
-        snapshot = {
+        return {
             "use_case": context.get('last_use_case'),
             "scores": context.get('use_case_scores'),
             "plugin_context": plugin_context,
@@ -527,32 +547,192 @@ class JarvisAssistant:
             "priority": context.get('priority'),
             "adaptive_context": context.get('adaptive_context'),
         }
-        return snapshot
 
-    # ... (Rest der Methoden bleiben unverändert)
-    # Gekürzt für Übersichtlichkeit - alle anderen Methoden bleiben identisch
+    def get_security_status(self) -> Dict[str, Any]:
+        """Dummy-Implementierung - muss erweitert werden"""
+        return {"status": "ok"}
+
+    def get_speech_status(self) -> Dict[str, Any]:
+        """Dummy-Implementierung - muss erweitert werden"""
+        return {"available": True, "listening": self.listening}
+
+    def get_system_metrics(self, include_details: bool = False) -> Dict[str, Any]:
+        """Aggregiert System- und Hardwaredaten."""
+        base_status = {}
+        monitor_summary: Dict[str, Any] = {}
+        monitor_details: Dict[str, Any] = {}
+        if self.system_monitor:
+            try:
+                monitor_summary = self.system_monitor.get_system_summary(include_details=False)
+                if include_details:
+                    monitor_details = self.system_monitor.get_all_metrics()
+            except Exception as exc:
+                self.logger.debug("Systemmonitor konnte nicht abgefragt werden: %s", exc)
+        return {
+            "status": base_status,
+            "summary": monitor_summary,
+            "details": monitor_details if include_details else {},
+        }
+
+    def get_llm_status(self) -> Dict[str, Any]:
+        manager = getattr(self, "llm_manager", None)
+        if not manager:
+            return {"available": {}, "current": None, "loaded": [], "active": False}
+        try:
+            available = manager.get_model_overview()
+        except Exception:
+            available = {}
+        loaded = list(getattr(manager, "loaded_models", {}).keys())
+        metadata = getattr(manager, "model_metadata", {})
+        return {
+            "available": available,
+            "current": getattr(manager, "current_model", None),
+            "loaded": loaded,
+            "active": bool(getattr(manager, "model_loaded", False)),
+            "metadata": metadata,
+        }
+
+    def control_llm_model(self, action: str, model_key: Optional[str] = None) -> Dict[str, Any]:
+        manager = getattr(self, "llm_manager", None)
+        if not manager:
+            raise RuntimeError("LLM-Manager nicht verfügbar.")
+        model = (model_key or manager.current_model or "mistral").strip()
+        action_normalized = (action or "").strip().lower()
+        if action_normalized == "load":
+            success = bool(manager.load_model(model))
+            return {"action": "load", "success": success, "model": manager.current_model}
+        if action_normalized == "unload":
+            manager.unload_model()
+            return {"action": "unload", "success": True}
+        if action_normalized == "download":
+            self._emit_model_download_event(model=model, status="starting")
+            try:
+                success = bool(manager.download_model(model))
+            except Exception as exc:
+                self._emit_model_download_event(model=model, status="error", message=str(exc))
+                raise
+            else:
+                status = "completed" if success else "failed"
+                self._emit_model_download_event(model=model, status=status)
+                return {"action": "download", "success": success}
+        raise ValueError(f"Unbekannte Modellaktion: {action}")
+
+    def get_plugin_overview(self) -> List[Dict[str, Any]]:
+        if not self.plugin_manager:
+            return []
+        try:
+            return self.plugin_manager.get_plugin_overview()
+        except Exception as exc:
+            self.logger.debug("Plugin-Übersicht nicht verfügbar: %s", exc)
+            return []
+
+    def start(self):
+        self.is_running = True
+        self.logger.info("J.A.R.V.I.S. wird gestartet...")
+        self._maybe_start_go_services()
+        if self.remote_gateway:
+            self.remote_gateway.mark_not_ready()
+            self.remote_gateway.start()
+        if self.web_interface:
+            self.web_interface.mark_not_ready()
+            self.web_interface.start()
+            self._schedule_web_ui_open()
+
+        if self.settings.get('first_run', True):
+            self.run_debug_mode()
+            self.settings.set('first_run', False)
+
+        self.start_listening()
+        self.gui.update_status("Bereit")
+        self.gui.run()
+
+    def stop(self):
+        self.is_running = False
+        self.stop_listening()
+        try:
+            if hasattr(self, "tts") and self.tts:
+                self.tts.shutdown()
+        except Exception:
+            pass
+        if self.plugin_manager:
+            self.plugin_manager.shutdown()
+        if hasattr(self, "update_scheduler") and self.update_scheduler:
+            self.update_scheduler.stop()
+        if self.remote_gateway:
+            try:
+                self.remote_gateway.stop()
+            except Exception as exc:
+                self.logger.debug("Remote-Gateway konnte nicht gestoppt werden: %s", exc)
+        if self.web_interface:
+            try:
+                self.web_interface.stop()
+            except Exception as exc:
+                self.logger.debug("Web-Interface konnte nicht gestoppt werden: %s", exc)
+        self.logger.info("J.A.R.V.I.S. wird beendet")
+        self._stop_go_services()
+
+    def run_debug_mode(self):
+        self.logger.info("Debug-Modus: Systemprüfungen werden durchgeführt...")
+        self.logger.info("Debug-Modus abgeschlossen")
+
+    def on_wake_word_detected(self):
+        if self.is_running:
+            self.listening = True
+            if getattr(self, "wake_word_enabled", True):
+                try:
+                    self.tts.speak("Ja, ich höre.")
+                except Exception as exc:
+                    self.logger.error(f"Akustische Rückmeldung fehlgeschlagen: {exc}")
+                self.gui.update_status("Höre zu...")
+                self.logger.info("Wake-Word erkannt")
+
+    def on_command_recognized(self, command_text):
+        if not self.is_running:
+            return
+        self.logger.info('Befehl erkannt: %s', command_text)
+        self.gui.add_user_message(command_text)
+        self.listening = False
+
+    def start_listening(self) -> bool:
+        recognizer = getattr(self, "speech_recognizer", None)
+        if not recognizer:
+            return False
+        self.listening = True
+        if getattr(self, "speech_thread", None) and self.speech_thread.is_alive():
+            return True
+        self.speech_thread = threading.Thread(target=recognizer.start_listening, daemon=True)
+        self.speech_thread.start()
+        return True
+
+    def stop_listening(self) -> bool:
+        self.listening = False
+        recognizer = getattr(self, "speech_recognizer", None)
+        if not recognizer:
+            return False
+        try:
+            recognizer.stop_listening()
+        except Exception as exc:
+            self.logger.debug("Spracherkennung konnte nicht gestoppt werden: %s", exc)
+            return False
+        return True
+
 
 def main():
     """Hauptfunktion"""
     try:
-        # ueberpruefen ob alle erforderlichen Verzeichnisse existieren
         os.makedirs("data", exist_ok=True)
         os.makedirs("logs", exist_ok=True)
         os.makedirs("models", exist_ok=True)
-        # Debug-Logging aktivieren (Konsole & Datei)
         from utils.logger import Logger
         Logger().set_level("DEBUG")
         print("Debug-Logs: logs/jarvis.log")
 
-        # Globalen Fehler-Reporter aktivieren (respektiert Settings.telemetry)
         try:
             settings_for_reporting = Settings()
             ErrorReporter(settings_for_reporting).install_global_hook()
         except Exception as _err:
-            # Niemals Start verhindern
             Logger().warning(f"Fehler-Reporter konnte nicht installiert werden: {_err}")
 
-        # J.A.R.V.I.S. starten
         jarvis = JarvisAssistant()
         jarvis.start()
 

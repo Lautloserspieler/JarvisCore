@@ -33,6 +33,7 @@ class JarvisDesktopApp(QMainWindow):
     def __init__(self, jarvis_instance=None):
         super().__init__()
         self.jarvis = jarvis_instance
+        self.is_running = True
         
         self._init_ui()
         self._apply_dark_theme()
@@ -416,8 +417,18 @@ class JarvisDesktopApp(QMainWindow):
         msg = payload if isinstance(payload, str) else str(payload.get("message", ""))
         self._log(f"📚 {msg}")
 
+    def closeEvent(self, event):
+        """Wird aufgerufen wenn Fenster geschlossen wird"""
+        self.is_running = False
+        if self.jarvis:
+            self.jarvis.is_running = False
+        event.accept()
+
     def run(self):
-        """Startet GUI-Event-Loop (blocking)"""
+        """Startet GUI und lässt sie laufen"""
+        # Fenster MUSS vor on_gui_ready angezeigt werden
+        self.show()
+        
         # Ready-Callback aufrufen
         if self.jarvis and hasattr(self.jarvis, "on_gui_ready"):
             try:
@@ -425,7 +436,9 @@ class JarvisDesktopApp(QMainWindow):
             except Exception as e:
                 self._log(f"on_gui_ready Fehler: {e}")
         
-        self.show()
+        # Event Loop läuft jetzt passiv
+        # QApplication.instance() läuft den Main-Loop in main.py
+        self._log("Desktop-GUI bereit")
 
 
 def create_jarvis_desktop_gui(jarvis_instance):

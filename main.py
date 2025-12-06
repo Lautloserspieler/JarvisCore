@@ -273,8 +273,6 @@ class JarvisAssistant:
             plugin_context=initial_plugin_context,
         )
         self._initialise_remote_gateway()
-        # Web-Interface deaktiviert (wurde gelöscht)
-        # self._initialise_web_interface()
 
         try:
             security_cfg = self.settings.get('security', {}) if self.settings else {}
@@ -302,7 +300,7 @@ class JarvisAssistant:
         self.logger.info("J.A.R.V.I.S. initialisiert")
 
     def _initialise_gui(self):
-        """Initialisiert die Desktop-UI (Dear ImGui) oder Headless-Modus."""
+        """Initialisiert die Desktop-UI (Dear ImGui FULL VERSION) oder Headless-Modus."""
         try:
             desktop_cfg = self.settings.get('desktop_app', {}) or {}
         except Exception:
@@ -311,12 +309,12 @@ class JarvisAssistant:
         self._desktop_cfg = desktop_cfg if isinstance(desktop_cfg, dict) else {}
         self.desktop_app_enabled = bool(self._desktop_cfg.get("enabled") or os.getenv("JARVIS_DESKTOP"))
 
-        # Versuche Dear ImGui Desktop-App zu laden
+        # Versuche Dear ImGui Desktop-App FULL VERSION zu laden
         if self.desktop_app_enabled:
             try:
-                from desktop.jarvis_imgui_app import create_jarvis_imgui_gui
-                self.desktop_gui = create_jarvis_imgui_gui(self)
-                self.logger.info("🎮 Dear ImGui Desktop-App geladen (GPU-beschleunigt)")
+                from desktop.jarvis_imgui_app_full import create_jarvis_imgui_gui_full
+                self.desktop_gui = create_jarvis_imgui_gui_full(self)
+                self.logger.info("🎮 Dear ImGui Desktop-App FULL geladen (7 Tabs, GPU-beschleunigt)")
                 return self.desktop_gui
             except ImportError as exc:
                 self.logger.warning("Dear ImGui nicht verfügbar (%s), falle auf Headless zurück", exc)
@@ -352,7 +350,6 @@ class JarvisAssistant:
         self._publish_remote_event("knowledge_progress", normalized)
 
     def _schedule_web_ui_open(self) -> None:
-        # Web-Interface wurde entfernt
         pass
 
     def _should_start_go_services(self) -> bool:

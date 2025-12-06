@@ -206,7 +206,7 @@
     "command_timeout_seconds": 45.0
   },
   "web_interface": {
-    "enabled": false,
+    "enabled": true,
     "host": "127.0.0.1",
     "port": 5050,
     "token": null,

@@ -172,7 +172,7 @@
   "models": {
     "llm": {
       "llama3": {
-        "load_strategy": "startup"
+        "load_strategy": "on_demand"
       },
       "mistral": {
         "load_strategy": "on_demand"
@@ -183,8 +183,8 @@
     },
     "tts": {
       "xtts": {
-        "load_strategy": "startup",
-        "enabled": true,
+        "load_strategy": "on_demand",
+        "enabled": false,
         "default_speaker": "speaker_0",
         "prompt_on_missing_speaker": true
       }
@@ -192,7 +192,7 @@
     "stt": {
       "whisper": {
         "load_strategy": "startup",
-        "enabled": true
+        "enabled": false
       }
     }
   },
@@ -200,17 +200,17 @@
     "enabled": false,
     "host": "127.0.0.1",
     "port": 8765,
-    "token": 1220,
+    "token": null,
     "broadcast_conversation": true,
     "allow_status_queries": true,
     "command_timeout_seconds": 45.0
   },
   "web_interface": {
-    "enabled": true,
+    "enabled": false,
     "host": "127.0.0.1",
     "port": 5050,
-    "token": "12345678",
-    "allow_guest_commands": true,
+    "token": null,
+    "allow_guest_commands": false,
     "command_timeout_seconds": 45.0,
     "auto_open_browser": false,
     "allowed_ips": [],
@@ -219,7 +219,18 @@
   },
   "desktop_app": {
     "enabled": true,
-    "suppress_browser": false
+    "window_title": "J.A.R.V.I.S. Desktop",
+    "width": 1400,
+    "height": 950,
+    "frameless": false,
+    "background_color": "#0b1220",
+    "open_devtools": false,
+    "suppress_browser": true,
+    "auto_token": true,
+    "show_controls": true,
+    "show_menu_bar": true,
+    "fullscreen": false,
+    "always_on_top": false
   },
   "response": {
     "condense_enabled": true,
@@ -263,16 +274,17 @@
       "passphrase_hint": null,
       "vault_reference": "security_passphrase",
       "passphrase_cache_ttl": 600,
-      "voice_match_threshold": 0.75
+      "voice_match_threshold": 0.75,
+      "auto_generate_token": true
     },
     "authenticator": {
-      "required": true,
-      "configured": true,
+      "required": false,
+      "configured": false,
       "setup_pending": false,
       "issuer": "JarvisCore",
-      "account_name": "JarvisCore-WebUI",
+      "account_name": "JarvisCore-Desktop",
       "vault_reference": "security_totp_secret",
-      "configured_at": "2025-11-05T17:51:47.503624"
+      "configured_at": null
     },
     "read": {
       "allowed_directories": [
@@ -317,7 +329,7 @@
       "require_confirmation": true
     },
     "voice": {
-      "profiles_required": true,
+      "profiles_required": false,
       "min_profiles": 1
     }
   },

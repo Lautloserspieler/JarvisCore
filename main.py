@@ -35,7 +35,6 @@ from core.security_manager import SecurityManager
 from core.learning_manager import LearningManager
 from core.voice_biometrics import VoiceBiometricManager
 from core.update_scheduler import UpdateScheduler
-from webapp.server import WebInterfaceServer
 from config.settings import Settings
 from utils.logger import Logger
 from utils.text_shortener import condense_text
@@ -90,7 +89,7 @@ class HeadlessGUI:
 
 
 class WebInterfaceBridge(HeadlessGUI):
-    """Brücke zwischen Kernlogik und Weboberfläche."""
+    """Brücke zwischen Kernlogik und Weboberfläche (DEPRECATED - Web-UI wurde entfernt)."""
 
     def update_status(self, message: str) -> None:
         super().update_status(message)
@@ -274,7 +273,8 @@ class JarvisAssistant:
             plugin_context=initial_plugin_context,
         )
         self._initialise_remote_gateway()
-        self._initialise_web_interface()
+        # Web-Interface deaktiviert (wurde gelöscht)
+        # self._initialise_web_interface()
 
         try:
             security_cfg = self.settings.get('security', {}) if self.settings else {}
@@ -302,19 +302,14 @@ class JarvisAssistant:
         self.logger.info("J.A.R.V.I.S. initialisiert")
 
     def _initialise_gui(self):
-        """Initialisiert die Desktop- oder Web-UI (jetzt mit Dear ImGui)."""
+        """Initialisiert die Desktop-UI (Dear ImGui) oder Headless-Modus."""
         try:
             desktop_cfg = self.settings.get('desktop_app', {}) or {}
         except Exception:
             desktop_cfg = {}
-        try:
-            web_cfg = self.settings.get('web_interface', {}) or {}
-        except Exception:
-            web_cfg = {}
 
         self._desktop_cfg = desktop_cfg if isinstance(desktop_cfg, dict) else {}
         self.desktop_app_enabled = bool(self._desktop_cfg.get("enabled") or os.getenv("JARVIS_DESKTOP"))
-        web_enabled = bool(web_cfg.get("enabled")) if isinstance(web_cfg, dict) else False
 
         # Versuche Dear ImGui Desktop-App zu laden
         if self.desktop_app_enabled:
@@ -324,15 +319,10 @@ class JarvisAssistant:
                 self.logger.info("🎮 Dear ImGui Desktop-App geladen (GPU-beschleunigt)")
                 return self.desktop_gui
             except ImportError as exc:
-                self.logger.warning("Dear ImGui nicht verfügbar (%s), falle auf Web-Interface zurück", exc)
+                self.logger.warning("Dear ImGui nicht verfügbar (%s), falle auf Headless zurück", exc)
                 self.logger.info("Installiere mit: pip install dearpygui")
             except Exception as exc:
                 self.logger.warning("Desktop-App konnte nicht geladen werden: %s", exc)
-
-        # Fallback: Web-Interface
-        if web_enabled:
-            self.logger.info("Web-Interface wird verwendet")
-            return WebInterfaceBridge(self, self.logger)
 
         # Fallback: Headless
         self.logger.info("Headless-Modus wird verwendet")
@@ -341,19 +331,14 @@ class JarvisAssistant:
     def _persist_authenticator_payload(self, payload: Optional[Dict[str, Any]]) -> None:
         """Speichert das aktuelle Pending-Payload sicher auf der Platte."""
         secure_root = Path("data") / "secure"
-        legacy_target = Path(__file__).resolve().parent / "webapp" / "static" / "data" / "authenticator.json"
         try:
             secure_root.mkdir(parents=True, exist_ok=True)
             target = secure_root / "authenticator_pending.json"
             if not payload:
                 if target.exists():
                     target.unlink()
-                if legacy_target.exists():
-                    legacy_target.unlink()
                 return
             target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-            if legacy_target.exists():
-                legacy_target.unlink()
         except Exception as exc:
             self.logger.debug("Authenticator-Status konnte nicht persistiert werden: %s", exc)
 
@@ -367,48 +352,8 @@ class JarvisAssistant:
         self._publish_remote_event("knowledge_progress", normalized)
 
     def _schedule_web_ui_open(self) -> None:
-        try:
-            web_cfg = self.settings.get('web_interface', {}) or {}
-        except Exception as exc:
-            self.logger.debug("Web-Interface Konfiguration konnte nicht gelesen werden: %s", exc)
-            return
-        if not isinstance(web_cfg, dict):
-            return
-        if not web_cfg.get("enabled", False):
-            return
-        if self.desktop_app_enabled and self._desktop_cfg.get("suppress_browser", True):
-            self.logger.debug("Desktop-UI aktiv; automatisches Browser-Öffnen übersprungen.")
-            return
-        if not web_cfg.get("auto_open_browser", True):
-            return
-        if not self.web_interface:
-            return
-
-        host = str(web_cfg.get("host") or "127.0.0.1")
-        port = int(web_cfg.get("port") or 8080)
-        if host in ("0.0.0.0", "::", ""):
-            host_for_url = "127.0.0.1"
-        else:
-            host_for_url = host
-        url = f"http://{host_for_url}:{port}/"
-
-        def _open_browser() -> None:
-            try:
-                if hasattr(self.web_interface, "wait_until_ready"):
-                    self.web_interface.wait_until_ready(timeout=10.0)
-            except Exception:
-                pass
-            time.sleep(0.3)
-            try:
-                opened = webbrowser.open(url, new=2)
-                if opened:
-                    self.logger.info("Web-UI im Browser geöffnet: %s", url)
-                else:
-                    self.logger.debug("Browser konnte nicht automatisch geöffnet werden.")
-            except Exception as exc:
-                self.logger.debug("Web-UI konnte nicht automatisch geöffnet werden: %s", exc)
-
-        threading.Thread(target=_open_browser, name="JarvisWebAutoOpen", daemon=True).start()
+        # Web-Interface wurde entfernt
+        pass
 
     def _should_start_go_services(self) -> bool:
         env_flag = os.getenv("JARVIS_START_GO", "").strip().lower()
@@ -474,25 +419,6 @@ class JarvisAssistant:
             self.logger.error(f"Remote-Control konnte nicht initialisiert werden: {exc}")
             self.remote_gateway = None
 
-    def _initialise_web_interface(self) -> None:
-        try:
-            web_cfg = self.settings.get('web_interface', {}) or {}
-        except Exception:
-            web_cfg = {}
-        if not isinstance(web_cfg, dict) or not web_cfg.get('enabled'):
-            self.web_interface = None
-            return
-        try:
-            self.web_interface = WebInterfaceServer(self, web_cfg, logger=self.logger)
-            self.logger.info(
-                "Web-UI vorbereitet (http://%s:%s)",
-                web_cfg.get('host', '0.0.0.0'),
-                web_cfg.get('port', 8080),
-            )
-        except Exception as exc:
-            self.logger.error(f"Web-Interface konnte nicht initialisiert werden: {exc}")
-            self.web_interface = None
-
     def _publish_remote_event(self, event_type: str, payload: Optional[Dict[str, Any]] = None) -> None:
         targets = [getattr(self, "remote_gateway", None), getattr(self, "web_interface", None)]
         for target in targets:
@@ -549,15 +475,12 @@ class JarvisAssistant:
         }
 
     def get_security_status(self) -> Dict[str, Any]:
-        """Dummy-Implementierung - muss erweitert werden"""
         return {"status": "ok"}
 
     def get_speech_status(self) -> Dict[str, Any]:
-        """Dummy-Implementierung - muss erweitert werden"""
         return {"available": True, "listening": self.listening}
 
     def get_system_metrics(self, include_details: bool = False) -> Dict[str, Any]:
-        """Aggregiert System- und Hardwaredaten."""
         base_status = {}
         monitor_summary: Dict[str, Any] = {}
         monitor_details: Dict[str, Any] = {}
@@ -633,10 +556,6 @@ class JarvisAssistant:
         if self.remote_gateway:
             self.remote_gateway.mark_not_ready()
             self.remote_gateway.start()
-        if self.web_interface:
-            self.web_interface.mark_not_ready()
-            self.web_interface.start()
-            self._schedule_web_ui_open()
 
         if self.settings.get('first_run', True):
             self.run_debug_mode()

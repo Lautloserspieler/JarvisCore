@@ -1,81 +1,396 @@
-# J.A.R.V.I.S. / JarvisCore — lokaler KI-Assistent
+<div align="center">
 
-JarvisCore ist ein modularer, voll lokal laufender Sprach- und Automationsassistent mit Web- und Desktop-Oberflaeche, STT/TTS, Wissensmodul, Plugin-System und GPU-beschleunigten LLMs. Fokus: Datenschutz, Erweiterbarkeit, robuste Sicherheitsmechanismen.
+# 🤖 J.A.R.V.I.S. Core
 
-English version: siehe `README_GB.md`.
+**Native Desktop AI Assistant mit 3 lokalen LLMs, Voice Control & Knowledge Base**
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11+-green.svg)](https://python.org)
+[![Go](https://img.shields.io/badge/Go-1.21+-00ADD8.svg)](https://golang.org)
+[![Wails](https://img.shields.io/badge/Wails-v2-red.svg)](https://wails.io)
+[![Vue](https://img.shields.io/badge/Vue-3-42b883.svg)](https://vuejs.org)
+
+**Komplett offline. Privacy-first. Open Source.**
+
+[Features](#-features) •
+[Quick Start](#-quick-start) •
+[Installation](#-installation) •
+[Dokumentation](#-dokumentation) •
+[Contributing](#-contributing)
+
+![JarvisCore Banner](https://via.placeholder.com/800x200/1a1a2e/eaeaea?text=J.A.R.V.I.S.+Core)
+
+</div>
 
 ---
 
-## Ueberblick
-- Sprachverarbeitung: Wake-Word, VOSK/Whisper/Faster-Whisper, TTS (XTTS v2 / Coqui / pyttsx3)
-- Intelligenz: LLaMA/Mistral/Hermes/DeepSeek via llama-cpp-python (CUDA)
-- Wissen & Memory: Lokaler Cache + Wikipedia/OpenLibrary/Semantic Scholar + Cross-Encoder MiniLM L6 v2
-- Interfaces: Web-Dashboard (AIOHTTP), Tkinter/Electron-GUI, Headless-Mode
-- Sicherheit: Rollenbasierte Kontrolle, Safe-Mode, Audit-Logs, optionale 2FA (TOTP)
-- Erweiterbarkeit: Plugins, autonome Tasks, REST-Services (Crawler), Agenten
+## 📖 Über J.A.R.V.I.S. Core
 
-## Architektur (Kurz)
-- Einstieg: `main.py` orchestriert Speech -> CommandProcessor/LLM -> TTS, startet Web-UI, Scheduler und Sicherheits-Subsysteme.
-- Kernmodule (`core/`): `speech_recognition`, `command_processor`, `llm_manager` + `llm_router`, Memory (`short_term`, `long_term`, `vector_memory`), Sicherheit (`security_manager`, `security_protocol`), Systemsteuerung (`system_control`, `system_monitor`), Plugins (`plugin_manager`).
-- Web: `webapp/server.py` (AIOHTTP Websocket/HTTP) mit Token- und IP-Whitelist, Rate-Limits.
-- Services: `services/crawler_service` (FastAPI) fuer wissensbezogenes Crawlen mit SecurityGuard (Domain-/Robots-/Ressourcenlimits) und SQLite-Storage.
-- Utilities: Logging, Error-Reporting, Secure Storage (DPAPI), Authenticator (TOTP), Textkuerzer.
+**J.A.R.V.I.S. Core** ist ein **vollständig offline funktionierender** KI-Assistent mit nativer Desktop-Oberfläche. Inspiriert von Tony Starks legendärem AI-Assistenten, bietet J.A.R.V.I.S. Core fortschrittliche Funktionen wie:
 
-## Go-Services (neu)
-- Ort: `go/` (Modul `jarviscore/go`).
-- `securityd`: HTTP-Service fuer Policy-/Token-Checks (`go run ./cmd/securityd`).
-- `gatewayd`: WebSocket-Hub + Broadcast (`go run ./cmd/gatewayd`) mit `/ws` und `/api/events`.
-- `memoryd`: Key-Value-/Memory-Service (`go run ./cmd/memoryd`) mit `save/get/search/delete`-Endpoints.
-- `systemd`: Systemressourcen/Status (`go run ./cmd/systemd`) mit `/system/resources` und `/system/status`.
-- `speechtaskd`: STT-Orchestrator-Stub (`go run ./cmd/speechtaskd`), Python bleibt STT-Hauptpfad.
-- `commandd`: Command-Staging (`go run ./cmd/commandd`) mit `/command/execute`.
-- gatewayd optional: Forward-Only-Modus per `JARVIS_GATEWAYD_ONLY=1`, ansonsten laeuft der Python-Websocket weiter als Fallback.
-- memoryd: unterstützt `ttl_seconds` für Einträge (persistente Ablage unter `data/memoryd`).
-- securityd: Token/Rollen via `SECURITYD_TOKENS` (JSON), optional JWT HS256 via `SECURITYD_JWT_SECRET`, Policies via `SECURITYD_POLICY` (JSON Rolle->Permissions).
-- Konfig securityd: `SECURITYD_LISTEN` (Standard `:7071`), `JARVIS_SECURITYD_TOKEN` (optional), `JARVIS_SECURITYD_URL` fuer Python-Wrapper.
-- Konfig gatewayd: `GATEWAYD_LISTEN` (Standard `:7081`), optional `JARVIS_GATEWAYD_TOKEN`; Python-Spiegelung via `JARVIS_GATEWAYD_URL`, `JARVIS_GATEWAYD_ONLY=1` fuer reinen Forward-Betrieb.
-- Konfig memoryd: `MEMORYD_LISTEN` (Standard `:7072`), `MEMORYD_STORE` (Standard `data/memoryd/store.json`), optional `JARVIS_MEMORYD_TOKEN`, Deaktivierung via `JARVIS_MEMORYD_ENABLED=0`.
-- Konfig systemd: `SYSTEMD_LISTEN` (Standard `:7073`), optional `JARVIS_SYSTEMD_TOKEN`, Deaktivierung via `JARVIS_SYSTEMD_ENABLED=0`, Python-Wrapper per `JARVIS_SYSTEMD_URL`.
+- 🧠 **3 lokale LLMs** (Llama 3, Phi-3, Mistral) - keine Cloud, volle Privacy
+- 🎤 **Voice Control** - Sprachsteuerung mit Whisper & Piper TTS
+- 📚 **Knowledge Base** - Semantische Suche mit lokalen Embeddings
+- 🔌 **Plugin System** - Erweiterbar durch eigene Module
+- 🖥️ **Native Desktop UI** - Cross-Platform (Windows, Linux, macOS)
+- 🔒 **100% Offline** - Alle Daten bleiben lokal
 
-## Anforderungen
-- OS: Windows 10/11 empfohlen; Linux/macOS moeglich mit Anpassungen
-- Python: 3.11 (64-bit)
-- RAM: ab 16 GB empfohlen; GPU: NVIDIA mit CUDA 11.8/12.x fuer LLM/TTS
-- Tools: git, PowerShell/Bash
+---
 
-## Installation & Start (Windows / PowerShell)
-```powershell
-cd C:\Users\<du>\Desktop
+## ✨ Features
+
+### 🤖 Lokale AI-Modelle
+
+- **3 LLMs zur Auswahl:** Llama 3 (8B), Phi-3 (3.8B), Mistral (7B)
+- **Automatisches Modell-Routing** - Wählt das beste Modell pro Task
+- **CUDA & CPU Support** - GPU-beschleunigt oder CPU-only
+- **Quantisierte Modelle** - 4-bit/8-bit für effiziente Nutzung
+
+### 🎤 Voice & Speech
+
+- **Speech Recognition** - Whisper-basiert, mehrsprachig
+- **Text-to-Speech** - Piper TTS, natürliche Stimmen
+- **Hotword Detection** - "Hey Jarvis" Wake Word
+- **Voice Cloning** - Eigene Stimme trainieren
+
+### 📚 Knowledge Management
+
+- **Semantic Search** - Finde relevante Informationen
+- **Local Knowledge Base** - Markdown, PDFs, Code importieren
+- **Auto-Expansion** - KI erweitert Wissen automatisch
+- **Context-Aware** - Berücksichtigt Gesprächskontext
+
+### 🔌 Plugin System
+
+- **Modular Architecture** - Einfach erweiterbar
+- **Built-in Plugins:** Wetter, News, Kalender, System Control
+- **Custom Plugins** - Eigene Plugins in Python entwickeln
+- **Plugin Manager** - Plugins aktivieren/deaktivieren in UI
+
+### 🖥️ Desktop UI (Wails)
+
+- **Native Performance** - Go Backend + Vue 3 Frontend
+- **Cross-Platform** - Windows, Linux, macOS
+- **Modern Design** - Dark/Light Theme, responsive
+- **Systemtray Integration** - Läuft im Hintergrund
+- **Real-time Updates** - WebSocket-basiert
+
+### 🔒 Privacy & Security
+
+- **100% Offline** - Keine Cloud-Verbindung erforderlich
+- **Adaptive Security** - Lernende Zugriffskontrolle
+- **Encrypted Storage** - Sensitive Daten verschlüsselt
+- **Safe Execution** - Sandboxed Command Execution
+
+---
+
+## 🚀 Quick Start
+
+### Voraussetzungen
+
+- **Python** 3.11+ (64-bit)
+- **Go** 1.21+ (für Desktop UI)
+- **Wails** v2 (für Desktop UI)
+- **CUDA** 12.1+ (optional, für GPU-Beschleunigung)
+
+### Installation (3 Schritte)
+
+```bash
+# 1. Repository klonen
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 
-# Optional: Abhaengigkeiten im venv
-py -3.11 -m venv .venv
-.venv\Scripts\Activate.ps1
+# 2. Setup ausführen (automatisch)
+python scripts/bootstrap.py --run
+
+# 3. Desktop UI starten
+cd desktop
+wails dev
+```
+
+**Das war's!** 🎉 J.A.R.V.I.S. läuft jetzt lokal auf deinem System.
+
+---
+
+## 📦 Installation
+
+### Option 1: Automatisches Setup (Empfohlen)
+
+```bash
+# CPU-only (kein CUDA)
+python scripts/bootstrap.py --cpu --run
+
+# Mit CUDA (GPU)
+python scripts/bootstrap.py --run
+
+# Nur Setup, nicht starten
+python scripts/bootstrap.py
+```
+
+### Option 2: Manuelles Setup
+
+```bash
+# 1. Virtuelle Umgebung erstellen
+python -m venv venv
+
+# 2. Aktivieren
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+
+# 3. Dependencies installieren
 pip install -r requirements.txt
 
-# Bootstrap + Start
-py -3.11 bootstrap.py --run
-# oder Doppelklick: run_jarvis.bat
+# 4. LLM-Modelle herunterladen
+python scripts/download_models.py
+
+# 5. Starten
+python main.py
 ```
-Linux/macOS: analog mit `python3.11 -m venv venv && source venv/bin/activate && python bootstrap.py --run`.
 
-## Konfiguration
-- Basis-Settings: `data/settings.json` (Template: `data/settings.template.json`). Nicht einchecken; sensible Felder via `.env` oder Umgebung setzen.
-- Crawler-Service: `services/crawler_service/config_crawler.json`. API-Key per Env `JARVIS_CRAWLER_API_KEY` setzen; JSON-Key kann leer bleiben.
-- Modelle: unter `models/` ablegen (LLM GGUF, Whisper/Faster-Whisper, optional XTTS Stimmen). Pfade in Settings anpassen.
+### Desktop UI bauen
 
-## Sicherheitshinweise
-- Keine Klartext-Secrets im Repo belassen. Verwende `.env`/Umgebungsvariablen und DPAPI-Speicher (`utils/secure_storage.py`) fuer lokale Geheimnisse.
-- Web-UI: Token setzen, IP-Whitelist und Rate-Limits pruefen (`webapp/server.py`).
-- Systemaktionen: Safe-Mode verwenden (`security`-Section in Settings) und nur freigegebene Pfade/Programme erlauben.
-- Crawler: Domain-Whitelist, Robots.txt-Respekt und Ressourcengrenzen im Config praeferieren.
-
-## Tests
 ```bash
-python -m pytest
-```
-Neue Tests decken Crawler-Auth und Config-API-Key-Handling ab.
+cd desktop
 
-## Bekannte Baustellen
-- FastAPI `@on_event` ist deprecated - Umstellung auf Lifespan empfohlen.
+# Development Mode (Hot-Reload)
+wails dev
+
+# Production Build
+wails build
+# → Binary in: desktop/build/bin/
+```
+
+---
+
+## 🎯 Nutzung
+
+### Python Backend starten
+
+```bash
+# Standard
+python main.py
+
+# Mit Debug-Logging
+python main.py --debug
+
+# Spezifisches LLM wählen
+python main.py --llm llama3
+```
+
+### Desktop UI starten
+
+```bash
+# Development
+cd desktop && wails dev
+
+# Production Binary
+./desktop/build/bin/JarvisCore  # Linux/macOS
+desktop\build\bin\JarvisCore.exe  # Windows
+```
+
+### Unified Launcher (Beides zusammen)
+
+```bash
+# Development Mode
+python start_jarvis.py --dev
+
+# Production Mode
+python start_jarvis.py
+
+# Nur Backend
+python start_jarvis.py --backend
+```
+
+---
+
+## 🗂️ Projekt-Struktur
+
+```
+JarvisCore/
+├── core/                  # 💻 Python Core Module
+│   ├── memory/           # Gedächtnis-System
+│   ├── speech/           # Sprach-Erkennung/-Synthese
+│   ├── llm/              # LLM-Integration
+│   ├── knowledge/        # Wissens-Verwaltung
+│   └── security/         # Sicherheits-Layer
+│
+├── desktop/              # 🖥️ Wails Desktop App
+│   ├── frontend/         # Vue 3 UI
+│   ├── backend/          # Go Backend
+│   └── build/            # Compiled Binaries
+│
+├── plugins/              # 🔌 Plugin-System
+│   ├── weather/
+│   ├── calendar/
+│   └── system_control/
+│
+├── models/               # 🧠 LLM Models (lokal)
+├── data/                 # 📚 Knowledge Base
+├── config/               # ⚙️ Konfiguration
+├── scripts/              # 🤖 Automatisierungs-Scripts
+├── tests/                # 🧪 Unit Tests
+└── docs/                 # 📖 Dokumentation
+```
+
+---
+
+## 📚 Dokumentation
+
+### Haupt-Dokumentation
+
+- **[Architektur](docs/ARCHITECTURE.md)** - System-Übersicht
+- **[Security](docs/SECURITY.md)** - Sicherheits-Richtlinien
+- **[Performance](docs/PERFORMANCE.md)** - Optimierungs-Tipps
+- **[Changelog](docs/CHANGELOG.md)** - Release Notes
+
+### Entwickler-Guides
+
+- **[Auto-Refactor](docs/AUTO_REFACTOR.md)** - Automatisches Refactoring
+- **[Root Cleanup](docs/ROOT_CLEANUP.md)** - Projekt-Organisation
+- **[UI Consolidation](docs/UI_CONSOLIDATION.md)** - Desktop-App Migration
+- **[Refactoring Guide](docs/REFACTORING_GUIDE.md)** - Modul-Reorganisation
+
+### Quick References
+
+- **[Quick Cleanup](QUICK_CLEANUP.md)** - Schnell-Referenz für Cleanup
+- **[Desktop README](desktop/README.md)** - Desktop UI Dokumentation
+
+---
+
+## 🛠️ Technologie-Stack
+
+### Backend (Python)
+
+- **LLM:** llama-cpp-python, transformers
+- **Speech:** faster-whisper, piper-tts
+- **Embeddings:** sentence-transformers
+- **Vector DB:** chromadb, faiss
+- **API:** FastAPI, WebSocket
+
+### Frontend (Desktop UI)
+
+- **Framework:** Wails v2 (Go + Web)
+- **UI:** Vue 3, TypeScript, Tailwind CSS
+- **Build:** Vite
+- **State:** Pinia
+
+### Infrastructure
+
+- **OS:** Windows, Linux, macOS
+- **GPU:** CUDA 12.1+ (optional)
+- **Storage:** SQLite, JSON
+
+---
+
+## 🎨 Screenshots
+
+<div align="center">
+
+### Desktop UI - Chat Interface
+![Chat](https://via.placeholder.com/600x400/1a1a2e/eaeaea?text=Chat+Interface)
+
+### Knowledge Base Browser
+![Knowledge](https://via.placeholder.com/600x400/1a1a2e/eaeaea?text=Knowledge+Base)
+
+### Settings & Model Selection
+![Settings](https://via.placeholder.com/600x400/1a1a2e/eaeaea?text=Settings)
+
+</div>
+
+---
+
+## 🤝 Contributing
+
+Beiträge sind willkommen! Bitte beachte:
+
+1. **Fork** das Repository
+2. **Branch** erstellen: `git checkout -b feature/amazing-feature`
+3. **Commit** Änderungen: `git commit -m 'feat: add amazing feature'`
+4. **Push** zum Branch: `git push origin feature/amazing-feature`
+5. **Pull Request** öffnen
+
+### Entwickler-Setup
+
+```bash
+# Development Dependencies
+pip install -r requirements-dev.txt
+
+# Pre-commit Hooks installieren
+pre-commit install
+
+# Tests ausführen
+pytest
+
+# Code-Formatierung
+black .
+ruff check .
+```
+
+---
+
+## 📄 Lizenz
+
+**Apache License 2.0**
+
+Dieses Projekt ist unter der Apache 2.0 Lizenz lizenziert - siehe [LICENSE](LICENSE) für Details.
+
+**Wichtige Hinweise:**
+- ✅ Kommerzielle Nutzung erlaubt
+- ✅ Modifikation erlaubt
+- ✅ Distribution erlaubt
+- ⚠️ Haftungsausschluss - Keine Garantien
+- ⚠️ Patent Grant - Siehe Lizenz
+
+---
+
+## 🙏 Danksagungen
+
+- **Meta AI** - Llama Modelle
+- **Microsoft** - Phi-3 Modelle
+- **Mistral AI** - Mistral Modelle
+- **OpenAI** - Whisper Speech Recognition
+- **Rhasspy** - Piper TTS
+- **Wails** - Desktop Framework
+- **Vue.js** - UI Framework
+
+---
+
+## 📞 Kontakt & Support
+
+- **GitHub Issues:** [Bug Reports & Feature Requests](https://github.com/Lautloserspieler/JarvisCore/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/Lautloserspieler/JarvisCore/discussions)
+- **Email:** emeyer@fn.de
+
+---
+
+## 🗺️ Roadmap
+
+### Version 1.1 (Q1 2026)
+- [ ] Multi-Modal Support (Vision + Audio)
+- [ ] Plugin Marketplace
+- [ ] Cloud Sync (optional, encrypted)
+- [ ] Mobile Companion App
+
+### Version 1.2 (Q2 2026)
+- [ ] Advanced Memory System (Long-term Learning)
+- [ ] Multi-User Support
+- [ ] API für externe Apps
+- [ ] Docker Container
+
+### Version 2.0 (Q3 2026)
+- [ ] Distributed Computing (Multi-Device)
+- [ ] Advanced Voice Cloning
+- [ ] Real-time Translation
+- [ ] Smart Home Integration
+
+---
+
+<div align="center">
+
+**Made with ❤️ by [@Lautloserspieler](https://github.com/Lautloserspieler)**
+
+⭐ **Star dieses Projekt wenn es dir gefällt!** ⭐
+
+[⬆ Back to Top](#-jarvis-core)
+
+</div>

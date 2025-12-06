@@ -20,33 +20,37 @@ try:
     )
     from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject, QThread
     from PyQt6.QtGui import QFont, QPalette, QColor, QTextCursor
+    PYQT6_AVAILABLE = True
 except ImportError:
-    print("❌ PyQt6 nicht installiert!")
+    PYQT6_AVAILABLE = False
+    print("⚠️ PyQt6 nicht installiert!")
     print("Installiere mit: pip install PyQt6")
-    sys.exit(1)
-
-
-class JarvisWorkerSignals(QObject):
-    """Signals für Thread-sichere GUI-Updates"""
-    status_update = pyqtSignal(str)
-    message_received = pyqtSignal(str, str)  # role, text
-    context_update = pyqtSignal(dict)
-    system_stats = pyqtSignal(dict)
 
 
 class JarvisDesktopApp(QMainWindow):
     """Native Desktop-GUI für J.A.R.V.I.S."""
+    
+    # Class-level Signals (werden erst nach QApplication-Init erstellt)
+    status_update = None
+    message_received = None
+    context_update = None
+    system_stats = None
 
     def __init__(self, jarvis_instance=None):
         super().__init__()
         self.jarvis = jarvis_instance
-        self.signals = JarvisWorkerSignals()
+        
+        # Signals erstellen (QApplication muss bereits existieren!)
+        self.status_update = pyqtSignal(str)
+        self.message_received = pyqtSignal(str, str)  # role, text
+        self.context_update = pyqtSignal(dict)
+        self.system_stats = pyqtSignal(dict)
         
         # Signals verbinden
-        self.signals.status_update.connect(self._update_status_label)
-        self.signals.message_received.connect(self._add_chat_message)
-        self.signals.context_update.connect(self._update_context_panel)
-        self.signals.system_stats.connect(self._update_system_stats)
+        self.status_update.connect(self._update_status_label)
+        self.message_received.connect(self._add_chat_message)
+        self.context_update.connect(self._update_context_panel)
+        self.system_stats.connect(self._update_system_stats)
         
         self._init_ui()
         self._apply_dark_theme()
@@ -299,9 +303,10 @@ class JarvisDesktopApp(QMainWindow):
         """Verarbeitet Befehl asynchron"""
         try:
             response = self.jarvis.send_text_command(text, source="desktop_app")
-            # Response wird über signals.message_received empfangen
+            # Response kommt über add_assistant_message callback
         except Exception as e:
-            self.signals.message_received.emit("assistant", f"❌ Fehler: {e}")
+            if self.message_received:
+                self.message_received.emit("assistant", f"❌ Fehler: {e}")
 
     def _toggle_listening(self):
         """Schaltet Spracherkennung ein/aus"""
@@ -309,14 +314,17 @@ class JarvisDesktopApp(QMainWindow):
             if self.jarvis:
                 success = self.jarvis.start_listening()
                 if success:
-                    self.signals.status_update.emit("🎤 Hört zu...")
+                    if self.status_update:
+                        self.status_update.emit("🎤 Hört zu...")
                 else:
                     self.listen_button.setChecked(False)
-                    self.signals.status_update.emit("⚠️ Spracherkennung nicht verfügbar")
+                    if self.status_update:
+                        self.status_update.emit("⚠️ Spracherkennung nicht verfügbar")
         else:
             if self.jarvis:
                 self.jarvis.stop_listening()
-            self.signals.status_update.emit("Bereit")
+            if self.status_update:
+                self.status_update.emit("Bereit")
 
     def _clear_chat(self):
         """Löscht Chat-Verlauf"""
@@ -327,20 +335,31 @@ class JarvisDesktopApp(QMainWindow):
 
     def update_status(self, message: str):
         """Wird von JARVIS aufgerufen (thread-safe)"""
-        self.signals.status_update.emit(message)
+        # Direkt updaten wenn im Main-Thread, sonst via metaObject
+        try:
+            self.status_label.setText(message)
+            self._log(f"Status: {message}")
+        except Exception:
+            pass
 
     def _update_status_label(self, message: str):
-        """Aktualisiert Statusleiste"""
+        """Aktualisiert Statusleiste (Signal-Slot)"""
         self.status_label.setText(message)
         self._log(f"Status: {message}")
 
     def add_user_message(self, text: str):
         """Wird von JARVIS aufgerufen"""
-        self.signals.message_received.emit("user", text)
+        try:
+            self._add_chat_message("user", text)
+        except Exception:
+            pass
 
     def add_assistant_message(self, text: str):
         """Wird von JARVIS aufgerufen"""
-        self.signals.message_received.emit("assistant", text)
+        try:
+            self._add_chat_message("assistant", text)
+        except Exception:
+            pass
 
     def _add_chat_message(self, role: str, text: str):
         """Fügt Nachricht zum Chat hinzu"""
@@ -367,10 +386,15 @@ class JarvisDesktopApp(QMainWindow):
 
     def update_context_panels(self, **kwargs):
         """Wird von JARVIS aufgerufen"""
-        self.signals.context_update.emit(kwargs)
+        try:
+            import json
+            formatted = json.dumps(kwargs, indent=2, ensure_ascii=False)
+            self.context_display.setPlainText(formatted)
+        except Exception:
+            pass
 
     def _update_context_panel(self, data: dict):
-        """Aktualisiert Kontext-Anzeige"""
+        """Aktualisiert Kontext-Anzeige (Signal-Slot)"""
         import json
         formatted = json.dumps(data, indent=2, ensure_ascii=False)
         self.context_display.setPlainText(formatted)
@@ -389,7 +413,8 @@ class JarvisDesktopApp(QMainWindow):
         """Holt Stats asynchron"""
         try:
             metrics = self.jarvis.get_system_metrics(include_details=False)
-            self.signals.system_stats.emit(metrics)
+            if self.system_stats:
+                self.system_stats.emit(metrics)
         except Exception:
             pass
 
@@ -407,12 +432,15 @@ class JarvisDesktopApp(QMainWindow):
         self.gpu_label.setText(f"{gpu:.1f}%" if gpu else "N/A")
         
         # LLM Status
-        llm_status = self.jarvis.get_llm_status() if self.jarvis else {}
-        current_model = llm_status.get("current")
-        if current_model:
-            self.llm_status_label.setText(f"✅ {current_model}")
-        else:
-            self.llm_status_label.setText("❌ Kein Modell geladen")
+        try:
+            llm_status = self.jarvis.get_llm_status() if self.jarvis else {}
+            current_model = llm_status.get("current")
+            if current_model:
+                self.llm_status_label.setText(f"✅ {current_model}")
+            else:
+                self.llm_status_label.setText("❌ Kein Modell geladen")
+        except Exception:
+            pass
 
     def _log(self, message: str):
         """Fügt Log-Eintrag hinzu"""
@@ -432,13 +460,20 @@ class JarvisDesktopApp(QMainWindow):
         """Startet GUI-Event-Loop (blocking)"""
         # Ready-Callback aufrufen
         if self.jarvis and hasattr(self.jarvis, "on_gui_ready"):
-            self.jarvis.on_gui_ready()
+            try:
+                self.jarvis.on_gui_ready()
+            except Exception as e:
+                self._log(f"on_gui_ready Fehler: {e}")
         
         self.show()
 
 
 def create_jarvis_desktop_gui(jarvis_instance):
     """Factory-Funktion für main.py"""
+    if not PYQT6_AVAILABLE:
+        raise ImportError("PyQt6 ist nicht installiert. Installiere es mit: pip install PyQt6")
+    
+    # QApplication MUSS vor GUI-Erstellung existieren!
     app = QApplication.instance()
     if app is None:
         app = QApplication(sys.argv)

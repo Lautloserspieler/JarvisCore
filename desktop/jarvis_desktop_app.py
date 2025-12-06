@@ -18,7 +18,7 @@ try:
         QListWidget, QTabWidget, QProgressBar, QStatusBar,
         QGroupBox, QGridLayout, QFrame
     )
-    from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject, QThread
+    from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject
     from PyQt6.QtGui import QFont, QPalette, QColor, QTextCursor
     PYQT6_AVAILABLE = True
 except ImportError:
@@ -30,27 +30,9 @@ except ImportError:
 class JarvisDesktopApp(QMainWindow):
     """Native Desktop-GUI für J.A.R.V.I.S."""
     
-    # Class-level Signals (werden erst nach QApplication-Init erstellt)
-    status_update = None
-    message_received = None
-    context_update = None
-    system_stats = None
-
     def __init__(self, jarvis_instance=None):
         super().__init__()
         self.jarvis = jarvis_instance
-        
-        # Signals erstellen (QApplication muss bereits existieren!)
-        self.status_update = pyqtSignal(str)
-        self.message_received = pyqtSignal(str, str)  # role, text
-        self.context_update = pyqtSignal(dict)
-        self.system_stats = pyqtSignal(dict)
-        
-        # Signals verbinden
-        self.status_update.connect(self._update_status_label)
-        self.message_received.connect(self._add_chat_message)
-        self.context_update.connect(self._update_context_panel)
-        self.system_stats.connect(self._update_system_stats)
         
         self._init_ui()
         self._apply_dark_theme()
@@ -183,7 +165,7 @@ class JarvisDesktopApp(QMainWindow):
         # LLM Status
         llm_group = QGroupBox("LLM-Modell")
         llm_layout = QVBoxLayout()
-        self.llm_status_label = QLabel("Kein Modell geladen")
+        self.llm_status_label = QLabel("❌ Kein Modell geladen")
         llm_layout.addWidget(self.llm_status_label)
         llm_group.setLayout(llm_layout)
         system_layout.addWidget(llm_group)
@@ -273,7 +255,6 @@ class JarvisDesktopApp(QMainWindow):
 
     def _start_background_updates(self):
         """Startet Timer für regelmäßige Updates"""
-        # System-Stats alle 2 Sekunden
         self.stats_timer = QTimer()
         self.stats_timer.timeout.connect(self._fetch_system_stats)
         self.stats_timer.start(2000)
@@ -303,10 +284,9 @@ class JarvisDesktopApp(QMainWindow):
         """Verarbeitet Befehl asynchron"""
         try:
             response = self.jarvis.send_text_command(text, source="desktop_app")
-            # Response kommt über add_assistant_message callback
+            # Response wird über add_assistant_message callback empfangen
         except Exception as e:
-            if self.message_received:
-                self.message_received.emit("assistant", f"❌ Fehler: {e}")
+            self._add_chat_message("assistant", f"❌ Fehler: {e}")
 
     def _toggle_listening(self):
         """Schaltet Spracherkennung ein/aus"""
@@ -314,38 +294,29 @@ class JarvisDesktopApp(QMainWindow):
             if self.jarvis:
                 success = self.jarvis.start_listening()
                 if success:
-                    if self.status_update:
-                        self.status_update.emit("🎤 Hört zu...")
+                    self.update_status("🎤 Hört zu...")
                 else:
                     self.listen_button.setChecked(False)
-                    if self.status_update:
-                        self.status_update.emit("⚠️ Spracherkennung nicht verfügbar")
+                    self.update_status("⚠️ Spracherkennung nicht verfügbar")
         else:
             if self.jarvis:
                 self.jarvis.stop_listening()
-            if self.status_update:
-                self.status_update.emit("Bereit")
+            self.update_status("Bereit")
 
     def _clear_chat(self):
         """Löscht Chat-Verlauf"""
         self.chat_display.clear()
         self._log("Chat-Verlauf gelöscht")
 
-    # --- GUI UPDATE METHODS (Thread-safe via Signals) ---
+    # --- GUI UPDATE METHODS (wird von JARVIS aufgerufen) ---
 
     def update_status(self, message: str):
-        """Wird von JARVIS aufgerufen (thread-safe)"""
-        # Direkt updaten wenn im Main-Thread, sonst via metaObject
+        """Wird von JARVIS aufgerufen - thread-safe"""
         try:
             self.status_label.setText(message)
             self._log(f"Status: {message}")
         except Exception:
             pass
-
-    def _update_status_label(self, message: str):
-        """Aktualisiert Statusleiste (Signal-Slot)"""
-        self.status_label.setText(message)
-        self._log(f"Status: {message}")
 
     def add_user_message(self, text: str):
         """Wird von JARVIS aufgerufen"""
@@ -393,12 +364,6 @@ class JarvisDesktopApp(QMainWindow):
         except Exception:
             pass
 
-    def _update_context_panel(self, data: dict):
-        """Aktualisiert Kontext-Anzeige (Signal-Slot)"""
-        import json
-        formatted = json.dumps(data, indent=2, ensure_ascii=False)
-        self.context_display.setPlainText(formatted)
-
     def _fetch_system_stats(self):
         """Holt System-Statistiken (async)"""
         if not self.jarvis:
@@ -413,32 +378,27 @@ class JarvisDesktopApp(QMainWindow):
         """Holt Stats asynchron"""
         try:
             metrics = self.jarvis.get_system_metrics(include_details=False)
-            if self.system_stats:
-                self.system_stats.emit(metrics)
-        except Exception:
-            pass
-
-    def _update_system_stats(self, metrics: dict):
-        """Aktualisiert System-Anzeige"""
-        summary = metrics.get("summary", {})
-        
-        cpu = summary.get("cpu_percent", 0)
-        self.cpu_label.setText(f"{cpu:.1f}%")
-        
-        ram = summary.get("memory_percent", 0)
-        self.ram_label.setText(f"{ram:.1f}%")
-        
-        gpu = summary.get("gpu_utilization", 0)
-        self.gpu_label.setText(f"{gpu:.1f}%" if gpu else "N/A")
-        
-        # LLM Status
-        try:
-            llm_status = self.jarvis.get_llm_status() if self.jarvis else {}
-            current_model = llm_status.get("current")
-            if current_model:
-                self.llm_status_label.setText(f"✅ {current_model}")
-            else:
-                self.llm_status_label.setText("❌ Kein Modell geladen")
+            summary = metrics.get("summary", {})
+            
+            cpu = summary.get("cpu_percent", 0)
+            self.cpu_label.setText(f"{cpu:.1f}%")
+            
+            ram = summary.get("memory_percent", 0)
+            self.ram_label.setText(f"{ram:.1f}%")
+            
+            gpu = summary.get("gpu_utilization", 0)
+            self.gpu_label.setText(f"{gpu:.1f}%" if gpu else "N/A")
+            
+            # LLM Status
+            try:
+                llm_status = self.jarvis.get_llm_status() if self.jarvis else {}
+                current_model = llm_status.get("current")
+                if current_model:
+                    self.llm_status_label.setText(f"✅ {current_model}")
+                else:
+                    self.llm_status_label.setText("❌ Kein Modell geladen")
+            except Exception:
+                pass
         except Exception:
             pass
 

@@ -37,10 +37,14 @@ class JarvisDesktopApp(QMainWindow):
         self.jarvis = jarvis_instance
         self.app = app
         self.is_running = True
+        self.selected_model = None  # Für LLM Model Selector
         
         self._init_ui()
         self._apply_jarvis_theme()
         self._start_background_updates()
+        
+        # Initial data load
+        self._initial_data_load()
 
     def _init_ui(self):
         """Initialisiert die Benutzeroberfläche"""
@@ -79,7 +83,7 @@ class JarvisDesktopApp(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self.status_label = QLabel("✅ Bereit")
-        self.ws_indicator = QLabel("🔴 Offline")
+        self.ws_indicator = QLabel("🟢 Online")
         self.status_bar.addPermanentWidget(self.status_label)
         self.status_bar.addPermanentWidget(self.ws_indicator)
 
@@ -317,11 +321,14 @@ class JarvisDesktopApp(QMainWindow):
         header_layout.addStretch()
         layout.addLayout(header_layout)
 
-        # Modell-Liste
-        self.model_list = QTextEdit()
-        self.model_list.setReadOnly(True)
-        self.model_list.setMaximumHeight(300)
-        layout.addWidget(self.model_list)
+        # Model Selector
+        selector_layout = QHBoxLayout()
+        selector_layout.addWidget(QLabel("Modell auswählen:"))
+        self.model_selector = QComboBox()
+        self.model_selector.addItem("-- Wähle ein Modell --")
+        self.model_selector.currentTextChanged.connect(self._on_model_selected)
+        selector_layout.addWidget(self.model_selector, stretch=1)
+        layout.addLayout(selector_layout)
 
         # Actions
         actions = QHBoxLayout()
@@ -336,6 +343,10 @@ class JarvisDesktopApp(QMainWindow):
         download_btn = QPushButton("📥 Download")
         download_btn.clicked.connect(lambda: self._model_action("download"))
         actions.addWidget(download_btn)
+        
+        refresh_btn = QPushButton("🔄 Aktualisieren")
+        refresh_btn.clicked.connect(self._refresh_models)
+        actions.addWidget(refresh_btn)
         actions.addStretch()
 
         layout.addLayout(actions)
@@ -343,7 +354,20 @@ class JarvisDesktopApp(QMainWindow):
         # Progress
         self.model_progress = QProgressBar()
         self.model_progress.setVisible(False)
+        self.model_progress_label = QLabel("")
+        self.model_progress_label.setVisible(False)
         layout.addWidget(self.model_progress)
+        layout.addWidget(self.model_progress_label)
+
+        # Modell-Liste
+        list_group = QGroupBox("Verfügbare Modelle")
+        list_layout = QVBoxLayout()
+        self.model_list = QTextEdit()
+        self.model_list.setReadOnly(True)
+        self.model_list.setMaximumHeight(200)
+        list_layout.addWidget(self.model_list)
+        list_group.setLayout(list_layout)
+        layout.addWidget(list_group)
 
         # Metadata
         meta_group = QGroupBox("Metadata")
@@ -474,18 +498,19 @@ class JarvisDesktopApp(QMainWindow):
         form_group = QGroupBox("➕ Benutzerdefinierte Befehle")
         form_layout = QVBoxLayout()
         
-        pattern_input = QLineEdit()
-        pattern_input.setPlaceholderText("Muster (z.B. 'wie spät ist es')")
+        self.pattern_input = QLineEdit()
+        self.pattern_input.setPlaceholderText("Muster (z.B. 'wie spät ist es')")
         form_layout.addWidget(QLabel("Muster:"))
-        form_layout.addWidget(pattern_input)
+        form_layout.addWidget(self.pattern_input)
         
-        response_input = QTextEdit()
-        response_input.setPlaceholderText("Antwort...")
-        response_input.setMaximumHeight(80)
+        self.response_input = QTextEdit()
+        self.response_input.setPlaceholderText("Antwort...")
+        self.response_input.setMaximumHeight(80)
         form_layout.addWidget(QLabel("Antwort:"))
-        form_layout.addWidget(response_input)
+        form_layout.addWidget(self.response_input)
         
         add_btn = QPushButton("➕ Befehl hinzufügen")
+        add_btn.clicked.connect(self._add_custom_command)
         form_layout.addWidget(add_btn)
         
         form_group.setLayout(form_layout)
@@ -530,10 +555,11 @@ class JarvisDesktopApp(QMainWindow):
         
         controls.addStretch()
         
-        filter_input = QLineEdit()
-        filter_input.setPlaceholderText("🔍 Filter...")
-        filter_input.setMaximumWidth(200)
-        controls.addWidget(filter_input)
+        self.log_filter = QLineEdit()
+        self.log_filter.setPlaceholderText("🔍 Filter...")
+        self.log_filter.setMaximumWidth(200)
+        self.log_filter.textChanged.connect(self._filter_logs)
+        controls.addWidget(self.log_filter)
         
         layout.addLayout(controls)
 
@@ -542,6 +568,9 @@ class JarvisDesktopApp(QMainWindow):
         self.log_output.setReadOnly(True)
         self.log_output.setFont(QFont("Consolas", 9))
         layout.addWidget(self.log_output)
+        
+        # Full logs backup (for filtering)
+        self.log_output_full = ""
 
         return widget
 
@@ -562,18 +591,18 @@ class JarvisDesktopApp(QMainWindow):
         speech_layout = QGridLayout()
         
         speech_layout.addWidget(QLabel("Wake Word:"), 0, 0)
-        wake_word_check = QCheckBox("Aktiviert")
-        speech_layout.addWidget(wake_word_check, 0, 1)
+        self.settings_wake_word_check = QCheckBox("Aktiviert")
+        speech_layout.addWidget(self.settings_wake_word_check, 0, 1)
         
         speech_layout.addWidget(QLabel("Min. Wörter:"), 1, 0)
-        min_words_spin = QSpinBox()
-        min_words_spin.setRange(1, 10)
-        speech_layout.addWidget(min_words_spin, 1, 1)
+        self.settings_min_words_spin = QSpinBox()
+        self.settings_min_words_spin.setRange(1, 10)
+        speech_layout.addWidget(self.settings_min_words_spin, 1, 1)
         
         speech_layout.addWidget(QLabel("TTS-Rate:"), 2, 0)
-        tts_rate_spin = QSpinBox()
-        tts_rate_spin.setRange(120, 260)
-        speech_layout.addWidget(tts_rate_spin, 2, 1)
+        self.settings_tts_rate_spin = QSpinBox()
+        self.settings_tts_rate_spin.setRange(120, 260)
+        speech_layout.addWidget(self.settings_tts_rate_spin, 2, 1)
         
         save_speech_btn = QPushButton("💾 Speichern")
         speech_layout.addWidget(save_speech_btn, 3, 0, 1, 2)
@@ -585,12 +614,16 @@ class JarvisDesktopApp(QMainWindow):
         audio_group = QGroupBox("🔊 Audio")
         audio_layout = QVBoxLayout()
         
-        device_combo = QComboBox()
+        self.settings_device_combo = QComboBox()
         audio_layout.addWidget(QLabel("Eingabegerät:"))
-        audio_layout.addWidget(device_combo)
+        audio_layout.addWidget(self.settings_device_combo)
         
         measure_btn = QPushButton("📊 Pegel messen")
+        measure_btn.clicked.connect(self._measure_audio_level)
         audio_layout.addWidget(measure_btn)
+        
+        self.audio_level_label = QLabel("Pegel: --")
+        audio_layout.addWidget(self.audio_level_label)
         
         audio_group.setLayout(audio_layout)
         content_layout.addWidget(audio_group)
@@ -599,11 +632,11 @@ class JarvisDesktopApp(QMainWindow):
         system_group = QGroupBox("⚙️ System")
         system_layout = QVBoxLayout()
         
-        debug_check = QCheckBox("Debug-Modus")
-        system_layout.addWidget(debug_check)
+        self.settings_debug_check = QCheckBox("Debug-Modus")
+        system_layout.addWidget(self.settings_debug_check)
         
-        autostart_check = QCheckBox("Autostart")
-        system_layout.addWidget(autostart_check)
+        self.settings_autostart_check = QCheckBox("Autostart")
+        system_layout.addWidget(self.settings_autostart_check)
         
         save_system_btn = QPushButton("💾 Speichern")
         system_layout.addWidget(save_system_btn)
@@ -617,32 +650,45 @@ class JarvisDesktopApp(QMainWindow):
         return widget
 
     # ===================================================================
-    # THEME
+    # THEME - EINHEITLICH DUNKEL!
     # ===================================================================
     def _apply_jarvis_theme(self):
-        """Wendet das erweiterte JARVIS Dark Theme an"""
-        # Palette
+        """Wendet das EINHEITLICHE dunkle JARVIS Theme an"""
+        # Palette - ALLE Farben dunkel!
         dark_palette = QPalette()
-        dark_palette.setColor(QPalette.ColorRole.Window, QColor(11, 18, 32))
+        bg_dark = QColor(11, 18, 32)  # #0b1220
+        bg_darker = QColor(15, 22, 33)  # #0f1621
+        
+        dark_palette.setColor(QPalette.ColorRole.Window, bg_dark)
         dark_palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorRole.Base, QColor(15, 22, 33))
+        dark_palette.setColor(QPalette.ColorRole.Base, bg_darker)
         dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(20, 28, 45))
         dark_palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
         dark_palette.setColor(QPalette.ColorRole.Button, QColor(30, 40, 60))
         dark_palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
         dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.black)
+        dark_palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorRole.PlaceholderText, QColor(136, 136, 136))
         
         self.setPalette(dark_palette)
+        self.app.setPalette(dark_palette)  # Global für alle Widgets!
         
-        # Globales Stylesheet
+        # Globales Stylesheet - EINHEITLICH DUNKEL
         self.setStyleSheet("""
+            /* === GLOBAL === */
+            * {
+                background: #0b1220;
+                color: white;
+            }
+            
             /* === MAIN WINDOW === */
             QMainWindow {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #0b1220, stop:0.5 #14213d, stop:1 #0b1220
-                );
+                background: #0b1220;
+            }
+            
+            QWidget {
+                background: #0b1220;
+                color: white;
             }
             
             /* === HEADER === */
@@ -705,7 +751,7 @@ class JarvisDesktopApp(QMainWindow):
             }
             
             /* === INPUT FIELDS === */
-            QLineEdit, QTextEdit, QSpinBox, QComboBox {
+            QLineEdit, QSpinBox, QComboBox {
                 background: #1c2838;
                 border: 1px solid #2a5885;
                 border-radius: 4px;
@@ -713,12 +759,43 @@ class JarvisDesktopApp(QMainWindow):
                 color: white;
             }
             
-            QTextEdit {
+            QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
+                border-color: #42a5f6;
+            }
+            
+            QComboBox::drop-down {
+                border: none;
+                background: #2a5885;
+            }
+            
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 6px solid white;
+                width: 0;
+                height: 0;
+            }
+            
+            QComboBox QAbstractItemView {
+                background: #1c2838;
+                color: white;
+                selection-background-color: #2a5885;
+                border: 1px solid #2a5885;
+            }
+            
+            /* === TEXT EDIT === */
+            QTextEdit, QTextBrowser {
                 background: #0f1621;
+                border: 1px solid #2a5885;
+                border-radius: 4px;
+                padding: 8px;
+                color: white;
             }
             
             /* === GROUP BOXES === */
             QGroupBox {
+                background: #0f1621;
                 border: 2px solid #2a5885;
                 border-radius: 6px;
                 margin-top: 12px;
@@ -731,6 +808,7 @@ class JarvisDesktopApp(QMainWindow):
                 subcontrol-origin: margin;
                 left: 15px;
                 padding: 0 5px;
+                background: #0f1621;
             }
             
             /* === METRIC CARDS === */
@@ -749,15 +827,18 @@ class JarvisDesktopApp(QMainWindow):
                 background: #0f1621;
                 gridline-color: #2a5885;
                 border: 1px solid #2a5885;
+                color: white;
             }
             
             QTableWidget::item {
                 padding: 8px;
                 color: white;
+                background: #0f1621;
             }
             
             QTableWidget::item:selected {
                 background: #2a5885;
+                color: white;
             }
             
             QHeaderView::section {
@@ -771,18 +852,46 @@ class JarvisDesktopApp(QMainWindow):
             /* === SCROLLBAR === */
             QScrollBar:vertical {
                 background: #0f1621;
-                width: 12px;
-                border-radius: 6px;
+                width: 14px;
+                border-radius: 7px;
+                margin: 0;
             }
             
             QScrollBar::handle:vertical {
                 background: #2a5885;
-                border-radius: 6px;
-                min-height: 20px;
+                border-radius: 7px;
+                min-height: 30px;
             }
             
             QScrollBar::handle:vertical:hover {
                 background: #3d7ab8;
+            }
+            
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0;
+                background: none;
+            }
+            
+            QScrollBar:horizontal {
+                background: #0f1621;
+                height: 14px;
+                border-radius: 7px;
+            }
+            
+            QScrollBar::handle:horizontal {
+                background: #2a5885;
+                border-radius: 7px;
+                min-width: 30px;
+            }
+            
+            /* === SCROLL AREA === */
+            QScrollArea {
+                background: #0b1220;
+                border: none;
+            }
+            
+            QScrollArea > QWidget > QWidget {
+                background: #0b1220;
             }
             
             /* === PROGRESS BAR === */
@@ -792,6 +901,7 @@ class JarvisDesktopApp(QMainWindow):
                 background: #0f1621;
                 text-align: center;
                 color: white;
+                height: 25px;
             }
             
             QProgressBar::chunk {
@@ -806,6 +916,7 @@ class JarvisDesktopApp(QMainWindow):
             QCheckBox {
                 color: white;
                 spacing: 8px;
+                background: transparent;
             }
             
             QCheckBox::indicator {
@@ -824,6 +935,7 @@ class JarvisDesktopApp(QMainWindow):
             /* === LABELS === */
             QLabel {
                 color: white;
+                background: transparent;
             }
             
             /* === STATUS BAR === */
@@ -832,7 +944,27 @@ class JarvisDesktopApp(QMainWindow):
                 color: white;
                 border-top: 1px solid #2a5885;
             }
+            
+            QStatusBar QLabel {
+                background: transparent;
+            }
         """)
+
+    # ===================================================================
+    # INITIAL DATA LOAD
+    # ===================================================================
+    def _initial_data_load(self):
+        """Lädt initiale Daten beim Start"""
+        threading.Thread(target=self._load_initial_data_async, daemon=True).start()
+    
+    def _load_initial_data_async(self):
+        """Lädt Daten asynchron"""
+        time.sleep(0.5)  # Warte bis GUI fertig ist
+        self._refresh_models()
+        self._refresh_plugins()
+        self._refresh_logs()
+        self._refresh_memory()
+        self._refresh_crawler_status()
 
     # ===================================================================
     # BACKGROUND UPDATES
@@ -880,6 +1012,10 @@ class JarvisDesktopApp(QMainWindow):
             uptime = summary.get("uptime_hours", 0)
             self.uptime_value_label.setText(f"{uptime:.1f}h")
             
+            # System Details
+            details = json.dumps(summary, indent=2, ensure_ascii=False)
+            self.system_details.setPlainText(details)
+            
             # LLM Status
             llm_status = self.jarvis.get_llm_status()
             current_model = llm_status.get("current")
@@ -902,8 +1038,293 @@ class JarvisDesktopApp(QMainWindow):
                     font-weight: bold;
                 """)
             
+            # Crawler Status (wenn Tab aktiv)
+            if self.tabs.currentIndex() == 5:  # Crawler Tab
+                self._refresh_crawler_status()
+            
+            # Memory Status (wenn Tab aktiv)
+            if self.tabs.currentIndex() == 6:  # Memory Tab
+                self._refresh_memory()
+            
         except Exception as e:
             self._log(f"Stats-Update Fehler: {e}")
+
+    # ===================================================================
+    # MODEL MANAGEMENT
+    # ===================================================================
+    def _refresh_models(self):
+        """Aktualisiert Modell-Liste"""
+        if not self.jarvis or not hasattr(self.jarvis, 'get_llm_status'):
+            return
+        
+        try:
+            llm_status = self.jarvis.get_llm_status()
+            available = llm_status.get("available", {})
+            
+            # Dropdown aktualisieren
+            self.model_selector.clear()
+            self.model_selector.addItem("-- Wähle ein Modell --")
+            for model_key in available.keys():
+                self.model_selector.addItem(model_key)
+            
+            # Liste anzeigen
+            model_text = "Verfügbare Modelle:\n\n"
+            for key, info in available.items():
+                status = "✅ Installiert" if info.get("available") else "📥 Download verfügbar"
+                size = info.get("size_mb", "?")
+                model_text += f"• {key}: {status} ({size} MB)\n"
+            
+            self.model_list.setPlainText(model_text)
+            
+            # Metadata
+            metadata = llm_status.get("metadata", {})
+            meta_text = json.dumps(metadata, indent=2, ensure_ascii=False)
+            self.model_metadata.setPlainText(meta_text)
+            
+        except Exception as e:
+            self._log(f"Model-Refresh Fehler: {e}")
+    
+    def _on_model_selected(self, model_name: str):
+        """Wird aufgerufen wenn Modell ausgewählt wird"""
+        if model_name and model_name != "-- Wähle ein Modell --":
+            self.selected_model = model_name
+            self._log(f"Modell ausgewählt: {model_name}")
+
+    def _model_action(self, action: str):
+        """LLM Model Action"""
+        if not self.jarvis or not self.selected_model:
+            self._log("❌ Kein Modell ausgewählt!")
+            return
+        
+        self._log(f"🚀 Modell-Aktion: {action} - {self.selected_model}")
+        
+        try:
+            if action == "download":
+                self.model_progress.setVisible(True)
+                self.model_progress_label.setVisible(True)
+                self.model_progress.setValue(0)
+                self.model_progress_label.setText("Download startet...")
+                
+                def progress_callback(progress):
+                    percent = progress.get("percent", 0)
+                    status = progress.get("status", "")
+                    self.model_progress.setValue(int(percent))
+                    self.model_progress_label.setText(f"{status}: {percent:.1f}%")
+                
+                threading.Thread(
+                    target=lambda: self.jarvis.control_llm_model("download", self.selected_model),
+                    daemon=True
+                ).start()
+            
+            elif action == "load":
+                result = self.jarvis.control_llm_model("load", self.selected_model)
+                if result.get("success"):
+                    self._log(f"✅ Modell geladen: {self.selected_model}")
+                else:
+                    self._log(f"❌ Modell-Laden fehlgeschlagen")
+            
+            elif action == "unload":
+                result = self.jarvis.control_llm_model("unload", self.selected_model)
+                if result.get("success"):
+                    self._log(f"✅ Modell entladen")
+                else:
+                    self._log(f"❌ Modell-Entladen fehlgeschlagen")
+            
+            # Refresh nach Aktion
+            time.sleep(0.5)
+            self._refresh_models()
+            
+        except Exception as e:
+            self._log(f"❌ Model-Action Fehler: {e}")
+            self.model_progress.setVisible(False)
+            self.model_progress_label.setVisible(False)
+
+    # ===================================================================
+    # PLUGIN MANAGEMENT
+    # ===================================================================
+    def _refresh_plugins(self):
+        """Aktualisiert Plugin-Liste"""
+        if not self.jarvis or not hasattr(self.jarvis, 'get_plugin_overview'):
+            return
+        
+        try:
+            plugins = self.jarvis.get_plugin_overview()
+            
+            self.plugin_table.setRowCount(len(plugins))
+            for i, plugin in enumerate(plugins):
+                self.plugin_table.setItem(i, 0, QTableWidgetItem(plugin.get("name", "")))
+                self.plugin_table.setItem(i, 1, QTableWidgetItem(plugin.get("module", "")))
+                
+                status = "✅" if plugin.get("enabled") else "❌"
+                self.plugin_table.setItem(i, 2, QTableWidgetItem(status))
+                
+                sandbox = "🔒" if plugin.get("sandbox") else "🔓"
+                self.plugin_table.setItem(i, 3, QTableWidgetItem(sandbox))
+                
+                self.plugin_table.setItem(i, 4, QTableWidgetItem("---"))
+            
+        except Exception as e:
+            self._log(f"Plugin-Refresh Fehler: {e}")
+
+    # ===================================================================
+    # CRAWLER MANAGEMENT
+    # ===================================================================
+    def _refresh_crawler_status(self):
+        """Aktualisiert Crawler-Status"""
+        if not self.jarvis or not hasattr(self.jarvis, 'get_crawler_status'):
+            return
+        
+        try:
+            status = self.jarvis.get_crawler_status()
+            
+            connected = "✅ Verbunden" if status.get("connected") else "❌ Offline"
+            self.crawler_status_label.setText(connected)
+            
+            docs = status.get("documents_total", 0)
+            self.crawler_docs_label.setText(f"{docs} Dokumente")
+            
+            jobs = len(status.get("running_jobs", []))
+            self.crawler_jobs_label.setText(f"{jobs} aktive Jobs")
+            
+        except Exception as e:
+            self._log(f"Crawler-Status Fehler: {e}")
+    
+    def _crawler_sync(self):
+        """Startet Crawler-Sync"""
+        if not self.jarvis or not hasattr(self.jarvis, 'run_crawler_sync_now'):
+            return
+        
+        self._log("🔄 Crawler-Sync gestartet...")
+        threading.Thread(
+            target=lambda: self.jarvis.run_crawler_sync_now(),
+            daemon=True
+        ).start()
+
+    # ===================================================================
+    # MEMORY MANAGEMENT
+    # ===================================================================
+    def _refresh_memory(self):
+        """Aktualisiert Memory-Snapshot"""
+        if not self.jarvis or not hasattr(self.jarvis, 'get_memory_snapshot'):
+            return
+        
+        try:
+            snapshot = self.jarvis.get_memory_snapshot(limit=20)
+            
+            summary = snapshot.get("short_term_summary", "Keine Daten")
+            self.memory_summary.setPlainText(summary)
+            
+            messages = snapshot.get("recent_messages", [])
+            msg_text = ""
+            for msg in messages:
+                role = msg.get("role", "")
+                text = msg.get("message", msg.get("text", ""))
+                timestamp = msg.get("timestamp", "")
+                msg_text += f"[{role}] {text}\n{timestamp}\n\n"
+            
+            self.memory_messages.setPlainText(msg_text)
+            
+        except Exception as e:
+            self._log(f"Memory-Refresh Fehler: {e}")
+
+    # ===================================================================
+    # TRAINING
+    # ===================================================================
+    def _add_custom_command(self):
+        """Fügt benutzerdefinierten Befehl hinzu"""
+        pattern = self.pattern_input.text().strip()
+        response = self.response_input.toPlainText().strip()
+        
+        if not pattern or not response:
+            self._log("❌ Muster und Antwort müssen ausgefüllt sein!")
+            return
+        
+        if self.jarvis and hasattr(self.jarvis, 'add_custom_command_entry'):
+            try:
+                success = self.jarvis.add_custom_command_entry(pattern, response)
+                if success:
+                    self._log(f"✅ Befehl hinzugefügt: {pattern}")
+                    self.pattern_input.clear()
+                    self.response_input.clear()
+                else:
+                    self._log("❌ Befehl konnte nicht hinzugefügt werden")
+            except Exception as e:
+                self._log(f"❌ Fehler: {e}")
+    
+    def _run_training(self):
+        """Startet Training"""
+        if not self.jarvis or not hasattr(self.jarvis, 'run_training_cycle'):
+            return
+        
+        self._log("🚀 Training wird gestartet...")
+        self.training_log.append("[" + time.strftime("%H:%M:%S") + "] Training gestartet...")
+        
+        def train():
+            try:
+                result = self.jarvis.run_training_cycle()
+                self.training_log.append(f"✅ Training abgeschlossen: {result}")
+            except Exception as e:
+                self.training_log.append(f"❌ Fehler: {e}")
+        
+        threading.Thread(target=train, daemon=True).start()
+
+    # ===================================================================
+    # LOGS
+    # ===================================================================
+    def _refresh_logs(self):
+        """Aktualisiert Logs"""
+        try:
+            log_file = Path("logs/jarvis.log")
+            if log_file.exists():
+                logs = log_file.read_text(encoding="utf-8", errors="ignore")
+                self.log_output_full = logs[-100000:]  # Letzte 100k Zeichen
+                self.log_output.setPlainText(self.log_output_full)
+                # Scroll to bottom
+                self.log_output.moveCursor(QTextCursor.MoveOperation.End)
+        except Exception as e:
+            self._log(f"Log-Refresh Fehler: {e}")
+    
+    def _filter_logs(self, filter_text: str):
+        """Filtert Logs"""
+        if not filter_text:
+            self.log_output.setPlainText(self.log_output_full)
+            return
+        
+        filtered = "\n".join(
+            line for line in self.log_output_full.split("\n")
+            if filter_text.lower() in line.lower()
+        )
+        self.log_output.setPlainText(filtered)
+
+    def _clear_logs(self):
+        """Löscht Logs"""
+        if self.jarvis and hasattr(self.jarvis, 'clear_logs'):
+            self.jarvis.clear_logs()
+        self.log_output.clear()
+        self.log_output_full = ""
+        self._log("🗑️ Logs gelöscht")
+
+    # ===================================================================
+    # SETTINGS
+    # ===================================================================
+    def _measure_audio_level(self):
+        """Misst Audio-Pegel"""
+        if not self.jarvis or not hasattr(self.jarvis, 'sample_audio_level'):
+            return
+        
+        self.audio_level_label.setText("Messe...")
+        
+        def measure():
+            try:
+                level = self.jarvis.sample_audio_level(duration=2.0)
+                if level:
+                    self.audio_level_label.setText(f"Pegel: {level:.2f}")
+                else:
+                    self.audio_level_label.setText("Pegel: N/A")
+            except Exception as e:
+                self.audio_level_label.setText(f"Fehler: {e}")
+        
+        threading.Thread(target=measure, daemon=True).start()
 
     # ===================================================================
     # EVENT HANDLER
@@ -948,58 +1369,6 @@ class JarvisDesktopApp(QMainWindow):
                 font-weight: bold;
                 color: white;
             """)
-
-    def _model_action(self, action: str):
-        """LLM Model Action"""
-        if not self.jarvis:
-            return
-        
-        self._log(f"Modell-Aktion: {action}")
-        # TODO: Implement model control
-
-    def _refresh_plugins(self):
-        """Aktualisiert Plugin-Liste"""
-        if not self.jarvis:
-            return
-        
-        self._log("Plugins werden aktualisiert...")
-        # TODO: Fetch and display plugins
-
-    def _crawler_sync(self):
-        """Startet Crawler-Sync"""
-        if not self.jarvis:
-            return
-        
-        self._log("Crawler-Sync gestartet...")
-        # TODO: Call crawler sync
-
-    def _run_training(self):
-        """Startet Training"""
-        if not self.jarvis:
-            return
-        
-        self._log("Training wird gestartet...")
-        threading.Thread(
-            target=lambda: self.jarvis.run_training_cycle(),
-            daemon=True
-        ).start()
-
-    def _refresh_logs(self):
-        """Aktualisiert Logs"""
-        try:
-            log_file = Path("logs/jarvis.log")
-            if log_file.exists():
-                logs = log_file.read_text(encoding="utf-8", errors="ignore")
-                self.log_output.setPlainText(logs[-50000:])  # Letzte 50k Zeichen
-        except Exception as e:
-            self._log(f"Log-Refresh Fehler: {e}")
-
-    def _clear_logs(self):
-        """Löscht Logs"""
-        if self.jarvis:
-            self.jarvis.clear_logs()
-        self.log_output.clear()
-        self._log("Logs gelöscht")
 
     # ===================================================================
     # GUI UPDATES (von JARVIS aufgerufen)
@@ -1070,7 +1439,9 @@ class JarvisDesktopApp(QMainWindow):
     def _log(self, message: str):
         """Fügt Log-Eintrag hinzu"""
         timestamp = time.strftime("%H:%M:%S")
-        self.log_output.append(f"[{timestamp}] {message}")
+        log_entry = f"[{timestamp}] {message}"
+        self.log_output.append(log_entry)
+        self.log_output_full += log_entry + "\n"
 
     def show_message(self, title: str, message: str):
         """Zeigt Nachricht"""

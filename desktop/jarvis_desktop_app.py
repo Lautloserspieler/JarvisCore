@@ -308,7 +308,6 @@ class JarvisDesktopApp(QMainWindow):
 
     # ===================================================================
     # TAB 4-10: MODELS, PLUGINS, CRAWLER, MEMORY, TRAINING, LOGS, SETTINGS
-    # (Gekürzt für Übersicht - identisch wie vorher)
     # ===================================================================
     
     def _create_models_tab(self) -> QWidget:
@@ -636,13 +635,15 @@ class JarvisDesktopApp(QMainWindow):
         threading.Thread(target=self._load_initial_data_async, daemon=True).start()
     
     def _load_initial_data_async(self):
+        """KRITISCH: Alle Refreshes müssen thread-safe sein!"""
         time.sleep(0.5)
         try:
-            self._refresh_models()
-            self._refresh_plugins()
+            # ALLE diese Aufrufe müssen intern _safe_update_gui verwenden!
+            self._refresh_models_async()
+            self._refresh_plugins_async()
             self._refresh_logs()
-            self._refresh_memory()
-            self._refresh_crawler_status()
+            self._refresh_memory_async()
+            self._refresh_crawler_status_async()
         except Exception as e:
             print(f"Initial data load error: {e}")
             traceback.print_exc()
@@ -674,14 +675,15 @@ class JarvisDesktopApp(QMainWindow):
                 current_model = llm_status.get("current")
                 self._safe_update_gui(lambda: self._update_llm_status_ui(current_model))
             if self.tabs.currentIndex() == 5:
-                self._refresh_crawler_status()
+                self._refresh_crawler_status_async()
             if self.tabs.currentIndex() == 6:
-                self._refresh_memory()
+                self._refresh_memory_async()
         except Exception as e:
             print(f"Stats-Update Fehler: {e}")
             traceback.print_exc()
 
     def _update_system_metrics_ui(self, cpu, ram, gpu, disk, uptime, summary):
+        """Wird im Main-Thread ausgeführt - SAFE!"""
         try:
             self.cpu_value_label.setText(f"{cpu:.1f}%")
             self.cpu_detail_label.setText(f"{summary.get('cpu_freq', 0):.0f} MHz")
@@ -698,6 +700,7 @@ class JarvisDesktopApp(QMainWindow):
             print(f"Update system metrics UI error: {e}")
 
     def _update_llm_status_ui(self, current_model):
+        """Wird im Main-Thread ausgeführt - SAFE!"""
         try:
             if current_model:
                 self.current_model_label.setText(f"✅ {current_model}")
@@ -709,27 +712,41 @@ class JarvisDesktopApp(QMainWindow):
             print(f"Update LLM status UI error: {e}")
 
     # ===================================================================
-    # HANDLER (gekürzt)
+    # HANDLER - ALLE JETZT THREAD-SAFE!
     # ===================================================================
     def _refresh_models(self):
+        """Public Methode - ruft async Version auf"""
+        threading.Thread(target=self._refresh_models_async, daemon=True).start()
+    
+    def _refresh_models_async(self):
+        """KRITISCH: Alle GUI-Updates via _safe_update_gui!"""
         if not self.jarvis or not hasattr(self.jarvis, 'get_llm_status'):
             return
         try:
             llm_status = self.jarvis.get_llm_status()
             available = llm_status.get("available", {})
-            self.model_selector.clear()
-            self.model_selector.addItem("-- Wähle ein Modell --")
-            for model_key in available.keys():
-                self.model_selector.addItem(model_key)
+            
+            # GUI-Update 1: ComboBox leeren und füllen
+            def update_combo():
+                self.model_selector.clear()
+                self.model_selector.addItem("-- Wähle ein Modell --")
+                for model_key in available.keys():
+                    self.model_selector.addItem(model_key)
+            self._safe_update_gui(update_combo)
+            
+            # GUI-Update 2: Model List
             model_text = "Verfügbare Modelle:\n\n"
             for key, info in available.items():
                 status = "✅ Installiert" if info.get("available") else "📥 Download verfügbar"
                 size = info.get("size_mb", "?")
                 model_text += f"• {key}: {status} ({size} MB)\n"
-            self.model_list.setPlainText(model_text)
+            self._safe_update_gui(lambda: self.model_list.setPlainText(model_text))
+            
+            # GUI-Update 3: Metadata
             metadata = llm_status.get("metadata", {})
             meta_text = json.dumps(metadata, indent=2, ensure_ascii=False)
-            self.model_metadata.setPlainText(meta_text)
+            self._safe_update_gui(lambda: self.model_metadata.setPlainText(meta_text))
+            
         except Exception as e:
             print(f"Model-Refresh Fehler: {e}")
             traceback.print_exc()
@@ -746,10 +763,7 @@ class JarvisDesktopApp(QMainWindow):
         self._log(f"🚀 Modell-Aktion: {action} - {self.selected_model}")
         try:
             if action == "download":
-                self.model_progress.setVisible(True)
-                self.model_progress_label.setVisible(True)
-                self.model_progress.setValue(0)
-                self.model_progress_label.setText("Download startet...")
+                self._safe_update_gui(lambda: (self.model_progress.setVisible(True), self.model_progress_label.setVisible(True), self.model_progress.setValue(0), self.model_progress_label.setText("Download startet...")))
                 threading.Thread(target=lambda: self.jarvis.control_llm_model("download", self.selected_model), daemon=True).start()
             elif action == "load":
                 result = self.jarvis.control_llm_model("load", self.selected_model)
@@ -768,28 +782,37 @@ class JarvisDesktopApp(QMainWindow):
         except Exception as e:
             self._log(f"❌ Model-Action Fehler: {e}")
             traceback.print_exc()
-            self.model_progress.setVisible(False)
-            self.model_progress_label.setVisible(False)
+            self._safe_update_gui(lambda: (self.model_progress.setVisible(False), self.model_progress_label.setVisible(False)))
 
     def _refresh_plugins(self):
+        """Public Methode - ruft async Version auf"""
+        threading.Thread(target=self._refresh_plugins_async, daemon=True).start()
+    
+    def _refresh_plugins_async(self):
+        """KRITISCH: Alle GUI-Updates via _safe_update_gui!"""
         if not self.jarvis or not hasattr(self.jarvis, 'get_plugin_overview'):
             return
         try:
             plugins = self.jarvis.get_plugin_overview()
-            self.plugin_table.setRowCount(len(plugins))
-            for i, plugin in enumerate(plugins):
-                self.plugin_table.setItem(i, 0, QTableWidgetItem(plugin.get("name", "")))
-                self.plugin_table.setItem(i, 1, QTableWidgetItem(plugin.get("module", "")))
-                status = "✅" if plugin.get("enabled") else "❌"
-                self.plugin_table.setItem(i, 2, QTableWidgetItem(status))
-                sandbox = "🔒" if plugin.get("sandbox") else "🔓"
-                self.plugin_table.setItem(i, 3, QTableWidgetItem(sandbox))
-                self.plugin_table.setItem(i, 4, QTableWidgetItem("---"))
+            
+            def update_table():
+                self.plugin_table.setRowCount(len(plugins))
+                for i, plugin in enumerate(plugins):
+                    self.plugin_table.setItem(i, 0, QTableWidgetItem(plugin.get("name", "")))
+                    self.plugin_table.setItem(i, 1, QTableWidgetItem(plugin.get("module", "")))
+                    status = "✅" if plugin.get("enabled") else "❌"
+                    self.plugin_table.setItem(i, 2, QTableWidgetItem(status))
+                    sandbox = "🔒" if plugin.get("sandbox") else "🔓"
+                    self.plugin_table.setItem(i, 3, QTableWidgetItem(sandbox))
+                    self.plugin_table.setItem(i, 4, QTableWidgetItem("---"))
+            
+            self._safe_update_gui(update_table)
         except Exception as e:
             print(f"Plugin-Refresh Fehler: {e}")
             traceback.print_exc()
 
-    def _refresh_crawler_status(self):
+    def _refresh_crawler_status_async(self):
+        """KRITISCH: Alle GUI-Updates via _safe_update_gui!"""
         if not self.jarvis or not hasattr(self.jarvis, 'get_crawler_status'):
             return
         try:
@@ -810,7 +833,8 @@ class JarvisDesktopApp(QMainWindow):
         self._log("🔄 Crawler-Sync gestartet...")
         threading.Thread(target=lambda: self.jarvis.run_crawler_sync_now(), daemon=True).start()
 
-    def _refresh_memory(self):
+    def _refresh_memory_async(self):
+        """KRITISCH: Alle GUI-Updates via _safe_update_gui!"""
         if not self.jarvis or not hasattr(self.jarvis, 'get_memory_snapshot'):
             return
         try:
@@ -840,8 +864,7 @@ class JarvisDesktopApp(QMainWindow):
                 success = self.jarvis.add_custom_command_entry(pattern, response)
                 if success:
                     self._log(f"✅ Befehl hinzugefügt: {pattern}")
-                    self.pattern_input.clear()
-                    self.response_input.clear()
+                    self._safe_update_gui(lambda: (self.pattern_input.clear(), self.response_input.clear()))
                 else:
                     self._log("❌ Befehl konnte nicht hinzugefügt werden")
             except Exception as e:
@@ -852,7 +875,8 @@ class JarvisDesktopApp(QMainWindow):
         if not self.jarvis or not hasattr(self.jarvis, 'run_training_cycle'):
             return
         self._log("🚀 Training wird gestartet...")
-        self.training_log.append("[" + time.strftime("%H:%M:%S") + "] Training gestartet...")
+        timestamp = time.strftime("%H:%M:%S")
+        self._safe_update_gui(lambda: self.training_log.append(f"[{timestamp}] Training gestartet..."))
         def train():
             try:
                 result = self.jarvis.run_training_cycle()
@@ -863,13 +887,13 @@ class JarvisDesktopApp(QMainWindow):
         threading.Thread(target=train, daemon=True).start()
 
     def _refresh_logs(self):
+        """Logs sind lokal - direkter Zugriff OK"""
         try:
             log_file = Path("logs/jarvis.log")
             if log_file.exists():
                 logs = log_file.read_text(encoding="utf-8", errors="ignore")
                 self.log_output_full = logs[-100000:]
-                self.log_output.setPlainText(self.log_output_full)
-                self.log_output.moveCursor(QTextCursor.MoveOperation.End)
+                self._safe_update_gui(lambda: (self.log_output.setPlainText(self.log_output_full), self.log_output.moveCursor(QTextCursor.MoveOperation.End)))
         except Exception as e:
             print(f"Log-Refresh Fehler: {e}")
             traceback.print_exc()
@@ -884,14 +908,13 @@ class JarvisDesktopApp(QMainWindow):
     def _clear_logs(self):
         if self.jarvis and hasattr(self.jarvis, 'clear_logs'):
             self.jarvis.clear_logs()
-        self.log_output.clear()
-        self.log_output_full = ""
+        self._safe_update_gui(lambda: (self.log_output.clear(), setattr(self, 'log_output_full', '')))
         self._log("🗑️ Logs gelöscht")
 
     def _measure_audio_level(self):
         if not self.jarvis or not hasattr(self.jarvis, 'sample_audio_level'):
             return
-        self.audio_level_label.setText("Messe...")
+        self._safe_update_gui(lambda: self.audio_level_label.setText("Messe..."))
         def measure():
             try:
                 level = self.jarvis.sample_audio_level(duration=2.0)
@@ -908,7 +931,7 @@ class JarvisDesktopApp(QMainWindow):
         text = self.input_field.text().strip()
         if not text:
             return
-        self.input_field.clear()
+        self._safe_update_gui(lambda: self.input_field.clear())
         self._add_chat_message("user", text)
         if self.jarvis:
             threading.Thread(target=lambda: self.jarvis.send_text_command(text, source="desktop_app"), daemon=True).start()
@@ -916,15 +939,13 @@ class JarvisDesktopApp(QMainWindow):
     def _toggle_listening(self):
         if self.listen_button.isChecked():
             if self.jarvis and self.jarvis.start_listening():
-                self.listening_indicator.setText("🎤 Hört zu")
-                self.listening_indicator.setStyleSheet("background: #2ecc71; padding: 8px 16px; border-radius: 16px; font-weight: bold; color: white;")
+                self._safe_update_gui(lambda: (self.listening_indicator.setText("🎤 Hört zu"), self.listening_indicator.setStyleSheet("background: #2ecc71; padding: 8px 16px; border-radius: 16px; font-weight: bold; color: white;")))
             else:
                 self.listen_button.setChecked(False)
         else:
             if self.jarvis:
                 self.jarvis.stop_listening()
-            self.listening_indicator.setText("🎵 Idle")
-            self.listening_indicator.setStyleSheet("background: #1e3a5f; padding: 8px 16px; border-radius: 16px; font-weight: bold; color: white;")
+            self._safe_update_gui(lambda: (self.listening_indicator.setText("🎵 Idle"), self.listening_indicator.setStyleSheet("background: #1e3a5f; padding: 8px 16px; border-radius: 16px; font-weight: bold; color: white;")))
 
     def update_status(self, message: str):
         try:

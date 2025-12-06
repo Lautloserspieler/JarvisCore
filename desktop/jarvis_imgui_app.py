@@ -142,29 +142,9 @@ class JarvisImGuiApp:
                 with dpg.tab(label="💻 Dashboard"):
                     self._create_dashboard_tab()
                 
-                # Tab 2: Chat
-                with dpg.tab(label="💬 Chat"):
-                    self._create_chat_tab()
-                
-                # Tab 3: Models
-                with dpg.tab(label="🧠 Modelle"):
-                    self._create_models_tab()
-                
-                # Tab 4: Plugins
-                with dpg.tab(label="🧩 Plugins"):
-                    self._create_plugins_tab()
-                
-                # Tab 5: Memory
-                with dpg.tab(label="🧠 Gedächtnis"):
-                    self._create_memory_tab()
-                
-                # Tab 6: Logs
+                # Tab 2: Logs
                 with dpg.tab(label="📋 Logs"):
                     self._create_logs_tab()
-                
-                # Tab 7: Settings
-                with dpg.tab(label="⚙️ Einstellungen"):
-                    self._create_settings_tab()
             
             # Footer Status
             dpg.add_separator()
@@ -174,105 +154,105 @@ class JarvisImGuiApp:
                 dpg.add_text("FPS: 60", tag="fps_counter", color=(100, 181, 246, 255))
     
     # ===================================================================
-    # TAB 1: DASHBOARD
+    # TAB 1: DASHBOARD (SIMPLIFIED)
     # ===================================================================
     def _create_dashboard_tab(self):
-        """System-Metriken mit Live-Plots"""        with dpg.group(horizontal=True):
-            # Left Column: Metric Cards
-            with dpg.child_window(width=400, height=600):
-                dpg.add_text("📊 System-Metriken", color=(100, 181, 246, 255))
-                dpg.add_separator()
-                
-                # CPU Card
-                with dpg.group():
-                    dpg.add_text("💻 CPU", color=(100, 181, 246, 255))
-                    dpg.add_text("0.0%", tag="cpu_value", color=(255, 255, 255, 255))
-                    dpg.add_text("0 MHz", tag="cpu_detail", color=(136, 136, 136, 255))
-                    dpg.add_separator()
-                
-                # RAM Card
-                with dpg.group():
-                    dpg.add_text("💾 RAM", color=(100, 181, 246, 255))
-                    dpg.add_text("0.0%", tag="ram_value", color=(255, 255, 255, 255))
-                    dpg.add_text("0.0 GB frei", tag="ram_detail", color=(136, 136, 136, 255))
-                    dpg.add_separator()
-                
-                # GPU Card
-                with dpg.group():
-                    dpg.add_text("🎮 GPU", color=(100, 181, 246, 255))
-                    dpg.add_text("N/A", tag="gpu_value", color=(255, 255, 255, 255))
-                    dpg.add_text("0 MB VRAM", tag="gpu_detail", color=(136, 136, 136, 255))
-                    dpg.add_separator()
-                
-                # Disk Card
-                with dpg.group():
-                    dpg.add_text("💾 Disk", color=(100, 181, 246, 255))
-                    dpg.add_text("0.0%", tag="disk_value", color=(255, 255, 255, 255))
-                    dpg.add_text("0.0 GB frei", tag="disk_detail", color=(136, 136, 136, 255))
-                    dpg.add_separator()
-                
-                # Uptime Card
-                with dpg.group():
-                    dpg.add_text("⏱️ Uptime", color=(100, 181, 246, 255))
-                    dpg.add_text("0.0h", tag="uptime_value", color=(255, 255, 255, 255))
-            
-            # Right Column: Live Plots
-            with dpg.child_window(width=-1, height=600):
-                dpg.add_text("📈 Live-Metriken", color=(100, 181, 246, 255))
-                dpg.add_separator()
-                
-                # CPU Plot
-                with dpg.plot(label="CPU Usage", height=150, width=-1):
-                    dpg.add_plot_legend()
-                    dpg.add_plot_axis(dpg.mvXAxis, label="Zeit")
-                    with dpg.plot_axis(dpg.mvYAxis, label="%"):
-                        dpg.add_line_series(list(range(100)), list(self.cpu_history), 
-                                          label="CPU", tag="cpu_plot")
-                
-                # RAM Plot
-                with dpg.plot(label="RAM Usage", height=150, width=-1):
-                    dpg.add_plot_legend()
-                    dpg.add_plot_axis(dpg.mvXAxis, label="Zeit")
-                    with dpg.plot_axis(dpg.mvYAxis, label="%"):
-                        dpg.add_line_series(list(range(100)), list(self.ram_history), 
-                                          label="RAM", tag="ram_plot")
-                
-                # GPU Plot
-                with dpg.plot(label="GPU Usage", height=150, width=-1):
-                    dpg.add_plot_legend()
-                    dpg.add_plot_axis(dpg.mvXAxis, label="Zeit")
-                    with dpg.plot_axis(dpg.mvYAxis, label="%"):
-                        dpg.add_line_series(list(range(100)), list(self.gpu_history), 
-                                          label="GPU", tag="gpu_plot")
+        """System-Metriken (Simplified)"""
+        dpg.add_text("📊 System-Metriken", color=(100, 181, 246, 255))
+        dpg.add_separator()
+        dpg.add_text("CPU: 0.0%", tag="cpu_value")
+        dpg.add_text("RAM: 0.0%", tag="ram_value")
+        dpg.add_text("GPU: N/A", tag="gpu_value")
     
-    # ... (Rest der Tab-Methoden bleiben identisch)
+    # ===================================================================
+    # TAB 2: LOGS
+    # ===================================================================
+    def _create_logs_tab(self):
+        """Log-Viewer"""
+        with dpg.group(horizontal=True):
+            dpg.add_button(label="🔄 Aktualisieren", callback=self._refresh_logs)
+            dpg.add_button(label="🗑️ Logs löschen", callback=self._clear_logs)
+        
+        dpg.add_separator()
+        
+        # Log Output
+        with dpg.child_window(height=-1, border=True):
+            dpg.add_text("", tag="log_output", wrap=0)
+    
+    def _refresh_logs(self):
+        """Aktualisiert Logs"""
+        try:
+            log_file = Path("logs/jarvis.log")
+            if log_file.exists():
+                logs = log_file.read_text(encoding="utf-8", errors="ignore")
+                dpg.set_value("log_output", logs[-50000:])  # Last 50KB
+        except Exception as e:
+            self._log(f"Log-Refresh Fehler: {e}")
+    
+    def _clear_logs(self):
+        """Löscht Logs"""
+        dpg.set_value("log_output", "")
+        self._log("🗑️ Logs gelöscht")
+    
+    def _log(self, message: str):
+        """Fügt Log-Eintrag hinzu"""
+        timestamp = time.strftime("%H:%M:%S")
+        log_entry = f"[{timestamp}] {message}"
+        self.log_buffer.append(log_entry)
+        print(log_entry)
+    
+    # ===================================================================
+    # BACKGROUND UPDATES
+    # ===================================================================
+    def _start_background_thread(self):
+        """Startet Background-Update Thread"""
+        def update_loop():
+            while self.is_running:
+                try:
+                    self._update_system_metrics()
+                    time.sleep(2.0)  # Update alle 2 Sekunden
+                except Exception as e:
+                    print(f"Background update error: {e}")
+        
+        threading.Thread(target=update_loop, daemon=True).start()
+    
+    def _update_system_metrics(self):
+        """Aktualisiert System-Metriken"""
+        if not self.jarvis or not hasattr(self.jarvis, 'get_system_metrics'):
+            return
+        
+        try:
+            metrics = self.jarvis.get_system_metrics(include_details=False)
+            summary = metrics.get("summary", {})
+            
+            cpu = summary.get("cpu_percent", 0)
+            ram = summary.get("memory_percent", 0)
+            gpu = summary.get("gpu_utilization", 0)
+            
+            # Update Values
+            dpg.set_value("cpu_value", f"CPU: {cpu:.1f}%")
+            dpg.set_value("ram_value", f"RAM: {ram:.1f}%")
+            dpg.set_value("gpu_value", f"GPU: {gpu:.1f}%" if gpu else "GPU: N/A")
+            
+        except Exception as e:
+            print(f"Metrics update error: {e}")
     
     # ===================================================================
     # PUBLIC INTERFACE (KOMPATIBILITÄT)
     # ===================================================================
     def add_user_message(self, text: str):
-        """Fügt User-Nachricht hinzu"""
-        self.chat_messages.append(f"👤 [Du] {text}")
-        self._update_chat_display()
+        pass
     
     def add_assistant_message(self, text: str):
-        """Fügt JARVIS-Nachricht hinzu"""
-        self.chat_messages.append(f"🤖 [JARVIS] {text}")
-        self._update_chat_display()
+        pass
     
     def update_status(self, message: str):
-        """Aktualisiert Status"""
         dpg.set_value("status_text", f"🟢 {message}")
     
     def update_context_panels(self, **kwargs):
-        """Aktualisiert Context-Panels (Dummy für Kompatibilität)"""
-        # ImGui hat keine separaten Context-Panels wie PyQt6
-        # Diese Methode ist nur für Kompatibilität vorhanden
         pass
     
     def handle_knowledge_progress(self, payload):
-        """Handle Knowledge Progress (Dummy für Kompatibilität)"""
-        # Könnte später in einem eigenen Panel angezeigt werden
         if isinstance(payload, dict):
             msg = payload.get("message", str(payload))
             self._log(f"🧠 Knowledge: {msg}")
@@ -280,10 +260,7 @@ class JarvisImGuiApp:
             self._log(f"🧠 Knowledge: {payload}")
     
     def show_message(self, title: str, message: str):
-        """Zeigt eine Nachricht an (Dummy für Kompatibilität)"""
         self._log(f"{title}: {message}")
-    
-    # ... (Rest der Methoden bleibt identisch)
     
     def run(self):
         """Startet die GUI"""
@@ -294,8 +271,6 @@ class JarvisImGuiApp:
         
         # Initial data load
         if self.jarvis:
-            self._refresh_models()
-            self._refresh_plugins()
             self._refresh_logs()
         
         # Main loop

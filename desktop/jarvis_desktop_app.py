@@ -425,9 +425,10 @@ class JarvisDesktopApp(QMainWindow):
         event.accept()
 
     def run(self):
-        """Startet GUI und lässt sie laufen"""
-        # Fenster MUSS vor on_gui_ready angezeigt werden
+        """Startet GUI und lässt sie blockierend laufen"""
+        # Fenster MUSS angezeigt werden
         self.show()
+        self._log("Desktop-GUI gestartet")
         
         # Ready-Callback aufrufen
         if self.jarvis and hasattr(self.jarvis, "on_gui_ready"):
@@ -436,9 +437,13 @@ class JarvisDesktopApp(QMainWindow):
             except Exception as e:
                 self._log(f"on_gui_ready Fehler: {e}")
         
-        # Event Loop läuft jetzt passiv
-        # QApplication.instance() läuft den Main-Loop in main.py
-        self._log("Desktop-GUI bereit")
+        # QApplication Event Loop starten - BLOCKIERT hier!
+        app = QApplication.instance()
+        if app:
+            # Die exec() methode blockiert solange bis die Anwendung beendet wird
+            app.exec()
+        
+        self._log("Desktop-GUI beendet")
 
 
 def create_jarvis_desktop_gui(jarvis_instance):

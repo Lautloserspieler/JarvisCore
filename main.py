@@ -44,14 +44,6 @@ from utils.authenticator import AuthenticatorManager
 from utils.logger import Logger
 
 GO_SERVICES = [
-    {"name": "securityd", "cmd": ["go", "run", "./cmd/securityd"]},
-    {"name": "gatewayd", "cmd": ["go", "run", "./cmd/gatewayd"]},
-    {"name": "memoryd", "cmd": ["go", "run", "./cmd/memoryd"]},
-    {"name": "systemd", "cmd": ["go", "run", "./cmd/systemd"]},
-    {"name": "speechtaskd", "cmd": ["go", "run", "./cmd/speechtaskd"]},
-    {"name": "commandd", "cmd": ["go", "run", "./cmd/commandd"]},
-]
-GO_SERVICES = [
     {"name": "securityd", "cmd": ["go", "run", "./cmd/securityd"], "env": {}},
     {"name": "gatewayd", "cmd": ["go", "run", "./cmd/gatewayd"], "env": {}},
     {"name": "memoryd", "cmd": ["go", "run", "./cmd/memoryd"], "env": {}},
@@ -120,84 +112,6 @@ class WebInterfaceBridge(HeadlessGUI):
             self._logger.debug("Kontext konnte nicht an Web-UI gesendet werden: %s", exc)
 
 
-class DesktopWebviewGUI(WebInterfaceBridge):
-    """Zeigt die Web-UI in einem nativen Fenster via pywebview."""
-
-    def __init__(self, jarvis: "JarvisAssistant", logger: Logger, desktop_cfg: Dict[str, Any], web_cfg: Dict[str, Any]) -> None:
-        super().__init__(jarvis, logger)
-        self._desktop_cfg = desktop_cfg or {}
-        host = str(web_cfg.get("host") or "127.0.0.1")
-        port = int(web_cfg.get("port") or 8080)
-        if host in ("0.0.0.0", "::", ""):
-            host_for_url = "127.0.0.1"
-        else:
-            host_for_url = host
-        self._web_url = f"http://{host_for_url}:{port}/"
-        self._title = str(self._desktop_cfg.get("window_title") or "J.A.R.V.I.S.")
-        try:
-            self._width = int(self._desktop_cfg.get("width", 1280) or 1280)
-            self._height = int(self._desktop_cfg.get("height", 820) or 820)
-        except Exception:
-            self._width, self._height = 1280, 820
-        self._frameless = bool(self._desktop_cfg.get("frameless", False))
-        self._background_color = str(self._desktop_cfg.get("background_color") or "#0b1220")
-        self._debug = bool(self._desktop_cfg.get("open_devtools", False))
-
-    def _wait_for_web_ready(self) -> None:
-        try:
-            if hasattr(self._jarvis, "web_interface") and self._jarvis.web_interface:
-                self._jarvis.web_interface.wait_until_ready(timeout=12.0)
-        except Exception:
-            pass
-
-    def _open_browser_fallback(self) -> None:
-        try:
-            webbrowser.open(self._web_url, new=2)
-        except Exception as exc:
-            self._logger.debug("Browser-Fallback konnte nicht geoeffnet werden: %s", exc)
-
-    def run(self) -> None:
-        try:
-            import webview  # type: ignore
-        except Exception as exc:
-            self._logger.warning("Desktop-WebView nicht verfuegbar (%s). Oeffne Browser stattdessen.", exc)
-            self._open_browser_fallback()
-            return super().run()
-
-        self._wait_for_web_ready()
-        ready_cb = getattr(self._jarvis, "on_gui_ready", None)
-
-        try:
-            window = webview.create_window(
-                self._title,
-                url=self._web_url,
-                width=self._width,
-                height=self._height,
-                frameless=self._frameless,
-                easy_drag=self._frameless,
-                resizable=True,
-                background_color=self._background_color,
-            )
-        except Exception as exc:
-            self._logger.error("Desktop-Fenster konnte nicht erstellt werden: %s", exc)
-            self._open_browser_fallback()
-            return super().run()
-
-        def _on_ready() -> None:
-            if callable(ready_cb):
-                try:
-                    ready_cb()
-                except Exception as exc_inner:
-                    self._logger.debug("Desktop-Ready Callback fehlgeschlagen: %s", exc_inner)
-
-        try:
-            webview.start(_on_ready if callable(ready_cb) else None, debug=self._debug, http_server=False, gui=None)
-        except Exception as exc:
-            self._logger.error("Desktop-App konnte nicht gestartet werden: %s", exc)
-            self._open_browser_fallback()
-            return super().run()
-
-
 class JarvisAssistant:
     """Hauptklasse faer den J.A.R.V.I.S. Assistenten"""
 
@@ -220,6 +134,7 @@ class JarvisAssistant:
         self._pending_authenticator_payload: Optional[Dict[str, str]] = None
         self._desktop_cfg: Dict[str, Any] = {}
         self.desktop_app_enabled = False
+        self.desktop_gui = None  # Referenz zum Desktop-Fenster
 
         # Komponenten initialisieren
         self.plugin_manager = PluginManager(self.logger)
@@ -235,7 +150,6 @@ class JarvisAssistant:
             security_manager=self.security_manager,
             logger=self.logger,
         )
-        self._go_processes: List[subprocess.Popen] = []
 
         self.speech_mode = "neutral"
         self.tts_stream_enabled = True
@@ -400,17 +314,24 @@ class JarvisAssistant:
         self.desktop_app_enabled = bool(self._desktop_cfg.get("enabled") or os.getenv("JARVIS_DESKTOP"))
         web_enabled = bool(web_cfg.get("enabled")) if isinstance(web_cfg, dict) else False
 
-        if self.desktop_app_enabled and web_enabled:
+        # Versuche Desktop-App zu laden
+        if self.desktop_app_enabled:
             try:
-                self.logger.info("Desktop-WebView aktiviert. Weboberflaeche wird im Fenster geladen.")
-                return DesktopWebviewGUI(self, self.logger, self._desktop_cfg, web_cfg if isinstance(web_cfg, dict) else {})
+                from desktop.jarvis_desktop_app import create_jarvis_desktop_gui
+                self.desktop_gui = create_jarvis_desktop_gui(self)
+                self.logger.info("Native Desktop-App (PyQt6) wird verwendet")
+                return self.desktop_gui
             except Exception as exc:
-                self.logger.warning("Desktop-App konnte nicht initialisiert werden, falle auf Browser zurueck: %s", exc)
-        elif self.desktop_app_enabled and not web_enabled:
-            self.logger.warning("Desktop-App angefragt, aber Web-Interface ist deaktiviert. Browser-Modus wird verwendet.")
+                self.logger.warning("Desktop-App konnte nicht geladen werden, falle auf Web-Interface zurueck: %s", exc)
 
-        self.logger.info("Desktop-GUI deaktiviert. Weboberflaeche uebernimmt die Visualisierung.")
-        return WebInterfaceBridge(self, self.logger)
+        # Fallback: Web-Interface
+        if web_enabled:
+            self.logger.info("Web-Interface wird verwendet")
+            return WebInterfaceBridge(self, self.logger)
+
+        # Fallback: Headless
+        self.logger.info("Headless-Modus wird verwendet")
+        return HeadlessGUI(self, self.logger)
 
     def _schedule_web_ui_open(self) -> None:
         try:
@@ -561,10 +482,9 @@ class JarvisAssistant:
             self.logger.debug("Download-Event konnte nicht gesendet werden: %s", exc)
 
     def _post_to_main_thread(self, callback) -> bool:
-        root = getattr(self.gui, "root", None)
-        if root and hasattr(root, "after"):
+        if self.desktop_gui and hasattr(self.desktop_gui, "post_to_qt"):
             try:
-                root.after(0, callback)
+                self.desktop_gui.post_to_qt(callback)
                 return True
             except Exception as exc:
                 self.logger.debug("GUI Callback konnte nicht geplant werden: %s", exc)
@@ -2015,11 +1935,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-

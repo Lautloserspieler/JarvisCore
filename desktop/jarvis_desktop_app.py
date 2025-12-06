@@ -30,9 +30,10 @@ except ImportError:
 class JarvisDesktopApp(QMainWindow):
     """Native Desktop-GUI für J.A.R.V.I.S."""
     
-    def __init__(self, jarvis_instance=None):
+    def __init__(self, jarvis_instance=None, app=None):
         super().__init__()
         self.jarvis = jarvis_instance
+        self.app = app  # QApplication Referenz speichern!
         self.is_running = True
         
         self._init_ui()
@@ -417,6 +418,11 @@ class JarvisDesktopApp(QMainWindow):
         msg = payload if isinstance(payload, str) else str(payload.get("message", ""))
         self._log(f"📚 {msg}")
 
+    def post_to_qt(self, callback):
+        """Thread-sicherer Callback für GUI-Updates"""
+        if self.app:
+            self.app.postEvent(self, lambda: callback())
+
     def closeEvent(self, event):
         """Wird aufgerufen wenn Fenster geschlossen wird"""
         self.is_running = False
@@ -438,10 +444,11 @@ class JarvisDesktopApp(QMainWindow):
                 self._log(f"on_gui_ready Fehler: {e}")
         
         # QApplication Event Loop starten - BLOCKIERT hier!
-        app = QApplication.instance()
-        if app:
+        if self.app:
             # Die exec() methode blockiert solange bis die Anwendung beendet wird
-            app.exec()
+            self.app.exec()
+        else:
+            self._log("FEHLER: QApplication nicht verfügbar!")
         
         self._log("Desktop-GUI beendet")
 
@@ -456,5 +463,6 @@ def create_jarvis_desktop_gui(jarvis_instance):
     if app is None:
         app = QApplication(sys.argv)
     
-    window = JarvisDesktopApp(jarvis_instance)
+    # App-Referenz an Window übergeben
+    window = JarvisDesktopApp(jarvis_instance, app=app)
     return window

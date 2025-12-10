@@ -39,6 +39,30 @@ export default function Index() {
     }
   }
 
+  // Helper: Get metric with fallback
+  const getMetric = (path: string, fallback: number = 0): number => {
+    try {
+      const parts = path.split('.')
+      let value: any = metrics
+      for (const part of parts) {
+        if (value && typeof value === 'object') {
+          value = value[part]
+        } else {
+          return fallback
+        }
+      }
+      return typeof value === 'number' ? value : fallback
+    } catch {
+      return fallback
+    }
+  }
+
+  const cpuPercent = getMetric('summary.cpu_percent', 0)
+  const memoryPercent = getMetric('summary.memory_percent', 0)
+  const memoryUsed = getMetric('summary.memory_used_gb', 0)
+  const memoryTotal = getMetric('summary.memory_total_gb', 0)
+  const diskPercent = getMetric('summary.disk_percent', 0)
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-jarvis-darker via-jarvis-dark to-jarvis-darker">
       {/* Header */}
@@ -116,13 +140,13 @@ export default function Index() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Auslastung</span>
                     <span className="text-jarvis-cyan font-mono">
-                      {metrics?.summary?.cpu_percent?.toFixed(1) || '0.0'}%
+                      {cpuPercent.toFixed(1)}%
                     </span>
                   </div>
                   <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-jarvis-cyan to-jarvis-blue transition-all duration-300"
-                      style={{ width: `${metrics?.summary?.cpu_percent || 0}%` }}
+                      style={{ width: `${cpuPercent}%` }}
                     />
                   </div>
                 </div>
@@ -138,14 +162,13 @@ export default function Index() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Verwendet</span>
                     <span className="text-jarvis-cyan font-mono">
-                      {((metrics?.summary?.memory_used_gb || 0)).toFixed(1)} GB / 
-                      {((metrics?.summary?.memory_total_gb || 0)).toFixed(1)} GB
+                      {memoryUsed.toFixed(1)} GB / {memoryTotal.toFixed(1)} GB
                     </span>
                   </div>
                   <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-jarvis-cyan to-jarvis-blue transition-all duration-300"
-                      style={{ width: `${metrics?.summary?.memory_percent || 0}%` }}
+                      style={{ width: `${memoryPercent}%` }}
                     />
                   </div>
                 </div>
@@ -161,13 +184,13 @@ export default function Index() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Verwendet</span>
                     <span className="text-jarvis-cyan font-mono">
-                      {metrics?.summary?.disk_percent?.toFixed(1) || '0.0'}%
+                      {diskPercent.toFixed(1)}%
                     </span>
                   </div>
                   <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-jarvis-cyan to-jarvis-blue transition-all duration-300"
-                      style={{ width: `${metrics?.summary?.disk_percent || 0}%` }}
+                      style={{ width: `${diskPercent}%` }}
                     />
                   </div>
                 </div>

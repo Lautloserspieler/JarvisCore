@@ -1,4 +1,4 @@
-"""
+"""  
 LLM-Manager fuer J.A.R.V.I.S.
 Verwaltet lokale Sprachmodelle (Llama, Mistral, etc.)
 """
@@ -109,6 +109,9 @@ class LLMManager:
         self.max_cached_models: int = int(os.environ.get("LLM_MAX_CACHED_MODELS", "2"))
         self.response_cache: Dict[str, Dict[str, Any]] = {}
         self.cache_ttl_seconds: int = int(os.environ.get("LLM_CACHE_TTL", "300"))
+
+        # Progress callback for downloads
+        self._progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None
 
         self.use_case_keywords: Dict[str, List[str]] = {
             "code": ["code", "programm", "skript", "funktion", "bug", "regex", "algorithmus", "entwickle"],
@@ -916,7 +919,7 @@ class LLMManager:
         last_emit = 0.0
 
         def emit_progress(force: bool = False, status: str = "in_progress", message: Optional[str] = None) -> None:
-            if not progress_cb:
+            if not progress_cb and not self._progress_callback:
                 return
             now = time.time()
             nonlocal last_emit
@@ -943,7 +946,11 @@ class LLMManager:
             }
             if message:
                 payload["message"] = message
-            progress_cb(payload)
+            # Call both callbacks
+            if progress_cb:
+                progress_cb(payload)
+            if self._progress_callback:
+                self._progress_callback(payload)
             last_emit = now
 
         response = None

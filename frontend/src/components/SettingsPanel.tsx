@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Settings, Mic, Volume2, Zap } from 'lucide-react'
 
 interface SettingsPanelProps {

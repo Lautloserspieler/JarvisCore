@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Download, Loader2, CheckCircle, XCircle, Cpu } from 'lucide-react'
+import { Loader2, CheckCircle, Cpu } from 'lucide-react'
 import { getLLMModels, loadLLMModel, unloadLLMModel } from '../lib/api'
 
 export default function ModelManager() {

@@ -50,6 +50,7 @@ websockets>=11.0.0
 fastapi>=0.111.0
 uvicorn>=0.23.0
 langdetect>=1.0.9
+dearpygui
 
 # System & hardware
 psutil>=5.9.0

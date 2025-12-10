@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-jarvis-darker text-white font-space;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-orbitron;
+  }
+}
+
+@layer components {
+  .jarvis-card {
+    @apply bg-jarvis-dark/50 border border-jarvis-cyan/20 rounded-lg backdrop-blur-sm;
+  }
+
+  .jarvis-button {
+    @apply px-4 py-2 bg-jarvis-cyan/10 border border-jarvis-cyan/50 rounded-lg
+           hover:bg-jarvis-cyan/20 hover:border-jarvis-cyan transition-all
+           font-orbitron text-jarvis-cyan;
+  }
+
+  .jarvis-input {
+    @apply w-full px-4 py-2 bg-jarvis-dark/50 border border-jarvis-cyan/30 rounded-lg
+           focus:border-jarvis-cyan focus:outline-none
+           text-white placeholder-gray-500;
+  }
+
+  .jarvis-glow {
+    @apply shadow-lg shadow-jarvis-cyan/20;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-jarvis-darker;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-jarvis-cyan/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-jarvis-cyan/50;
+}

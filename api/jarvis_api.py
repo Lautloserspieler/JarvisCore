@@ -14,6 +14,7 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 import asyncio
 import json
+import threading
 
 app = FastAPI(
     title="J.A.R.V.I.S. API",
@@ -35,7 +36,7 @@ app.add_middleware(
 # Global JARVIS instance
 _jarvis_instance = None
 
-# Global download progress tracking
+# 🔴 GLOBAL download progress tracking
 _download_progress: Dict[str, Any] = {
     "model": None,
     "status": None,
@@ -46,17 +47,20 @@ _download_progress: Dict[str, Any] = {
     "eta": 0,
     "message": "",
 }
+_progress_lock = threading.Lock()
 
 def update_download_progress(progress_data: Dict[str, Any]):
-    """Updates global download progress"""
+    """🔴 Updates global download progress - called from LLM Manager"""
     global _download_progress
-    _download_progress.update(progress_data)
+    with _progress_lock:
+        _download_progress.update(progress_data)
+        print(f"[API] Progress updated: {progress_data}")
 
 def set_jarvis_instance(jarvis):
     """Setzt die globale JARVIS-Instanz und bindet Callbacks"""
     global _jarvis_instance
     _jarvis_instance = jarvis
-    # Bind progress callback to LLM manager
+    # 🔴 Bind progress callback to LLM manager
     if hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
         jarvis.llm_manager._progress_callback = update_download_progress
         print("✅ Download progress callback bound to LLM manager")
@@ -69,7 +73,8 @@ def get_jarvis():
 
 def get_download_progress() -> Dict[str, Any]:
     """Returns current download progress"""
-    return _download_progress.copy()
+    with _progress_lock:
+        return _download_progress.copy()
 
 # Pydantic Models
 class CommandRequest(BaseModel):
@@ -155,23 +160,12 @@ async def llm_status():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/llm/model_overview")
-async def model_overview():
-    """Get overview of all available models"""
-    try:
-        jarvis = get_jarvis()
-        if hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
-            return jarvis.llm_manager.getmodeloverviewself()
-        raise HTTPException(status_code=503, detail="LLM Manager not available")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/api/llm/download_status")
 async def download_status(model: Optional[str] = Query(None)):
     """🔴 FIX: Get current LLM download progress with optional model parameter"""
     progress = get_download_progress()
     
-    # 🎯 If specific model requested, return progress for that model
+    # If specific model requested, ensure model field is set
     if model:
         progress['model'] = model
     
@@ -184,13 +178,38 @@ async def llm_action(request: LLMActionRequest):
     try:
         jarvis = get_jarvis()
         
-        # For download, ensure progress callback is set
+        # 🔴 For download, start in background thread and ensure callback is set
         if request.action == "download" and hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
+            model_key = request.model
+            
+            # Ensure callback is bound
             jarvis.llm_manager._progress_callback = update_download_progress
+            
+            # 🔴 Start download in background thread
+            def background_download():
+                try:
+                    print(f"[LLM] Starting download for {model_key}...")
+                    jarvis.llm_manager.download_model(model_key, progress_cb=update_download_progress)
+                    print(f"[LLM] Download completed for {model_key}")
+                except Exception as e:
+                    print(f"[LLM] Download error for {model_key}: {e}")
+                    with _progress_lock:
+                        _download_progress.update({
+                            "model": model_key,
+                            "status": "error",
+                            "message": str(e)
+                        })
+            
+            # Start download thread
+            download_thread = threading.Thread(target=background_download, daemon=True)
+            download_thread.start()
+            
+            return {"success": True, "model": model_key, "message": "Download started"}
         
         result = jarvis.control_llm_model(request.action, request.model)
         return result
     except Exception as e:
+        print(f"[API] LLM action error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/llm/download")
@@ -199,12 +218,33 @@ async def download_model(model: str = Query(...)):
     try:
         jarvis = get_jarvis()
         
+        if not hasattr(jarvis, 'llm_manager') or not jarvis.llm_manager:
+            raise HTTPException(status_code=503, detail="LLM Manager not available")
+        
         # Ensure progress callback is set
-        if hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
-            jarvis.llm_manager._progress_callback = update_download_progress
+        jarvis.llm_manager._progress_callback = update_download_progress
         
         print(f"[API] Starting download for model: {model}")
-        result = jarvis.control_llm_model("download", model)
+        
+        # 🔴 Start download in background thread
+        def background_download():
+            try:
+                print(f"[LLM] Download thread: starting {model}...")
+                jarvis.llm_manager.download_model(model, progress_cb=update_download_progress)
+                print(f"[LLM] Download thread: completed {model}")
+            except Exception as e:
+                print(f"[LLM] Download thread error: {e}")
+                with _progress_lock:
+                    _download_progress.update({
+                        "model": model,
+                        "status": "error",
+                        "message": str(e)
+                    })
+        
+        # Start thread
+        download_thread = threading.Thread(target=background_download, daemon=True)
+        download_thread.start()
+        
         return {"success": True, "model": model, "message": "Download started"}
     except Exception as e:
         print(f"[API] Download error: {e}")

@@ -2,41 +2,25 @@
 # -*- coding: utf-8 -*-
 """
 J.A.R.V.I.S. FastAPI Backend
+RESTful API und WebSocket-Server für die Web-UI
 """
 
-import sys
-import asyncio
-import json
-from pathlib import Path
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from starlette.middleware.cors import CORSMiddleware
+from typing import Optional, Dict, Any, List
+from pathlib import Path
+import asyncio
+import json
 
-# JARVIS-Instanz (wird von main.py gesetzt)
-_jarvis_instance = None
-
-def set_jarvis_instance(jarvis):
-    global _jarvis_instance
-    _jarvis_instance = jarvis
-
-def get_jarvis():
-    if _jarvis_instance is None:
-        raise RuntimeError("JARVIS instance not initialized")
-    return _jarvis_instance
-
-# FastAPI App
 app = FastAPI(
     title="J.A.R.V.I.S. API",
-    description="RESTful API für J.A.R.V.I.S. Sprachassistent",
+    description="RESTful API für den J.A.R.V.I.S. Sprachassistenten",
     version="2.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json"
 )
 
 # CORS Middleware
@@ -48,24 +32,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Pydantic Models
-class ChatMessage(BaseModel):
-    text: str
-    stream: bool = False
+# Global JARVIS instance
+_jarvis_instance = None
 
-class LLMLoadRequest(BaseModel):
-    model: str
+def set_jarvis_instance(jarvis):
+    """Setzt die globale JARVIS-Instanz"""
+    global _jarvis_instance
+    _jarvis_instance = jarvis
+
+def get_jarvis():
+    """Gibt die JARVIS-Instanz zurück"""
+    if _jarvis_instance is None:
+        raise HTTPException(status_code=503, detail="JARVIS ist noch nicht initialisiert")
+    return _jarvis_instance
+
+# Pydantic Models
+class CommandRequest(BaseModel):
+    command: str
+    mode: Optional[str] = "text"
 
 class LLMActionRequest(BaseModel):
-    action: str  # "load", "unload", "download"
+    action: str  # load, unload, download
     model: Optional[str] = None
 
-class SettingsUpdate(BaseModel):
+class SettingRequest(BaseModel):
     section: str
     key: str
     value: Any
 
-# WebSocket Connection Manager
+# WebSocket Manager
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -73,12 +68,10 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
-        print("WebSocket connected")
 
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-        print("WebSocket disconnected")
 
     async def broadcast(self, message: dict):
         for connection in self.active_connections:
@@ -89,209 +82,240 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# =============================================================================
+# ============================================================================
 # API ENDPOINTS
-# =============================================================================
+# ============================================================================
 
 @app.get("/api/health")
 async def health_check():
-    """System Health Check"""
-    jarvis = get_jarvis()
-    return {
-        "status": "ok",
-        "running": jarvis.is_running,
-        "version": "2.0.0",
-        "timestamp": datetime.now().isoformat()
-    }
+    """System-Gesundheitscheck"""
+    try:
+        jarvis = get_jarvis()
+        return {
+            "status": "ok",
+            "version": "2.0.0",
+            "running": jarvis.is_running,
+            "listening": jarvis.listening,
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "message": str(e)}
+        )
 
 @app.get("/api/status")
 async def get_status():
-    """Runtime Status"""
-    jarvis = get_jarvis()
-    return jarvis.get_runtime_status()
-
-@app.get("/api/metrics")
-async def get_metrics(details: bool = False):
-    """System Metrics (CPU, RAM, Disk)"""
-    jarvis = get_jarvis()
-    return jarvis.get_system_metrics(include_details=details)
-
-# =============================================================================
-# LLM ENDPOINTS
-# =============================================================================
-
-@app.get("/api/llm/status")
-async def llm_status():
-    """LLM Model Status"""
-    jarvis = get_jarvis()
-    return jarvis.get_llm_status()
-
-@app.post("/api/llm/load")
-async def llm_load(request: LLMLoadRequest):
-    """Load LLM Model"""
-    jarvis = get_jarvis()
+    """Detaillierter System-Status"""
     try:
-        result = jarvis.control_llm_model("load", request.model)
-        return result
+        jarvis = get_jarvis()
+        return jarvis.get_runtime_status()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/llm/unload")
-async def llm_unload():
-    """Unload Current LLM Model"""
-    jarvis = get_jarvis()
+@app.get("/api/metrics")
+async def get_metrics():
+    """System-Metriken (CPU, RAM, Disk)"""
     try:
-        result = jarvis.control_llm_model("unload")
-        return result
+        jarvis = get_jarvis()
+        return jarvis.get_system_metrics(include_details=False)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/llm/status")
+async def llm_status():
+    """LLM Status und verfügbare Modelle"""
+    try:
+        jarvis = get_jarvis()
+        return jarvis.get_llm_status()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/llm/action")
 async def llm_action(request: LLMActionRequest):
-    """Generic LLM Action (load/unload/download)"""
-    jarvis = get_jarvis()
+    """LLM Aktion (load/unload/download)"""
     try:
+        jarvis = get_jarvis()
         result = jarvis.control_llm_model(request.action, request.model)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# =============================================================================
-# PLUGIN ENDPOINTS
-# =============================================================================
+@app.post("/api/llm/load")
+async def load_model(request: dict):
+    """Lädt ein LLM-Modell"""
+    try:
+        jarvis = get_jarvis()
+        model_key = request.get("model", "mistral")
+        result = jarvis.control_llm_model("load", model_key)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/llm/unload")
+async def unload_model():
+    """Entlädt das aktuelle LLM-Modell"""
+    try:
+        jarvis = get_jarvis()
+        result = jarvis.control_llm_model("unload")
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/plugins")
 async def get_plugins():
-    """Get Plugin Overview"""
-    jarvis = get_jarvis()
-    return jarvis.get_plugin_overview()
+    """Liste aller Plugins"""
+    try:
+        jarvis = get_jarvis()
+        return jarvis.get_plugin_overview()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# =============================================================================
-# SETTINGS ENDPOINTS
-# =============================================================================
+@app.post("/api/command")
+async def execute_command(request: CommandRequest):
+    """Führt einen Befehl aus"""
+    try:
+        jarvis = get_jarvis()
+        processor = getattr(jarvis, "command_processor", None)
+        if not processor:
+            raise HTTPException(status_code=503, detail="Command Processor nicht verfügbar")
+        
+        response = processor.process_command(request.command)
+        return {"success": True, "response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/settings")
-async def update_settings(update: SettingsUpdate):
-    """Update Settings"""
-    jarvis = get_jarvis()
+async def save_setting(request: SettingRequest):
+    """Speichert eine Einstellung"""
     try:
-        # Get settings object
-        settings = jarvis.settings
+        jarvis = get_jarvis()
+        settings = getattr(jarvis, "settings", None)
         if not settings:
-            raise HTTPException(status_code=500, detail="Settings not available")
+            raise HTTPException(status_code=503, detail="Settings nicht verfügbar")
         
-        # Set value using dot notation (section.key)
-        settings.set(f"{update.section}.{update.key}", update.value)
+        # Get current section or create empty dict
+        current = settings.get(request.section, {})
+        if not isinstance(current, dict):
+            current = {}
         
-        return {
-            "success": True,
-            "message": "Settings updated",
-            "section": update.section,
-            "key": update.key
-        }
+        # Update value
+        current[request.key] = request.value
+        settings.set(request.section, current)
+        
+        # Force save to disk
+        settings.save()
+        
+        # If HuggingFace token was updated, reload LLM manager settings
+        if request.section == 'llm' and request.key == 'huggingface_token':
+            llm_manager = getattr(jarvis, 'llm_manager', None)
+            if llm_manager:
+                # Reload settings in LLM manager
+                llm_manager.settings = settings
+                print(f"✅ HuggingFace Token updated and LLM manager reloaded")
+        
+        return {"success": True, "message": "Einstellung gespeichert"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# =============================================================================
-# CHAT ENDPOINT
-# =============================================================================
-
-@app.post("/api/chat/message")
-async def send_chat_message(message: ChatMessage):
-    """Send Chat Message"""
-    jarvis = get_jarvis()
-    
-    # Process command
-    response_text = "Verstanden. Befehl wird verarbeitet."
-    
-    # Broadcast to WebSocket clients
-    await manager.broadcast({
-        "type": "chat_message",
-        "data": {
-            "message": message.text,
-            "response": response_text,
-            "timestamp": datetime.now().isoformat()
-        }
-    })
-    
-    return {
-        "response": response_text,
-        "timestamp": datetime.now().isoformat()
-    }
-
-# =============================================================================
-# LOGS ENDPOINT
-# =============================================================================
-
-@app.get("/api/logs")
-async def get_logs(lines: int = 100):
-    """Get Recent Logs"""
+@app.post("/api/voice/start")
+async def start_listening():
+    """Startet die Spracherkennung"""
     try:
-        log_file = Path("logs/jarvis.log")
-        if not log_file.exists():
-            return {"logs": []}
-        
-        with open(log_file, "r", encoding="utf-8") as f:
-            all_lines = f.readlines()
-            recent_lines = all_lines[-lines:]
-        
-        return {
-            "logs": [line.strip() for line in recent_lines],
-            "total": len(all_lines)
-        }
+        jarvis = get_jarvis()
+        success = jarvis.start_listening()
+        return {"success": success, "listening": jarvis.listening}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# =============================================================================
+@app.post("/api/voice/stop")
+async def stop_listening():
+    """Stoppt die Spracherkennung"""
+    try:
+        jarvis = get_jarvis()
+        success = jarvis.stop_listening()
+        return {"success": success, "listening": jarvis.listening}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
 # WEBSOCKET
-# =============================================================================
+# ============================================================================
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket-Verbindung für Echtzeit-Updates"""
     await manager.connect(websocket)
+    print("WebSocket connected")
+    
     try:
         while True:
+            # Empfange Nachrichten vom Client
             data = await websocket.receive_text()
             message = json.loads(data)
             
-            # Echo back for now
-            await manager.broadcast({
-                "type": "echo",
-                "data": message
-            })
+            # Verarbeite Nachricht
+            msg_type = message.get("type")
+            
+            if msg_type == "ping":
+                await websocket.send_json({"type": "pong"})
+            
+            elif msg_type == "command":
+                try:
+                    jarvis = get_jarvis()
+                    processor = getattr(jarvis, "command_processor", None)
+                    if processor:
+                        response = processor.process_command(message.get("command", ""))
+                        await websocket.send_json({
+                            "type": "command_response",
+                            "response": response
+                        })
+                except Exception as e:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": str(e)
+                    })
+            
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+        print("WebSocket disconnected")
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        manager.disconnect(websocket)
 
-# =============================================================================
-# STATIC FILES (Frontend)
-# =============================================================================
+# ============================================================================
+# STATIC FILES & SPA
+# ============================================================================
 
-frontend_dist = Path("frontend/dist")
+# Frontend dist Ordner
+frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+
 if frontend_dist.exists():
     # Serve static assets
     app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
     
-    # Serve index.html for all other routes (SPA)
+    # Serve index.html für alle anderen Routes (SPA)
     @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
+    async def serve_spa(full_path: str):
+        # API routes nicht abfangen
         if full_path.startswith("api/"):
-            raise HTTPException(status_code=404, detail="API endpoint not found")
+            raise HTTPException(status_code=404)
         
-        file_path = frontend_dist / full_path
-        if file_path.exists() and file_path.is_file():
-            return FileResponse(file_path)
-        
-        # Fallback to index.html for SPA routing
-        return FileResponse(frontend_dist / "index.html")
-else:
-    @app.get("/")
-    async def root():
-        return {
-            "message": "J.A.R.V.I.S. API läuft",
-            "docs": "/api/docs",
-            "warning": "Frontend nicht gebaut. Führe aus: cd frontend && npm run build"
-        }
+        # index.html für alle SPA-Routes
+        index_file = frontend_dist / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404)
 
-if __name__ == "__main__":
-    print("❌ Starte main.py statt dieser Datei!")
-    sys.exit(1)
+# ============================================================================
+# STARTUP
+# ============================================================================
+
+@app.on_event("startup")
+async def startup_event():
+    print("📡 FastAPI Backend gestartet")
+    print("🌐 Web-UI: http://localhost:8000")
+    print("📜 API Docs: http://localhost:8000/api/docs")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    print("👋 FastAPI Backend wird beendet")

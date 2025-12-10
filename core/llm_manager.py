@@ -1,4 +1,4 @@
-"""  
+"""
 LLM-Manager fuer J.A.R.V.I.S.
 Verwaltet lokale Sprachmodelle (Llama, Mistral, etc.)
 """
@@ -44,6 +44,20 @@ class LLMManager:
         self.router = LLMRouter()
 
         self.available_models: Dict[str, Dict[str, Any]] = {
+            "mistral": {
+                "name": "Mistral-Nemo-Instruct-2407.Q4_K_M.gguf",
+                "display_name": "Mistral 7B Nemo Instruct",
+                "description": "Einsatzgebiet: Code, technische Details, Systembefehle, schnelle Antworten",
+                "context_length": 8192,
+                "parameters": "7B",
+                "use_case": "code",
+                "format": "gguf",
+                "size_gb": 6.7,
+                "repo_url": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407-GGUF",
+                "strengths": ["praezise", "strukturiert", "logisch", "schnell", "deutsch-freundlich"],
+                "weaknesses": ["weniger kreativ"],
+                "role": "technical",
+            },
             "llama3": {
                 "name": "Meta-Llama-3-8B-Instruct.Q4_K_M.gguf",
                 "display_name": "Meta Llama 3 8B Instruct",
@@ -57,20 +71,6 @@ class LLMManager:
                 "strengths": ["flexibel", "generativ", "ideenreich"],
                 "weaknesses": ["weniger praezise bei Code oder Technik"],
                 "role": "standard",
-            },
-            "mistral": {
-                "name": "Nous-Hermes-2-Mistral-7B-DPO.Q4_K_M.gguf",
-                "display_name": "Nous Hermes 2 (Mistral 7B DPO)",
-                "description": "Einsatzgebiet: Code, technische Details, Systembefehle",
-                "context_length": 8192,
-                "parameters": "7B",
-                "use_case": "code",
-                "format": "gguf",
-                "size_gb": 4.1,
-                "repo_url": "https://huggingface.co/NousResearch/Nous-Hermes-2-Mistral-7B-DPO-GGUF",
-                "strengths": ["praezise", "strukturiert", "logisch"],
-                "weaknesses": ["weniger kreativ"],
-                "role": "technical",
             },
             "deepseek": {
                 "name": "DeepSeek-R1-8B-f16.gguf",
@@ -94,7 +94,7 @@ class LLMManager:
             },
         }
 
-        self.default_model: Optional[str] = next(iter(self.available_models.keys()), None)
+        self.default_model: Optional[str] = "mistral"
 
 
         self.current_model: Optional[str] = None
@@ -199,7 +199,7 @@ class LLMManager:
             return []
         startup_models: List[str] = []
         preferred_order: List[str] = [
-            model_key for model_key in ("llama3", "mistral", "deepseek") if model_key in self.available_models
+            model_key for model_key in ("mistral", "llama3", "deepseek") if model_key in self.available_models
         ]
         preferred_order.extend(
             model_key for model_key in self.available_models.keys() if model_key not in preferred_order
@@ -834,7 +834,7 @@ class LLMManager:
             if configured_startup:
                 target_models = [key for key in configured_startup if key in self.available_models]
             else:
-                target_models = [key for key in ("llama3", "mistral", "deepseek") if key in self.available_models]
+                target_models = [key for key in ("mistral", "llama3", "deepseek") if key in self.available_models]
                 stop_after_first = True
             if not target_models:
                 self.logger.info("Keine LLM-Modelle zum automatischen Laden konfiguriert oder verfuegbar.")

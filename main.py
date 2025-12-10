@@ -371,6 +371,44 @@ class JarvisAssistant:
             "metadata": metadata,
         }
 
+    def control_llm_model(self, action: str, model_key: Optional[str] = None) -> Dict[str, Any]:
+        """Steuert LLM Models (load/unload/download)"""
+        manager = getattr(self, "llm_manager", None)
+        if not manager:
+            raise RuntimeError("LLM-Manager nicht verfügbar.")
+        
+        model = (model_key or manager.current_model or "mistral").strip()
+        action_normalized = (action or "").strip().lower()
+        
+        if action_normalized == "load":
+            self.logger.info(f"Loading LLM model: {model}")
+            try:
+                success = bool(manager.load_model(model))
+                return {"action": "load", "success": success, "model": manager.current_model}
+            except Exception as exc:
+                self.logger.error(f"Failed to load model {model}: {exc}")
+                raise
+        
+        elif action_normalized == "unload":
+            self.logger.info("Unloading current LLM model")
+            try:
+                manager.unload_model()
+                return {"action": "unload", "success": True}
+            except Exception as exc:
+                self.logger.error(f"Failed to unload model: {exc}")
+                raise
+        
+        elif action_normalized == "download":
+            self.logger.info(f"Downloading LLM model: {model}")
+            try:
+                success = bool(manager.download_model(model))
+                return {"action": "download", "success": success, "model": model}
+            except Exception as exc:
+                self.logger.error(f"Failed to download model {model}: {exc}")
+                raise
+        
+        raise ValueError(f"Unbekannte Modellaktion: {action}")
+
     def get_plugin_overview(self) -> List[Dict[str, Any]]:
         if not self.plugin_manager:
             return []

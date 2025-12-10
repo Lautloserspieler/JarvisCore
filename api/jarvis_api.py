@@ -15,6 +15,7 @@ from pathlib import Path
 import asyncio
 import json
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 app = FastAPI(
     title="J.A.R.V.I.S. API",
@@ -35,6 +36,9 @@ app.add_middleware(
 
 # Global JARVIS instance
 _jarvis_instance = None
+
+# 🔴 Thread pool for blocking operations
+_executor = ThreadPoolExecutor(max_workers=4)
 
 # 🔴 GLOBAL download progress tracking
 _download_progress: Dict[str, Any] = {
@@ -355,7 +359,7 @@ async def stop_listening():
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket-Verbindung für Echtzeit-Updates"""
     await manager.connect(websocket)
-    print("WebSocket connected")
+    print("✅ WebSocket connected")
     
     try:
         while True:
@@ -365,21 +369,41 @@ async def websocket_endpoint(websocket: WebSocket):
             
             # Verarbeite Nachricht
             msg_type = message.get("type")
+            print(f"[WS] Received: {msg_type}")
             
             if msg_type == "ping":
                 await websocket.send_json({"type": "pong"})
             
             elif msg_type == "command":
+                command_text = message.get("command", "")
+                print(f"[WS] Processing command: {command_text}")
+                
                 try:
                     jarvis = get_jarvis()
                     processor = getattr(jarvis, "command_processor", None)
                     if processor:
-                        response = processor.process_command(message.get("command", ""))
+                        # 🔴 FIX: Run blocking command in thread pool
+                        loop = asyncio.get_event_loop()
+                        response = await loop.run_in_executor(
+                            _executor,
+                            processor.process_command,
+                            command_text
+                        )
+                        
+                        print(f"[WS] Command response: {response}")
+                        
                         await websocket.send_json({
                             "type": "command_response",
                             "response": response
                         })
+                    else:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "Command Processor nicht verfügbar"
+                        })
+                        
                 except Exception as e:
+                    print(f"[WS] Command error: {e}")
                     await websocket.send_json({
                         "type": "error",
                         "message": str(e)
@@ -387,9 +411,9 @@ async def websocket_endpoint(websocket: WebSocket):
             
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        print("WebSocket disconnected")
+        print("❌ WebSocket disconnected")
     except Exception as e:
-        print(f"WebSocket error: {e}")
+        print(f"❌ WebSocket error: {e}")
         manager.disconnect(websocket)
 
 # ============================================================================
@@ -429,3 +453,4 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     print("👋 FastAPI Backend wird beendet")
+    _executor.shutdown(wait=False)

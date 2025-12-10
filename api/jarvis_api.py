@@ -5,7 +5,7 @@ J.A.R.V.I.S. FastAPI Backend
 RESTful API und WebSocket-Server für die Web-UI
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -155,10 +155,28 @@ async def llm_status():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/llm/model_overview")
+async def model_overview():
+    """Get overview of all available models"""
+    try:
+        jarvis = get_jarvis()
+        if hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
+            return jarvis.llm_manager.getmodeloverviewself()
+        raise HTTPException(status_code=503, detail="LLM Manager not available")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/llm/download_status")
-async def download_status():
-    """Get current LLM download progress"""
-    return get_download_progress()
+async def download_status(model: Optional[str] = Query(None)):
+    """🔴 FIX: Get current LLM download progress with optional model parameter"""
+    progress = get_download_progress()
+    
+    # 🎯 If specific model requested, return progress for that model
+    if model:
+        progress['model'] = model
+    
+    print(f"[API] Download status requested for model={model}: {progress}")
+    return progress
 
 @app.post("/api/llm/action")
 async def llm_action(request: LLMActionRequest):
@@ -173,6 +191,23 @@ async def llm_action(request: LLMActionRequest):
         result = jarvis.control_llm_model(request.action, request.model)
         return result
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/llm/download")
+async def download_model(model: str = Query(...)):
+    """🔴 NEW ENDPOINT: Start LLM model download"""
+    try:
+        jarvis = get_jarvis()
+        
+        # Ensure progress callback is set
+        if hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
+            jarvis.llm_manager._progress_callback = update_download_progress
+        
+        print(f"[API] Starting download for model: {model}")
+        result = jarvis.control_llm_model("download", model)
+        return {"success": True, "model": model, "message": "Download started"}
+    except Exception as e:
+        print(f"[API] Download error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/llm/load")

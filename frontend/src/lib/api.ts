@@ -27,14 +27,14 @@ export const getHealth = () => fetchAPI<{
 
 // System Metrics
 export const getSystemMetrics = (details = false) => fetchAPI<any>(
-  `/system/metrics?details=${details}`
+  `/metrics?details=${details}`
 )
 
-// LLM Status
+// LLM Status (returns available models + current model)
 export const getLLMStatus = () => fetchAPI<any>('/llm/status')
 
-// LLM Models
-export const getLLMModels = () => fetchAPI<any>('/llm/models')
+// LLM Models (alias for getLLMStatus for compatibility)
+export const getLLMModels = () => getLLMStatus()
 
 // Load LLM Model
 export const loadLLMModel = (model: string) => fetchAPI<any>('/llm/load', {

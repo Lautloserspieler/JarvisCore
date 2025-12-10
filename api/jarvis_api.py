@@ -47,24 +47,25 @@ _download_progress: Dict[str, Any] = {
     "message": "",
 }
 
+def update_download_progress(progress_data: Dict[str, Any]):
+    """Updates global download progress"""
+    global _download_progress
+    _download_progress.update(progress_data)
+
 def set_jarvis_instance(jarvis):
-    """Setzt die globale JARVIS-Instanz"""
+    """Setzt die globale JARVIS-Instanz und bindet Callbacks"""
     global _jarvis_instance
     _jarvis_instance = jarvis
-    # Set up progress callback for LLM manager
-    if hasattr(jarvis, 'llm_manager'):
+    # Bind progress callback to LLM manager
+    if hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
         jarvis.llm_manager._progress_callback = update_download_progress
+        print("✅ Download progress callback bound to LLM manager")
 
 def get_jarvis():
     """Gibt die JARVIS-Instanz zurück"""
     if _jarvis_instance is None:
         raise HTTPException(status_code=503, detail="JARVIS ist noch nicht initialisiert")
     return _jarvis_instance
-
-def update_download_progress(progress_data: Dict[str, Any]):
-    """Updates global download progress"""
-    global _download_progress
-    _download_progress.update(progress_data)
 
 def get_download_progress() -> Dict[str, Any]:
     """Returns current download progress"""
@@ -165,8 +166,8 @@ async def llm_action(request: LLMActionRequest):
     try:
         jarvis = get_jarvis()
         
-        # For download, set up progress callback
-        if request.action == "download" and hasattr(jarvis, 'llm_manager'):
+        # For download, ensure progress callback is set
+        if request.action == "download" and hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
             jarvis.llm_manager._progress_callback = update_download_progress
         
         result = jarvis.control_llm_model(request.action, request.model)

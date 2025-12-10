@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings, Mic, Volume2, Zap } from 'lucide-react'
+import { Settings, Mic, Volume2, Zap, Key, Eye, EyeOff } from 'lucide-react'
 
 interface SettingsPanelProps {
   onClose: () => void
@@ -9,6 +9,10 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [wakeWordEnabled, setWakeWordEnabled] = useState(true)
   const [speechMode, setSpeechMode] = useState('neutral')
   const [ttsEnabled, setTtsEnabled] = useState(true)
+  const [hfToken, setHfToken] = useState('')
+  const [showToken, setShowToken] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const speechModes = [
     { value: 'neutral', label: 'Neutral' },
@@ -16,6 +20,35 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
     { value: 'professional', label: 'Professional' },
     { value: 'casual', label: 'Casual' },
   ]
+
+  const handleSaveSettings = async () => {
+    setSaving(true)
+    setSaveSuccess(false)
+
+    try {
+      // Save HuggingFace token
+      if (hfToken.trim()) {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            section: 'llm',
+            key: 'huggingface_token',
+            value: hfToken.trim(),
+          }),
+        })
+      }
+
+      // Save other settings here...
+
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000)
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -36,6 +69,46 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
         </div>
 
         <div className="space-y-6">
+          {/* HuggingFace Token */}
+          <section>
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <Key className="w-5 h-5 text-jarvis-cyan" />
+              HuggingFace Token
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="p-4 bg-jarvis-dark/50 rounded-lg">
+                <p className="font-medium mb-2">API Token</p>
+                <p className="text-sm text-gray-400 mb-3">
+                  Benötigt für Llama3 und andere gated models. Erstelle einen Token auf huggingface.co/settings/tokens
+                </p>
+                <div className="relative">
+                  <input
+                    type={showToken ? 'text' : 'password'}
+                    value={hfToken}
+                    onChange={(e) => setHfToken(e.target.value)}
+                    placeholder="hf_xxxxxxxxxxxxxxxxxxxxxx"
+                    className="jarvis-input pr-10 font-mono text-sm"
+                  />
+                  <button
+                    onClick={() => setShowToken(!showToken)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <a
+                  href="https://huggingface.co/settings/tokens"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-jarvis-cyan hover:underline mt-2 inline-block"
+                >
+                  → Token erstellen auf HuggingFace
+                </a>
+              </div>
+            </div>
+          </section>
+
           {/* Speech Recognition */}
           <section>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -164,8 +237,16 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
           >
             Schließen
           </button>
-          <button className="flex-1 px-4 py-2 bg-jarvis-cyan text-jarvis-darker rounded-lg font-orbitron hover:bg-jarvis-cyan/80 transition-all">
-            Speichern
+          <button 
+            onClick={handleSaveSettings}
+            disabled={saving}
+            className={`flex-1 px-4 py-2 rounded-lg font-orbitron transition-all ${
+              saveSuccess
+                ? 'bg-green-500 text-white'
+                : 'bg-jarvis-cyan text-jarvis-darker hover:bg-jarvis-cyan/80'
+            }`}
+          >
+            {saving ? 'Speichern...' : saveSuccess ? '✓ Gespeichert!' : 'Speichern'}
           </button>
         </div>
       </div>

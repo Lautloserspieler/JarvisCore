@@ -2,49 +2,28 @@
 # -*- coding: utf-8 -*-
 """
 J.A.R.V.I.S. FastAPI Backend
-
-REST API + WebSocket für die Web-UI
+RESTful API und WebSocket-Server für die Web-UI
 """
 
-import asyncio
-import json
-from typing import Optional, Dict, Any, List
-from pathlib import Path
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional, Dict, Any, List
+from pathlib import Path
+import asyncio
+import json
 
-# JARVIS Instance (wird von main.py gesetzt)
-_jarvis_instance: Optional[Any] = None
-
-
-def set_jarvis_instance(jarvis):
-    """Setzt die JARVIS-Instanz für die API."""
-    global _jarvis_instance
-    _jarvis_instance = jarvis
-
-
-def get_jarvis():
-    """Gibt die aktuelle JARVIS-Instanz zurück."""
-    if _jarvis_instance is None:
-        raise RuntimeError("JARVIS instance not initialized")
-    return _jarvis_instance
-
-
-# FastAPI App
 app = FastAPI(
     title="J.A.R.V.I.S. API",
-    description="REST API + WebSocket für JARVIS Web-UI",
+    description="RESTful API für den J.A.R.V.I.S. Sprachassistenten",
     version="2.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json"
 )
 
-# CORS
+# CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -53,46 +32,70 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static Files (Frontend)
-frontend_dist = Path("frontend/dist")
-if frontend_dist.exists():
-    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
+# Global JARVIS instance
+_jarvis_instance = None
 
+def set_jarvis_instance(jarvis):
+    """Setzt die globale JARVIS-Instanz"""
+    global _jarvis_instance
+    _jarvis_instance = jarvis
 
-# ============================================================================
+def get_jarvis():
+    """Gibt die JARVIS-Instanz zurück"""
+    if _jarvis_instance is None:
+        raise HTTPException(status_code=503, detail="JARVIS ist noch nicht initialisiert")
+    return _jarvis_instance
+
 # Pydantic Models
-# ============================================================================
-
-class ChatMessage(BaseModel):
-    """Chat-Nachricht vom User"""
-    text: str
-    stream: bool = False
-
-
-class LLMLoadRequest(BaseModel):
-    """LLM Model laden"""
-    model: str
-
+class CommandRequest(BaseModel):
+    command: str
+    mode: Optional[str] = "text"
 
 class LLMActionRequest(BaseModel):
-    """LLM Aktion (load/unload/download)"""
     action: str  # load, unload, download
     model: Optional[str] = None
 
+class SettingRequest(BaseModel):
+    section: str
+    key: str
+    value: Any
+
+# WebSocket Manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                pass
+
+manager = ConnectionManager()
 
 # ============================================================================
-# Health & Status
+# API ENDPOINTS
 # ============================================================================
 
 @app.get("/api/health")
 async def health_check():
-    """Health Check"""
+    """System-Gesundheitscheck"""
     try:
         jarvis = get_jarvis()
         return {
             "status": "ok",
+            "version": "2.0.0",
             "running": jarvis.is_running,
-            "version": "2.0.0"
+            "listening": jarvis.listening,
         }
     except Exception as e:
         return JSONResponse(
@@ -100,299 +103,208 @@ async def health_check():
             content={"status": "error", "message": str(e)}
         )
 
-
 @app.get("/api/status")
 async def get_status():
-    """Vollständiger Status"""
+    """Detaillierter System-Status"""
     try:
         jarvis = get_jarvis()
         return jarvis.get_runtime_status()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ============================================================================
-# System Metrics
-# ============================================================================
-
-@app.get("/api/system/metrics")
-async def get_system_metrics(details: bool = False):
-    """System-Metriken (CPU, RAM, GPU, etc.)"""
+@app.get("/api/metrics")
+async def get_metrics():
+    """System-Metriken (CPU, RAM, Disk)"""
     try:
         jarvis = get_jarvis()
-        return jarvis.get_system_metrics(include_details=details)
+        return jarvis.get_system_metrics(include_details=False)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ============================================================================
-# LLM Management
-# ============================================================================
-
 @app.get("/api/llm/status")
-async def get_llm_status():
-    """LLM Status (welches Model geladen ist, etc.)"""
+async def llm_status():
+    """LLM Status und verfügbare Modelle"""
     try:
         jarvis = get_jarvis()
         return jarvis.get_llm_status()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.get("/api/llm/models")
-async def list_llm_models():
-    """Liste aller verfügbaren LLM-Modelle"""
-    try:
-        jarvis = get_jarvis()
-        llm_manager = getattr(jarvis, "llm_manager", None)
-        if not llm_manager:
-            return {"available": {}, "loaded": []}
-        
-        available = llm_manager.get_model_overview()
-        loaded = list(getattr(llm_manager, "loaded_models", {}).keys())
-        
-        return {
-            "available": available,
-            "loaded": loaded,
-            "current": getattr(llm_manager, "current_model", None)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/llm/load")
-async def load_llm_model(request: LLMLoadRequest):
-    """LLM Model laden"""
-    try:
-        jarvis = get_jarvis()
-        result = jarvis.control_llm_model(action="load", model_key=request.model)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/llm/unload")
-async def unload_llm_model():
-    """Aktuelles LLM Model entladen"""
-    try:
-        jarvis = get_jarvis()
-        result = jarvis.control_llm_model(action="unload")
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.post("/api/llm/action")
 async def llm_action(request: LLMActionRequest):
-    """LLM Aktion ausführen (load/unload/download)"""
+    """LLM Aktion (load/unload/download)"""
     try:
         jarvis = get_jarvis()
-        result = jarvis.control_llm_model(
-            action=request.action,
-            model_key=request.model
-        )
+        result = jarvis.control_llm_model(request.action, request.model)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/llm/load")
+async def load_model(request: dict):
+    """Lädt ein LLM-Modell"""
+    try:
+        jarvis = get_jarvis()
+        model_key = request.get("model", "mistral")
+        result = jarvis.control_llm_model("load", model_key)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# ============================================================================
-# Plugins
-# ============================================================================
+@app.post("/api/llm/unload")
+async def unload_model():
+    """Entlädt das aktuelle LLM-Modell"""
+    try:
+        jarvis = get_jarvis()
+        result = jarvis.control_llm_model("unload")
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/plugins")
 async def get_plugins():
     """Liste aller Plugins"""
     try:
         jarvis = get_jarvis()
-        return {"plugins": jarvis.get_plugin_overview()}
+        return jarvis.get_plugin_overview()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ============================================================================
-# Chat
-# ============================================================================
-
-@app.post("/api/chat/message")
-async def send_chat_message(message: ChatMessage):
-    """Chat-Nachricht senden"""
+@app.post("/api/command")
+async def execute_command(request: CommandRequest):
+    """Führt einen Befehl aus"""
     try:
         jarvis = get_jarvis()
+        processor = getattr(jarvis, "command_processor", None)
+        if not processor:
+            raise HTTPException(status_code=503, detail="Command Processor nicht verfügbar")
         
-        # Command Processor aufrufen
-        if hasattr(jarvis, "command_processor"):
-            response = jarvis.command_processor.process_command(message.text)
-            return {
-                "response": response,
-                "status": "ok"
-            }
-        else:
-            return {
-                "response": "Command processor nicht verfügbar",
-                "status": "error"
-            }
+        response = processor.process_command(request.command)
+        return {"success": True, "response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ============================================================================
-# Logs
-# ============================================================================
-
-@app.get("/api/logs")
-async def get_logs(lines: int = 100):
-    """Letzte N Zeilen der Logs"""
+@app.post("/api/settings")
+async def save_setting(request: SettingRequest):
+    """Speichert eine Einstellung"""
     try:
-        log_file = Path("logs/jarvis.log")
-        if not log_file.exists():
-            return {"logs": []}
+        jarvis = get_jarvis()
+        settings = getattr(jarvis, "settings", None)
+        if not settings:
+            raise HTTPException(status_code=503, detail="Settings nicht verfügbar")
         
-        with open(log_file, "r", encoding="utf-8") as f:
-            all_lines = f.readlines()
-            recent = all_lines[-lines:] if len(all_lines) > lines else all_lines
+        # Get current section or create empty dict
+        current = settings.get(request.section, {})
+        if not isinstance(current, dict):
+            current = {}
         
-        return {"logs": [line.strip() for line in recent]}
+        # Update value
+        current[request.key] = request.value
+        settings.set(request.section, current)
+        
+        return {"success": True, "message": "Einstellung gespeichert"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/voice/start")
+async def start_listening():
+    """Startet die Spracherkennung"""
+    try:
+        jarvis = get_jarvis()
+        success = jarvis.start_listening()
+        return {"success": success, "listening": jarvis.listening}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/voice/stop")
+async def stop_listening():
+    """Stoppt die Spracherkennung"""
+    try:
+        jarvis = get_jarvis()
+        success = jarvis.stop_listening()
+        return {"success": success, "listening": jarvis.listening}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
-# WebSocket
+# WEBSOCKET
 # ============================================================================
-
-class ConnectionManager:
-    """WebSocket Connection Manager"""
-    
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-    
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-    
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-    
-    async def broadcast(self, message: dict):
-        """Nachricht an alle Clients senden"""
-        for connection in self.active_connections:
-            try:
-                await connection.send_json(message)
-            except Exception:
-                pass
-
-
-manager = ConnectionManager()
-
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket für Realtime-Updates"""
+    """WebSocket-Verbindung für Echtzeit-Updates"""
     await manager.connect(websocket)
+    print("WebSocket connected")
     
     try:
-        jarvis = get_jarvis()
-        
-        # Begrüßung
-        await websocket.send_json({
-            "type": "connected",
-            "message": "Verbindung zu JARVIS hergestellt"
-        })
-        
-        # Message Loop
         while True:
+            # Empfange Nachrichten vom Client
             data = await websocket.receive_text()
             message = json.loads(data)
             
+            # Verarbeite Nachricht
             msg_type = message.get("type")
             
             if msg_type == "ping":
                 await websocket.send_json({"type": "pong"})
             
-            elif msg_type == "chat":
-                text = message.get("text", "")
-                if hasattr(jarvis, "command_processor"):
-                    response = jarvis.command_processor.process_command(text)
+            elif msg_type == "command":
+                try:
+                    jarvis = get_jarvis()
+                    processor = getattr(jarvis, "command_processor", None)
+                    if processor:
+                        response = processor.process_command(message.get("command", ""))
+                        await websocket.send_json({
+                            "type": "command_response",
+                            "response": response
+                        })
+                except Exception as e:
                     await websocket.send_json({
-                        "type": "chat_response",
-                        "text": response
+                        "type": "error",
+                        "message": str(e)
                     })
             
-            elif msg_type == "get_status":
-                status = jarvis.get_runtime_status()
-                await websocket.send_json({
-                    "type": "status",
-                    "data": status
-                })
-            
-            elif msg_type == "get_metrics":
-                metrics = jarvis.get_system_metrics(include_details=False)
-                await websocket.send_json({
-                    "type": "metrics",
-                    "data": metrics
-                })
-    
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+        print("WebSocket disconnected")
     except Exception as e:
-        print(f"WebSocket Error: {e}")
+        print(f"WebSocket error: {e}")
         manager.disconnect(websocket)
 
-
 # ============================================================================
-# Frontend (SPA)
+# STATIC FILES & SPA
 # ============================================================================
 
-@app.get("/")
-async def serve_frontend():
-    """Serve Frontend SPA"""
-    index_file = frontend_dist / "index.html"
-    if index_file.exists():
-        return FileResponse(str(index_file))
-    else:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "error": "Frontend nicht gebaut",
-                "message": "Führe aus: cd frontend && npm install && npm run build"
-            }
-        )
+# Frontend dist Ordner
+frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
 
-
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    """Catch-all für SPA Routing"""
-    # Wenn Datei existiert, serve sie
-    file_path = frontend_dist / full_path
-    if file_path.exists() and file_path.is_file():
-        return FileResponse(str(file_path))
+if frontend_dist.exists():
+    # Serve static assets
+    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
     
-    # Sonst: index.html (SPA Routing)
-    index_file = frontend_dist / "index.html"
-    if index_file.exists():
-        return FileResponse(str(index_file))
-    else:
-        return JSONResponse(
-            status_code=404,
-            content={"error": "Frontend nicht gefunden"}
-        )
-
+    # Serve index.html für alle anderen Routes (SPA)
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # API routes nicht abfangen
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404)
+        
+        # index.html für alle SPA-Routes
+        index_file = frontend_dist / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404)
 
 # ============================================================================
-# Startup/Shutdown
+# STARTUP
 # ============================================================================
 
 @app.on_event("startup")
 async def startup_event():
-    """FastAPI Startup"""
     print("📡 FastAPI Backend gestartet")
     print("🌐 Web-UI: http://localhost:8000")
     print("📜 API Docs: http://localhost:8000/api/docs")
 
-
 @app.on_event("shutdown")
 async def shutdown_event():
-    """FastAPI Shutdown"""
     print("👋 FastAPI Backend wird beendet")

@@ -337,16 +337,30 @@ class JarvisAssistant:
         }
 
     def get_system_metrics(self, include_details: bool = False) -> Dict[str, Any]:
+        """Returns system metrics with proper fallbacks"""
         base_status = {}
-        monitor_summary: Dict[str, Any] = {}
+        monitor_summary: Dict[str, Any] = {
+            "cpu_percent": 0.0,
+            "memory_percent": 0.0,
+            "memory_used_gb": 0.0,
+            "memory_total_gb": 0.0,
+            "disk_percent": 0.0,
+        }
         monitor_details: Dict[str, Any] = {}
+        
         if self.system_monitor:
             try:
-                monitor_summary = self.system_monitor.get_system_summary(include_details=False)
+                summary = self.system_monitor.get_system_summary(include_details=False)
+                if summary and isinstance(summary, dict):
+                    monitor_summary.update(summary)
+                
                 if include_details:
-                    monitor_details = self.system_monitor.get_all_metrics()
+                    details = self.system_monitor.get_all_metrics()
+                    if details and isinstance(details, dict):
+                        monitor_details = details
             except Exception as exc:
                 self.logger.debug("Systemmonitor konnte nicht abgefragt werden: %s", exc)
+        
         return {
             "status": base_status,
             "summary": monitor_summary,

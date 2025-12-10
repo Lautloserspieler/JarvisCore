@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react'
-import { Activity, Cpu, HardDrive, Mic, MessageSquare, Settings, Zap } from 'lucide-react'
+import { Activity, Cpu, HardDrive, Mic, Settings as SettingsIcon, Zap } from 'lucide-react'
 import VoiceVisualizer from '../components/VoiceVisualizer'
+import ModelManager from '../components/ModelManager'
+import PluginManager from '../components/PluginManager'
+import SettingsPanel from '../components/SettingsPanel'
+import ChatBox from '../components/ChatBox'
+import SystemControl from '../components/SystemControl'
 import { getHealth, getSystemMetrics, getLLMStatus } from '../lib/api'
 
+type Tab = 'dashboard' | 'models' | 'plugins' | 'chat'
+
 export default function Index() {
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [health, setHealth] = useState<any>(null)
   const [metrics, setMetrics] = useState<any>(null)
   const [llmStatus, setLLMStatus] = useState<any>(null)
   const [listening, setListening] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
-    // Initial load
     loadData()
-
-    // Refresh every 2 seconds
     const interval = setInterval(loadData, 2000)
     return () => clearInterval(interval)
   }, [])
@@ -36,7 +42,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-jarvis-darker via-jarvis-dark to-jarvis-darker">
       {/* Header */}
-      <header className="border-b border-jarvis-cyan/20 backdrop-blur-md">
+      <header className="border-b border-jarvis-cyan/20 backdrop-blur-md sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -60,114 +66,145 @@ export default function Index() {
                 <span className="text-sm">{health?.running ? 'Online' : 'Offline'}</span>
               </div>
 
-              <button className="jarvis-button">
-                <Settings className="w-5 h-5" />
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="jarvis-button"
+              >
+                <SettingsIcon className="w-5 h-5" />
               </button>
             </div>
           </div>
+
+          {/* Navigation Tabs */}
+          <nav className="flex gap-2 mt-4">
+            {[
+              { id: 'dashboard', label: 'Dashboard' },
+              { id: 'models', label: 'Models' },
+              { id: 'plugins', label: 'Plugins' },
+              { id: 'chat', label: 'Chat' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as Tab)}
+                className={`px-4 py-2 rounded-lg font-orbitron transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-jarvis-cyan/20 border border-jarvis-cyan text-jarvis-cyan'
+                    : 'border border-jarvis-cyan/20 text-gray-400 hover:border-jarvis-cyan/50 hover:text-jarvis-cyan'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - System Metrics */}
-          <div className="space-y-6">
-            {/* CPU */}
-            <div className="jarvis-card jarvis-glow p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Cpu className="w-6 h-6 text-jarvis-cyan" />
-                <h3 className="text-lg font-bold">CPU</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Auslastung</span>
-                  <span className="text-jarvis-cyan font-mono">
-                    {metrics?.summary?.cpu_percent?.toFixed(1) || '0.0'}%
-                  </span>
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - System Metrics */}
+            <div className="space-y-6">
+              {/* CPU */}
+              <div className="jarvis-card jarvis-glow p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Cpu className="w-6 h-6 text-jarvis-cyan" />
+                  <h3 className="text-lg font-bold">CPU</h3>
                 </div>
-                <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-jarvis-cyan to-jarvis-blue transition-all duration-300"
-                    style={{ width: `${metrics?.summary?.cpu_percent || 0}%` }}
-                  />
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Auslastung</span>
+                    <span className="text-jarvis-cyan font-mono">
+                      {metrics?.summary?.cpu_percent?.toFixed(1) || '0.0'}%
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-jarvis-cyan to-jarvis-blue transition-all duration-300"
+                      style={{ width: `${metrics?.summary?.cpu_percent || 0}%` }}
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* RAM */}
+              <div className="jarvis-card jarvis-glow p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Activity className="w-6 h-6 text-jarvis-cyan" />
+                  <h3 className="text-lg font-bold">RAM</h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Verwendet</span>
+                    <span className="text-jarvis-cyan font-mono">
+                      {((metrics?.summary?.memory_used_gb || 0)).toFixed(1)} GB / 
+                      {((metrics?.summary?.memory_total_gb || 0)).toFixed(1)} GB
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-jarvis-cyan to-jarvis-blue transition-all duration-300"
+                      style={{ width: `${metrics?.summary?.memory_percent || 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Storage */}
+              <div className="jarvis-card jarvis-glow p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <HardDrive className="w-6 h-6 text-jarvis-cyan" />
+                  <h3 className="text-lg font-bold">Storage</h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Verwendet</span>
+                    <span className="text-jarvis-cyan font-mono">
+                      {metrics?.summary?.disk_percent?.toFixed(1) || '0.0'}%
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-jarvis-cyan to-jarvis-blue transition-all duration-300"
+                      style={{ width: `${metrics?.summary?.disk_percent || 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* LLM Status */}
+              <div className="jarvis-card jarvis-glow p-6">
+                <h3 className="text-lg font-bold mb-4">LLM Status</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Model</span>
+                    <span className="text-jarvis-cyan">{llmStatus?.current || 'None'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Status</span>
+                    <span className={llmStatus?.active ? 'text-green-500' : 'text-gray-500'}>
+                      {llmStatus?.active ? 'Loaded' : 'Not Loaded'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* System Control */}
+              <SystemControl 
+                listening={listening}
+                onToggleListening={() => setListening(!listening)}
+              />
             </div>
 
-            {/* RAM */}
-            <div className="jarvis-card jarvis-glow p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Activity className="w-6 h-6 text-jarvis-cyan" />
-                <h3 className="text-lg font-bold">RAM</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Verwendet</span>
-                  <span className="text-jarvis-cyan font-mono">
-                    {((metrics?.summary?.memory_used_gb || 0)).toFixed(1)} GB / 
-                    {((metrics?.summary?.memory_total_gb || 0)).toFixed(1)} GB
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-jarvis-cyan to-jarvis-blue transition-all duration-300"
-                    style={{ width: `${metrics?.summary?.memory_percent || 0}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Storage */}
-            <div className="jarvis-card jarvis-glow p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <HardDrive className="w-6 h-6 text-jarvis-cyan" />
-                <h3 className="text-lg font-bold">Storage</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Verwendet</span>
-                  <span className="text-jarvis-cyan font-mono">
-                    {metrics?.summary?.disk_percent?.toFixed(1) || '0.0'}%
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-jarvis-cyan to-jarvis-blue transition-all duration-300"
-                    style={{ width: `${metrics?.summary?.disk_percent || 0}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* LLM Status */}
-            <div className="jarvis-card jarvis-glow p-6">
-              <h3 className="text-lg font-bold mb-4">LLM Status</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Model</span>
-                  <span className="text-jarvis-cyan">{llmStatus?.current || 'None'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Status</span>
-                  <span className={llmStatus?.active ? 'text-green-500' : 'text-gray-500'}>
-                    {llmStatus?.active ? 'Loaded' : 'Not Loaded'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Center Column - Chat & Voice */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Voice Visualizer */}
-            <div className="jarvis-card jarvis-glow p-8">
-              <div className="flex flex-col items-center gap-6">
+            {/* Center Column - Voice */}
+            <div className="lg:col-span-2">
+              <div className="jarvis-card jarvis-glow p-8 h-full flex flex-col items-center justify-center">
                 <VoiceVisualizer listening={listening} />
                 
                 <button
                   onClick={() => setListening(!listening)}
-                  className={`px-8 py-4 rounded-full font-orbitron text-lg transition-all ${
+                  className={`mt-8 px-8 py-4 rounded-full font-orbitron text-lg transition-all ${
                     listening
                       ? 'bg-jarvis-cyan text-jarvis-darker shadow-lg shadow-jarvis-cyan/50'
                       : 'bg-jarvis-cyan/10 border-2 border-jarvis-cyan text-jarvis-cyan hover:bg-jarvis-cyan/20'
@@ -175,48 +212,44 @@ export default function Index() {
                 >
                   <div className="flex items-center gap-3">
                     <Mic className="w-6 h-6" />
-                    <span>{listening ? 'Listening...' : 'Activate'}</span>
+                    <span>{listening ? 'Listening...' : 'Activate Voice'}</span>
                   </div>
                 </button>
-              </div>
-            </div>
 
-            {/* Chat */}
-            <div className="jarvis-card jarvis-glow p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <MessageSquare className="w-6 h-6 text-jarvis-cyan" />
-                <h3 className="text-lg font-bold">Chat</h3>
-              </div>
-              
-              {/* Messages */}
-              <div className="h-64 overflow-y-auto mb-4 space-y-3">
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-jarvis-cyan/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold">J</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-300">
-                      Willkommen! Wie kann ich Ihnen helfen?
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Input */}
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  placeholder="Nachricht eingeben..."
-                  className="jarvis-input"
-                />
-                <button className="jarvis-button">
-                  Senden
-                </button>
+                <p className="text-sm text-gray-400 mt-4">
+                  {listening ? 'Ich höre zu...' : 'Klicken zum Aktivieren'}
+                </p>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Models Tab */}
+        {activeTab === 'models' && (
+          <div className="max-w-4xl mx-auto">
+            <ModelManager />
+          </div>
+        )}
+
+        {/* Plugins Tab */}
+        {activeTab === 'plugins' && (
+          <div className="max-w-4xl mx-auto">
+            <PluginManager />
+          </div>
+        )}
+
+        {/* Chat Tab */}
+        {activeTab === 'chat' && (
+          <div className="max-w-6xl mx-auto h-[calc(100vh-250px)]">
+            <ChatBox />
+          </div>
+        )}
       </main>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <SettingsPanel onClose={() => setShowSettings(false)} />
+      )}
 
       {/* Footer */}
       <footer className="border-t border-jarvis-cyan/20 mt-12">

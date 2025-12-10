@@ -1,4 +1,3 @@
-
 """
 LLM-Manager fuer J.A.R.V.I.S.
 Verwaltet lokale Sprachmodelle (Llama, Mistral, etc.)
@@ -289,7 +288,7 @@ class LLMManager:
             if self.is_model_ready(candidate):
                 return candidate
 
-        # Router-gestuetzte Auswahl unter allen verfügbaren/geladenen Modellen
+        # Router-gestuetzte Auswahl unter allen verfügbaren/geladenen Modellen
         try:
             ready_models = [key for key in self.available_models if self.is_model_ready(key)]
             if hasattr(self, "router") and ready_models:
@@ -897,6 +896,19 @@ class LLMManager:
         tmp_path = target_path.with_suffix(target_path.suffix + ".download")
         tmp_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Get HuggingFace token from settings
+        headers = {}
+        if self.settings:
+            try:
+                llm_config = self.settings.get('llm', {})
+                if isinstance(llm_config, dict):
+                    token = llm_config.get('huggingface_token')
+                    if token and isinstance(token, str) and token.strip():
+                        headers['Authorization'] = f"Bearer {token.strip()}"
+                        self.logger.info("Using HuggingFace token for download")
+            except Exception as exc:
+                self.logger.debug(f"Could not retrieve HuggingFace token: {exc}")
+
         self.logger.info("Starte Download fuer %s (%s)", model_key, url)
         downloaded = 0
         total = 0
@@ -936,7 +948,7 @@ class LLMManager:
 
         response = None
         try:
-            response = requests.get(url, stream=True, timeout=30)
+            response = requests.get(url, stream=True, timeout=30, headers=headers)
             response.raise_for_status()
             total = int(response.headers.get("Content-Length", "0")) or 0
             chunk_size = 4 * 1024 * 1024  # 4 MB
@@ -997,4 +1009,3 @@ class LLMManager:
         except Exception as exc:  # pragma: no cover
             self.logger.error(f"Fehler bei Anforderungspruefung: {exc}")
             return {"sufficient_ram": False, "sufficient_disk": False, "model_available": False}
-

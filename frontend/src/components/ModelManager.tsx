@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Loader2, CheckCircle, Cpu, Download, AlertCircle } from 'lucide-react'
 import { getLLMModels, loadLLMModel, unloadLLMModel } from '../lib/api'
 
@@ -19,6 +19,9 @@ export default function ModelManager() {
   const [error, setError] = useState<string | null>(null)
   const [downloadProgress, setDownloadProgress] = useState<Map<string, ModelDownloadProgress>>(new Map())
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null)
+  
+  // 🔴 CRITICAL: Track polling interval
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     loadModels()
@@ -26,15 +29,26 @@ export default function ModelManager() {
     return () => clearInterval(interval)
   }, [])
 
-  // Polling für Download-Progress
+  // 🔄 Polling für Download-Progress (AGGRESSIVE 500ms)
   useEffect(() => {
-    if (!downloadingModel) return
+    if (!downloadingModel) {
+      // Stop polling when no model is downloading
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
+      return
+    }
 
     const pollProgress = async () => {
       try {
-        const response = await fetch('/api/llm/download_status')
+        console.log(`[ModelManager] Polling progress for ${downloadingModel}...`)
+        
+        const response = await fetch(`/api/llm/download_status?model=${downloadingModel}`)
         if (response.ok) {
           const data = await response.json()
+          console.log(`[ModelManager] Poll response:`, data)
+          
           if (data && data.model) {
             setDownloadProgress(prev => {
               const newMap = new Map(prev)
@@ -50,16 +64,38 @@ export default function ModelManager() {
               })
               return newMap
             })
+
+            // 🏁 Stop polling when download completes
+            if (data.status === 'completed' || data.status === 'already_exists' || data.status === 'error') {
+              console.log(`[ModelManager] Download ${data.status}, stopping poll`)
+              if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current)
+                pollingIntervalRef.current = null
+              }
+              setDownloadingModel(null)
+              
+              // Refresh model list after 500ms
+              setTimeout(() => loadModels(), 500)
+            }
           }
         }
       } catch (err) {
-        console.error('Failed to poll download status:', err)
+        console.error('[ModelManager] Poll error:', err)
+        // Don't stop polling on error
       }
     }
 
-    // Poll every 500ms while downloading
-    const interval = setInterval(pollProgress, 500)
-    return () => clearInterval(interval)
+    // Initial poll immediately
+    pollProgress()
+    
+    // Poll every 500ms (AGGRESSIVE)
+    pollingIntervalRef.current = setInterval(pollProgress, 500)
+    
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+    }
   }, [downloadingModel])
 
   const loadModels = async () => {
@@ -115,6 +151,8 @@ export default function ModelManager() {
     })
 
     try {
+      console.log(`[ModelManager] Starting download for ${modelKey}...`)
+      
       const response = await fetch('/api/llm/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -126,23 +164,16 @@ export default function ModelManager() {
       }
 
       const result = await response.json()
+      console.log(`[ModelManager] Download initiated:`, result)
       
       if (result.success) {
-        setDownloadProgress(prev => {
-          const newMap = new Map(prev)
-          newMap.set(modelKey, {
-            model: modelKey,
-            status: 'completed',
-            percent: 100,
-          })
-          return newMap
-        })
-        setDownloadingModel(null)
-        await loadModels()
+        // Polling will be started automatically by useEffect
+        console.log(`[ModelManager] Download started, polling will handle progress...`)
       } else {
-        throw new Error('Download failed')
+        throw new Error(result.error || 'Download failed')
       }
     } catch (err: any) {
+      console.error(`[ModelManager] Download error:`, err)
       setError(err.message)
       setDownloadProgress(prev => {
         const newMap = new Map(prev)
@@ -154,6 +185,12 @@ export default function ModelManager() {
         return newMap
       })
       setDownloadingModel(null)
+      
+      // Clear polling interval on error
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
     }
   }
 

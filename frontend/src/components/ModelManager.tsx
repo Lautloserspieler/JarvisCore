@@ -4,7 +4,7 @@ import { getLLMModels, loadLLMModel, unloadLLMModel } from '../lib/api'
 
 interface ModelDownloadProgress {
   model: string
-  status: 'downloading' | 'completed' | 'error' | 'already_exists'
+  status: 'downloading' | 'in_progress' | 'completed' | 'error' | 'already_exists'
   downloaded?: number
   total?: number
   percent?: number
@@ -49,19 +49,20 @@ export default function ModelManager() {
           const data = await response.json()
           console.log(`[ModelManager] Poll response:`, data)
           
-          if (data && data.model) {
+          if (data) {
             setDownloadProgress(prev => {
               const newMap = new Map(prev)
-              newMap.set(data.model, {
-                model: data.model,
-                status: data.status || 'downloading',
-                downloaded: data.downloaded,
-                total: data.total,
-                percent: data.percent,
+              newMap.set(downloadingModel, {
+                model: data.model || downloadingModel,
+                status: data.status || 'in_progress',
+                downloaded: data.downloaded || 0,
+                total: data.total || 0,
+                percent: data.percent || 0,
                 speed: data.speed,
                 eta: data.eta,
                 message: data.message,
               })
+              console.log(`[ModelManager] Updated state for ${downloadingModel}:`, newMap.get(downloadingModel))
               return newMap
             })
 
@@ -142,7 +143,7 @@ export default function ModelManager() {
       const newMap = new Map(prev)
       newMap.set(modelKey, {
         model: modelKey,
-        status: 'downloading',
+        status: 'in_progress',
         downloaded: 0,
         total: 0,
         percent: 0,
@@ -264,7 +265,8 @@ export default function ModelManager() {
           const isLoaded = models.current === key
           const isLoading = loading === key
           const downloadInfo = getDownloadProgress(key)
-          const isDownloading = downloadInfo?.status === 'downloading'
+          // 🔴 FIX: Check for 'in_progress' status from backend
+          const isDownloading = downloadInfo?.status === 'in_progress' || downloadInfo?.status === 'downloading'
           const downloadCompleted = downloadInfo?.status === 'completed'
           const downloadError = downloadInfo?.status === 'error'
 
@@ -339,7 +341,7 @@ export default function ModelManager() {
                   <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-jarvis-blue to-jarvis-cyan transition-all duration-300"
-                      style={{ width: `${downloadInfo.percent || 0}%` }}
+                      style={{ width: `${Math.min(100, downloadInfo.percent || 0)}%` }}
                     />
                   </div>
                   

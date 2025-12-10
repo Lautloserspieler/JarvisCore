@@ -35,16 +35,40 @@ app.add_middleware(
 # Global JARVIS instance
 _jarvis_instance = None
 
+# Global download progress tracking
+_download_progress: Dict[str, Any] = {
+    "model": None,
+    "status": None,
+    "downloaded": 0,
+    "total": 0,
+    "percent": 0,
+    "speed": 0,
+    "eta": 0,
+    "message": "",
+}
+
 def set_jarvis_instance(jarvis):
     """Setzt die globale JARVIS-Instanz"""
     global _jarvis_instance
     _jarvis_instance = jarvis
+    # Set up progress callback for LLM manager
+    if hasattr(jarvis, 'llm_manager'):
+        jarvis.llm_manager._progress_callback = update_download_progress
 
 def get_jarvis():
     """Gibt die JARVIS-Instanz zurück"""
     if _jarvis_instance is None:
         raise HTTPException(status_code=503, detail="JARVIS ist noch nicht initialisiert")
     return _jarvis_instance
+
+def update_download_progress(progress_data: Dict[str, Any]):
+    """Updates global download progress"""
+    global _download_progress
+    _download_progress.update(progress_data)
+
+def get_download_progress() -> Dict[str, Any]:
+    """Returns current download progress"""
+    return _download_progress.copy()
 
 # Pydantic Models
 class CommandRequest(BaseModel):
@@ -130,11 +154,21 @@ async def llm_status():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/llm/download_status")
+async def download_status():
+    """Get current LLM download progress"""
+    return get_download_progress()
+
 @app.post("/api/llm/action")
 async def llm_action(request: LLMActionRequest):
     """LLM Aktion (load/unload/download)"""
     try:
         jarvis = get_jarvis()
+        
+        # For download, set up progress callback
+        if request.action == "download" and hasattr(jarvis, 'llm_manager'):
+            jarvis.llm_manager._progress_callback = update_download_progress
+        
         result = jarvis.control_llm_model(request.action, request.model)
         return result
     except Exception as e:

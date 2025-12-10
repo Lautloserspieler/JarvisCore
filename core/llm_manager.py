@@ -1,6 +1,6 @@
 """
 LLM-Manager fuer J.A.R.V.I.S.
-Verwaltet lokale Sprachmodelle (Llama, Mistral, etc.)
+Verwaltet lokale Sprachmodelle (Mistral, DeepSeek, etc.)
 """
 
 import os
@@ -45,35 +45,21 @@ class LLMManager:
 
         self.available_models: Dict[str, Dict[str, Any]] = {
             "mistral": {
-                "name": "Mistral-Nemo-Instruct-2407.Q4_K_M.gguf",
+                "name": "Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
                 "display_name": "Mistral 7B Nemo Instruct",
                 "description": "Einsatzgebiet: Code, technische Details, Systembefehle, schnelle Antworten",
                 "context_length": 8192,
                 "parameters": "7B",
                 "use_case": "code",
                 "format": "gguf",
-                "size_gb": 6.7,
-                "repo_url": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407-GGUF",
-                "strengths": ["praezise", "strukturiert", "logisch", "schnell", "deutsch-freundlich"],
+                "size_gb": 7.48,
+                "repo_url": "https://huggingface.co/second-state/Mistral-Nemo-Instruct-2407-GGUF",
+                "strengths": ["praezise", "strukturiert", "logisch", "schnell", "deutsch-freundlich", "code"],
                 "weaknesses": ["weniger kreativ"],
                 "role": "technical",
             },
-            "llama3": {
-                "name": "Meta-Llama-3-8B-Instruct.Q4_K_M.gguf",
-                "display_name": "Meta Llama 3 8B Instruct",
-                "description": "Einsatzgebiet: Kreative Antworten, offene Fragen, Dialoge",
-                "context_length": 8192,
-                "parameters": "8B",
-                "use_case": "conversation",
-                "format": "gguf",
-                "size_gb": 4.9,
-                "repo_url": "https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct-GGUF",
-                "strengths": ["flexibel", "generativ", "ideenreich"],
-                "weaknesses": ["weniger praezise bei Code oder Technik"],
-                "role": "standard",
-            },
             "deepseek": {
-                "name": "DeepSeek-R1-8B-f16.gguf",
+                "name": "Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
                 "alt_names": [
                     "DeepSeek-R1-Distill-Llama-8B.Q4_K_M.gguf",
                     "DeepSeek-R1-Distill-Llama-8B.Q4_K_S.gguf",
@@ -88,8 +74,8 @@ class LLMManager:
                 "format": "safetensors",
                 "size_gb": 6.9,
                 "repo_url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
-                "strengths": ["hohe rechenleistung", "genauigkeit"],
-                "weaknesses": ["groesser", "langsamer", "nur bei bedarf aktiv"],
+                "strengths": ["hohe rechenleistung", "genauigkeit", "analysen"],
+                "weaknesses": ["groesser", "langsamer"],
                 "role": "analysis",
             },
         }
@@ -122,12 +108,12 @@ class LLMManager:
             "knowledge": ["wer ist", "was ist", "erklaere", "wissen", "fakten", "recherche"]
         }
         self.use_case_model_map: Dict[str, List[str]] = {
-            "code": ["mistral", "llama3"],
-            "analysis": ["deepseek", "llama3", "mistral"],
-            "creative": ["llama3", "mistral"],
-            "emotion": ["llama3", "mistral"],
-            "conversation": ["llama3", "mistral"],
-            "knowledge": ["deepseek", "llama3", "mistral"]
+            "code": ["mistral", "deepseek"],
+            "analysis": ["deepseek", "mistral"],
+            "creative": ["mistral", "deepseek"],
+            "emotion": ["mistral", "deepseek"],
+            "conversation": ["mistral", "deepseek"],
+            "knowledge": ["deepseek", "mistral"]
         }
         self.default_use_case: str = "conversation"
         self.logic_path_map: Dict[str, str] = {
@@ -199,7 +185,7 @@ class LLMManager:
             return []
         startup_models: List[str] = []
         preferred_order: List[str] = [
-            model_key for model_key in ("mistral", "llama3", "deepseek") if model_key in self.available_models
+            model_key for model_key in ("mistral", "deepseek") if model_key in self.available_models
         ]
         preferred_order.extend(
             model_key for model_key in self.available_models.keys() if model_key not in preferred_order
@@ -791,8 +777,6 @@ class LLMManager:
             return "mistral"
         if task_type in ["analysis", "complex_reasoning", "research", "facts"] and self.is_model_ready("deepseek"):
             return "deepseek"
-        if task_type in ["conversation", "creative_writing", "chat", "standard"] and self.is_model_ready("llama3"):
-            return "llama3"
         return self.choose_model_for_prompt(task_type)
 
     def download_model_info(self, model_key: str) -> Dict[str, str]:
@@ -834,7 +818,7 @@ class LLMManager:
             if configured_startup:
                 target_models = [key for key in configured_startup if key in self.available_models]
             else:
-                target_models = [key for key in ("mistral", "llama3", "deepseek") if key in self.available_models]
+                target_models = [key for key in ("mistral", "deepseek") if key in self.available_models]
                 stop_after_first = True
             if not target_models:
                 self.logger.info("Keine LLM-Modelle zum automatischen Laden konfiguriert oder verfuegbar.")

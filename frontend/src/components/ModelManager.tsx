@@ -21,7 +21,7 @@ export default function ModelManager() {
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null)
   
   // 🔴 CRITICAL: Track polling interval
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const pollingIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     loadModels()

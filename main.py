@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 J.A.R.V.I.S. - Deutscher KI-Sprachassistent
-Hauptmodul für den Start der Anwendung
+Hauptmodul für den Start mit Web-UI
 """
 
 import sys
@@ -14,8 +14,16 @@ import json
 import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
-from concurrent.futures import Future
 from typing import Any, Optional, Dict, List
+
+# Für Web-UI
+try:
+    import uvicorn
+    from api.jarvis_api import app, set_jarvis_instance
+    WEB_UI_AVAILABLE = True
+except ImportError:
+    WEB_UI_AVAILABLE = False
+    print("⚠️  Web-UI nicht verfügbar. Installiere: pip install fastapi uvicorn")
 
 # Lokale Imports
 from core.speech_recognition import SpeechRecognizer
@@ -30,14 +38,13 @@ from core.knowledge_manager import KnowledgeManager
 from core.crawler_client import CrawlerClient
 from core.system_control import SystemControl
 from core.system_monitor import SystemMonitor
-from core.security_protocol import SecurityProtocolManager, PriorityLevel
+from core.security_protocol import SecurityProtocolManager
 from core.security_manager import SecurityManager
 from core.learning_manager import LearningManager
 from core.voice_biometrics import VoiceBiometricManager
 from core.update_scheduler import UpdateScheduler
 from config.settings import Settings
 from utils.logger import Logger
-from utils.text_shortener import condense_text
 from utils.error_reporter import ErrorReporter
 from utils.authenticator import AuthenticatorManager
 
@@ -51,66 +58,8 @@ GO_SERVICES = [
 ]
 
 
-class HeadlessGUI:
-    """Minimal Ersatz-GUI für headless Betrieb."""
-
-    def __init__(self, jarvis: "JarvisAssistant", logger: Logger) -> None:
-        self._jarvis = jarvis
-        self._logger = logger
-
-    def update_status(self, message: str) -> None:
-        self._logger.info(f"[Status] {message}")
-
-    def update_context_panels(self, **_kwargs) -> None:
-        pass
-
-    def handle_knowledge_progress(self, payload) -> None:
-        self._logger.debug(f"[Knowledge] {payload}")
-
-    def add_user_message(self, message: str) -> None:
-        self._logger.info(f"[User] {message}")
-
-    def add_assistant_message(self, message: str) -> None:
-        self._logger.info(f"[Assistant] {message}")
-
-    def show_message(self, title: str, message: str) -> None:
-        self._logger.info(f"{title}: {message}")
-
-    def run(self) -> None:
-        self._logger.info("GUI nicht verfügbar. Headless-Modus aktiv. Drücke STRG+C zum Beenden.")
-        ready_cb = getattr(self._jarvis, "on_gui_ready", None)
-        if callable(ready_cb):
-            try:
-                ready_cb()
-            except Exception as exc:
-                self._logger.debug("Remote-Ready Callback konnte nicht aufgerufen werden: %s", exc)
-        while self._jarvis.is_running:
-            time.sleep(0.5)
-
-
-class WebInterfaceBridge(HeadlessGUI):
-    """Brücke zwischen Kernlogik und Weboberfläche (DEPRECATED - Web-UI wurde entfernt)."""
-
-    def update_status(self, message: str) -> None:
-        super().update_status(message)
-        try:
-            runtime = self._jarvis.get_runtime_status()
-            runtime["status_message"] = message
-            self._jarvis._publish_remote_event("status", runtime)
-        except Exception as exc:
-            self._logger.debug("Status konnte nicht an Web-UI gesendet werden: %s", exc)
-
-    def update_context_panels(self, **kwargs) -> None:
-        super().update_context_panels(**kwargs)
-        try:
-            payload = {key: value for key, value in kwargs.items() if value is not None}
-            self._jarvis._publish_remote_event("context_update", payload)
-        except Exception as exc:
-            self._logger.debug("Kontext konnte nicht an Web-UI gesendet werden: %s", exc)
-
-
 class JarvisAssistant:
-    """Hauptklasse für den J.A.R.V.I.S. Assistenten"""
+    """Hauptklasse für den J.A.R.V.I.S. Assistenten mit Web-UI"""
 
     def __init__(self):
         self.logger = Logger()
@@ -124,21 +73,18 @@ class JarvisAssistant:
         self._passphrase_hint: Optional[str] = None
         self._min_command_words = 3
         self.remote_gateway = None
-        self.web_interface = None
         self._conversation_history: List[Dict[str, Any]] = []
         self.system_monitor = SystemMonitor(update_interval=2.0)
         self.speech_thread: Optional[threading.Thread] = None
         self._pending_authenticator_payload: Optional[Dict[str, str]] = None
-        self._desktop_cfg: Dict[str, Any] = {}
-        self.desktop_app_enabled = False
-        self.desktop_gui = None
+        self._go_processes: List[subprocess.Popen] = []
+        self.web_ui_thread: Optional[threading.Thread] = None
 
         # Komponenten initialisieren
         self.plugin_manager = PluginManager(self.logger)
         self.knowledge_manager = KnowledgeManager()
         self.crawler_client = CrawlerClient()
         self.system_control = SystemControl(self.security_manager, self.settings)
-        self._go_processes: List[subprocess.Popen] = []
         self.tts = TextToSpeech(self.settings)
         self.task_core = AutonomousTaskCore(
             knowledge_manager=self.knowledge_manager,
@@ -258,20 +204,9 @@ class JarvisAssistant:
                 self._passphrase_hint = hint.strip()
         except Exception:
             self._passphrase_hint = None
-            
-        self.gui = self._initialise_gui()
-        self.security_protocol.gui = self.gui
 
         self.knowledge_manager.register_progress_callback(self._handle_knowledge_progress)
-        initial_plugin_context = dict(self.command_processor.context.get('plugin_context', {}) or {})
-        cmd_map = self.command_processor.context.get('command_map')
-        if cmd_map:
-            initial_plugin_context['command_map'] = cmd_map
-        self.gui.update_context_panels(
-            use_case=self.command_processor.context.get('last_use_case'),
-            scores=self.command_processor.context.get('use_case_scores'),
-            plugin_context=initial_plugin_context,
-        )
+        
         self._initialise_remote_gateway()
 
         try:
@@ -297,34 +232,7 @@ class JarvisAssistant:
         )
         self.update_scheduler.start()
 
-        self.logger.info("J.A.R.V.I.S. initialisiert")
-
-    def _initialise_gui(self):
-        """Initialisiert die Desktop-UI (Dear ImGui FULL VERSION) oder Headless-Modus."""
-        try:
-            desktop_cfg = self.settings.get('desktop_app', {}) or {}
-        except Exception:
-            desktop_cfg = {}
-
-        self._desktop_cfg = desktop_cfg if isinstance(desktop_cfg, dict) else {}
-        self.desktop_app_enabled = bool(self._desktop_cfg.get("enabled") or os.getenv("JARVIS_DESKTOP"))
-
-        # Versuche Dear ImGui Desktop-App FULL VERSION zu laden
-        if self.desktop_app_enabled:
-            try:
-                from desktop.jarvis_imgui_app_full import create_jarvis_imgui_gui_full
-                self.desktop_gui = create_jarvis_imgui_gui_full(self)
-                self.logger.info("🎮 Dear ImGui Desktop-App FULL geladen (7 Tabs, GPU-beschleunigt)")
-                return self.desktop_gui
-            except ImportError as exc:
-                self.logger.warning("Dear ImGui nicht verfügbar (%s), falle auf Headless zurück", exc)
-                self.logger.info("Installiere mit: pip install dearpygui")
-            except Exception as exc:
-                self.logger.warning("Desktop-App konnte nicht geladen werden: %s", exc)
-
-        # Fallback: Headless
-        self.logger.info("Headless-Modus wird verwendet")
-        return HeadlessGUI(self, self.logger)
+        self.logger.info("🤖 J.A.R.V.I.S. Core initialisiert")
 
     def _persist_authenticator_payload(self, payload: Optional[Dict[str, Any]]) -> None:
         """Speichert das aktuelle Pending-Payload sicher auf der Platte."""
@@ -341,16 +249,9 @@ class JarvisAssistant:
             self.logger.debug("Authenticator-Status konnte nicht persistiert werden: %s", exc)
 
     def _handle_knowledge_progress(self, payload):
-        """Leitet Lernfortschritt an GUI und Web weiter."""
-        try:
-            self.gui.handle_knowledge_progress(payload)
-        except Exception:
-            pass
+        """Leitet Lernfortschritt an Remote-Clients weiter."""
         normalized = payload if isinstance(payload, dict) else {"message": str(payload)}
         self._publish_remote_event("knowledge_progress", normalized)
-
-    def _schedule_web_ui_open(self) -> None:
-        pass
 
     def _should_start_go_services(self) -> bool:
         env_flag = os.getenv("JARVIS_START_GO", "").strip().lower()
@@ -417,32 +318,11 @@ class JarvisAssistant:
             self.remote_gateway = None
 
     def _publish_remote_event(self, event_type: str, payload: Optional[Dict[str, Any]] = None) -> None:
-        targets = [getattr(self, "remote_gateway", None), getattr(self, "web_interface", None)]
-        for target in targets:
-            if not target:
-                continue
+        if self.remote_gateway:
             try:
-                target.publish(event_type, payload or {})
+                self.remote_gateway.publish(event_type, payload or {})
             except Exception as exc:
                 self.logger.debug("Remote-Event konnte nicht gesendet werden: %s", exc)
-
-    def _emit_model_download_event(self, **payload) -> None:
-        data = dict(payload or {})
-        data.setdefault("timestamp", time.time())
-        try:
-            self._publish_remote_event("model_download_progress", data)
-        except Exception as exc:
-            self.logger.debug("Download-Event konnte nicht gesendet werden: %s", exc)
-
-    def _post_to_main_thread(self, callback) -> bool:
-        return False
-
-    def on_gui_ready(self) -> None:
-        if self.remote_gateway:
-            self.remote_gateway.mark_ready()
-        if self.web_interface:
-            self.web_interface.mark_ready()
-        self._publish_remote_event("status", {"state": "ready"})
 
     def get_runtime_status(self) -> Dict[str, Any]:
         context = getattr(self.command_processor, 'context', {}) or {}
@@ -455,27 +335,6 @@ class JarvisAssistant:
             "last_command": context.get('last_command'),
             "conversation_mode": context.get('conversation_mode'),
         }
-
-    def get_context_snapshot(self) -> Dict[str, Any]:
-        context = dict(getattr(self.command_processor, 'context', {}) or {})
-        plugin_context = dict(context.get('plugin_context', {}) or {})
-        command_map = context.get('command_map')
-        if command_map:
-            plugin_context['command_map'] = command_map
-        return {
-            "use_case": context.get('last_use_case'),
-            "scores": context.get('use_case_scores'),
-            "plugin_context": plugin_context,
-            "logic_path": context.get('logic_path'),
-            "priority": context.get('priority'),
-            "adaptive_context": context.get('adaptive_context'),
-        }
-
-    def get_security_status(self) -> Dict[str, Any]:
-        return {"status": "ok"}
-
-    def get_speech_status(self) -> Dict[str, Any]:
-        return {"available": True, "listening": self.listening}
 
     def get_system_metrics(self, include_details: bool = False) -> Dict[str, Any]:
         base_status = {}
@@ -512,31 +371,6 @@ class JarvisAssistant:
             "metadata": metadata,
         }
 
-    def control_llm_model(self, action: str, model_key: Optional[str] = None) -> Dict[str, Any]:
-        manager = getattr(self, "llm_manager", None)
-        if not manager:
-            raise RuntimeError("LLM-Manager nicht verfügbar.")
-        model = (model_key or manager.current_model or "mistral").strip()
-        action_normalized = (action or "").strip().lower()
-        if action_normalized == "load":
-            success = bool(manager.load_model(model))
-            return {"action": "load", "success": success, "model": manager.current_model}
-        if action_normalized == "unload":
-            manager.unload_model()
-            return {"action": "unload", "success": True}
-        if action_normalized == "download":
-            self._emit_model_download_event(model=model, status="starting")
-            try:
-                success = bool(manager.download_model(model))
-            except Exception as exc:
-                self._emit_model_download_event(model=model, status="error", message=str(exc))
-                raise
-            else:
-                status = "completed" if success else "failed"
-                self._emit_model_download_event(model=model, status=status)
-                return {"action": "download", "success": success}
-        raise ValueError(f"Unbekannte Modellaktion: {action}")
-
     def get_plugin_overview(self) -> List[Dict[str, Any]]:
         if not self.plugin_manager:
             return []
@@ -547,44 +381,110 @@ class JarvisAssistant:
             return []
 
     def start(self):
+        """Startet JARVIS mit Web-UI"""
         self.is_running = True
-        self.logger.info("J.A.R.V.I.S. wird gestartet...")
+        self.logger.info("🚀 J.A.R.V.I.S. wird gestartet...")
+        
+        # Go-Services starten
         self._maybe_start_go_services()
+        
+        # Remote Gateway starten
         if self.remote_gateway:
-            self.remote_gateway.mark_not_ready()
             self.remote_gateway.start()
 
+        # Web-UI starten
+        if WEB_UI_AVAILABLE:
+            self._start_web_ui()
+        else:
+            self.logger.warning("⚠️  Web-UI nicht verfügbar. Headless-Modus.")
+
+        # Speech Recognition starten
         if self.settings.get('first_run', True):
             self.run_debug_mode()
             self.settings.set('first_run', False)
 
         self.start_listening()
-        self.gui.update_status("Bereit")
-        self.gui.run()
+        self.logger.info("✅ J.A.R.V.I.S. läuft")
+        
+        # Hauptthread am Leben halten
+        try:
+            while self.is_running:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self.logger.info("\n👋 Beende JARVIS...")
+            self.stop()
+
+    def _start_web_ui(self):
+        """Startet FastAPI Web-UI in Background-Thread"""
+        if not WEB_UI_AVAILABLE:
+            return
+        
+        # JARVIS-Instanz an API übergeben
+        set_jarvis_instance(self)
+        
+        # Check ob Frontend gebaut ist
+        frontend_dist = Path("frontend/dist")
+        if not frontend_dist.exists():
+            self.logger.warning("⚠️  Frontend nicht gebaut!")
+            self.logger.warning("Führe aus: cd frontend && npm install && npm run build")
+        
+        # FastAPI in Background-Thread starten
+        def run_uvicorn():
+            try:
+                uvicorn.run(
+                    app,
+                    host="0.0.0.0",
+                    port=8000,
+                    log_level="info",
+                    access_log=False
+                )
+            except Exception as exc:
+                self.logger.error(f"Web-UI Fehler: {exc}")
+        
+        self.web_ui_thread = threading.Thread(target=run_uvicorn, daemon=True)
+        self.web_ui_thread.start()
+        
+        # Browser nach 2 Sekunden öffnen
+        def open_browser():
+            time.sleep(2)
+            url = "http://localhost:8000"
+            try:
+                webbrowser.open(url)
+                self.logger.info(f"🌐 Web-UI: {url}")
+            except Exception as exc:
+                self.logger.warning(f"Browser konnte nicht geöffnet werden: {exc}")
+                self.logger.info(f"🌐 Öffne manuell: {url}")
+        
+        threading.Thread(target=open_browser, daemon=True).start()
+        
+        self.logger.info("📡 Web-UI gestartet")
+        self.logger.info("📡 API Docs: http://localhost:8000/api/docs")
+        self.logger.info("🔌 WebSocket: ws://localhost:8000/ws")
 
     def stop(self):
+        """Stoppt JARVIS"""
         self.is_running = False
         self.stop_listening()
+        
         try:
             if hasattr(self, "tts") and self.tts:
                 self.tts.shutdown()
         except Exception:
             pass
+        
         if self.plugin_manager:
             self.plugin_manager.shutdown()
+        
         if hasattr(self, "update_scheduler") and self.update_scheduler:
             self.update_scheduler.stop()
+        
         if self.remote_gateway:
             try:
                 self.remote_gateway.stop()
             except Exception as exc:
                 self.logger.debug("Remote-Gateway konnte nicht gestoppt werden: %s", exc)
-        if self.web_interface:
-            try:
-                self.web_interface.stop()
-            except Exception as exc:
-                self.logger.debug("Web-Interface konnte nicht gestoppt werden: %s", exc)
-        self.logger.info("J.A.R.V.I.S. wird beendet")
+        
+        self.logger.info("👋 J.A.R.V.I.S. wird beendet")
         self._stop_go_services()
 
     def run_debug_mode(self):
@@ -599,14 +499,12 @@ class JarvisAssistant:
                     self.tts.speak("Ja, ich höre.")
                 except Exception as exc:
                     self.logger.error(f"Akustische Rückmeldung fehlgeschlagen: {exc}")
-                self.gui.update_status("Höre zu...")
                 self.logger.info("Wake-Word erkannt")
 
     def on_command_recognized(self, command_text):
         if not self.is_running:
             return
         self.logger.info('Befehl erkannt: %s', command_text)
-        self.gui.add_user_message(command_text)
         self.listening = False
 
     def start_listening(self) -> bool:
@@ -634,14 +532,22 @@ class JarvisAssistant:
 
 
 def main():
-    """Hauptfunktion"""
+    """Hauptfunktion - Startet JARVIS mit Web-UI"""
+    print("🤖" + "="*60)
+    print("  J.A.R.V.I.S. - Just A Rather Very Intelligent System")
+    print("  Version 2.0.0 - Web UI Edition")
+    print("="*61)
+    print()
+    
     try:
         os.makedirs("data", exist_ok=True)
         os.makedirs("logs", exist_ok=True)
         os.makedirs("models", exist_ok=True)
+        
         from utils.logger import Logger
         Logger().set_level("DEBUG")
-        print("Debug-Logs: logs/jarvis.log")
+        print("📜 Debug-Logs: logs/jarvis.log")
+        print()
 
         try:
             settings_for_reporting = Settings()
@@ -653,9 +559,11 @@ def main():
         jarvis.start()
 
     except KeyboardInterrupt:
-        print("\nJ.A.R.V.I.S. wird beendet...")
+        print("\n👋 J.A.R.V.I.S. wird beendet...")
     except Exception as e:
-        print(f"Fehler beim Start: {e}")
+        print(f"❌ Fehler beim Start: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 

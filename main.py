@@ -337,53 +337,88 @@ class JarvisAssistant:
         }
 
     def get_system_metrics(self, include_details: bool = False) -> Dict[str, Any]:
-        """Returns system metrics with proper fallbacks"""
-        base_status = {}
-        monitor_summary: Dict[str, Any] = {
+        """Returns system metrics with proper mapping from SystemMonitor"""
+        # Default fallback values
+        monitor_summary = {
             "cpu_percent": 0.0,
             "memory_percent": 0.0,
             "memory_used_gb": 0.0,
             "memory_total_gb": 0.0,
             "disk_percent": 0.0,
         }
-        monitor_details: Dict[str, Any] = {}
         
         if self.system_monitor:
             try:
-                summary = self.system_monitor.get_system_summary(include_details=False)
-                if summary and isinstance(summary, dict):
-                    monitor_summary.update(summary)
+                # Get summary from SystemMonitor
+                raw_summary = self.system_monitor.get_system_summary(include_details=False)
                 
-                if include_details:
-                    details = self.system_monitor.get_all_metrics()
-                    if details and isinstance(details, dict):
-                        monitor_details = details
+                # Map SystemMonitor structure to UI format
+                if raw_summary and isinstance(raw_summary, dict):
+                    # CPU
+                    cpu = raw_summary.get('cpu', {})
+                    if isinstance(cpu, dict):
+                        monitor_summary['cpu_percent'] = float(cpu.get('usage_percent', 0.0) or 0.0)
+                    
+                    # Memory
+                    memory = raw_summary.get('memory', {})
+                    if isinstance(memory, dict):
+                        monitor_summary['memory_percent'] = float(memory.get('percent', 0.0) or 0.0)
+                        total_bytes = memory.get('total', 0) or 0
+                        used_bytes = memory.get('used', 0) or 0
+                        monitor_summary['memory_total_gb'] = round(total_bytes / (1024**3), 1)
+                        monitor_summary['memory_used_gb'] = round(used_bytes / (1024**3), 1)
+                    
+                    # Disk (get first partition)
+                    if include_details:
+                        disk_info = self.system_monitor.get_disk_info()
+                        disks = disk_info.get('disks', {})
+                        if disks:
+                            first_disk = next(iter(disks.values()))
+                            monitor_summary['disk_percent'] = float(first_disk.get('percent', 0.0) or 0.0)
+                    else:
+                        # Quick disk check
+                        try:
+                            import psutil
+                            usage = psutil.disk_usage('/')
+                            monitor_summary['disk_percent'] = float(usage.percent)
+                        except Exception:
+                            pass
+                
+                self.logger.debug(f"System Metrics: {monitor_summary}")
+                
             except Exception as exc:
-                self.logger.debug("Systemmonitor konnte nicht abgefragt werden: %s", exc)
+                self.logger.error(f"Fehler beim Abrufen der System-Metriken: {exc}")
         
         return {
-            "status": base_status,
+            "status": {},
             "summary": monitor_summary,
-            "details": monitor_details if include_details else {},
+            "details": {},
         }
 
     def get_llm_status(self) -> Dict[str, Any]:
         manager = getattr(self, "llm_manager", None)
         if not manager:
+            self.logger.warning("LLM-Manager nicht verfügbar")
             return {"available": {}, "current": None, "loaded": [], "active": False}
         try:
             available = manager.get_model_overview()
-        except Exception:
-            available = {}
-        loaded = list(getattr(manager, "loaded_models", {}).keys())
-        metadata = getattr(manager, "model_metadata", {})
-        return {
-            "available": available,
-            "current": getattr(manager, "current_model", None),
-            "loaded": loaded,
-            "active": bool(getattr(manager, "model_loaded", False)),
-            "metadata": metadata,
-        }
+            loaded = list(getattr(manager, "loaded_models", {}).keys())
+            metadata = getattr(manager, "model_metadata", {})
+            current = getattr(manager, "current_model", None)
+            active = bool(getattr(manager, "model_loaded", False))
+            
+            self.logger.info(f"LLM Status: available={len(available)}, current={current}, active={active}")
+            
+            return {
+                "available": available,
+                "current": current,
+                "loaded": loaded,
+                "active": active,
+                "metadata": metadata,
+            }
+        except Exception as exc:
+            self.logger.error(f"Fehler beim Abrufen des LLM-Status: {exc}")
+            return {"available": {}, "current": None, "loaded": [], "active": False}
 
     def control_llm_model(self, action: str, model_key: Optional[str] = None) -> Dict[str, Any]:
         """Steuert LLM Models (load/unload/download)"""
@@ -425,11 +460,14 @@ class JarvisAssistant:
 
     def get_plugin_overview(self) -> List[Dict[str, Any]]:
         if not self.plugin_manager:
+            self.logger.warning("Plugin-Manager nicht verfügbar")
             return []
         try:
-            return self.plugin_manager.get_plugin_overview()
+            plugins = self.plugin_manager.get_plugin_overview()
+            self.logger.info(f"Plugin Overview: {len(plugins)} plugins")
+            return plugins
         except Exception as exc:
-            self.logger.debug("Plugin-Übersicht nicht verfügbar: %s", exc)
+            self.logger.error(f"Fehler beim Abrufen der Plugin-Übersicht: {exc}")
             return []
 
     def start(self):

@@ -4,8 +4,12 @@ import { getLLMModels, loadLLMModel, unloadLLMModel } from '../lib/api'
 
 interface ModelDownloadProgress {
   model: string
-  status: 'downloading' | 'completed' | 'error'
-  progress?: number
+  status: 'downloading' | 'completed' | 'error' | 'already_exists'
+  downloaded?: number
+  total?: number
+  percent?: number
+  speed?: number
+  eta?: number
   message?: string
 }
 
@@ -14,6 +18,7 @@ export default function ModelManager() {
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [downloadProgress, setDownloadProgress] = useState<Map<string, ModelDownloadProgress>>(new Map())
+  const [downloadingModel, setDownloadingModel] = useState<string | null>(null)
 
   useEffect(() => {
     loadModels()
@@ -21,34 +26,41 @@ export default function ModelManager() {
     return () => clearInterval(interval)
   }, [])
 
+  // Polling für Download-Progress
   useEffect(() => {
-    // WebSocket für Download-Progress
-    const ws = new WebSocket('ws://localhost:8000/ws')
-    
-    ws.onmessage = (event) => {
+    if (!downloadingModel) return
+
+    const pollProgress = async () => {
       try {
-        const data = JSON.parse(event.data)
-        if (data.type === 'model_download_progress') {
-          setDownloadProgress(prev => {
-            const newMap = new Map(prev)
-            newMap.set(data.model, {
-              model: data.model,
-              status: data.status,
-              progress: data.progress,
-              message: data.message,
+        const response = await fetch('/api/llm/download_status')
+        if (response.ok) {
+          const data = await response.json()
+          if (data && data.model) {
+            setDownloadProgress(prev => {
+              const newMap = new Map(prev)
+              newMap.set(data.model, {
+                model: data.model,
+                status: data.status || 'downloading',
+                downloaded: data.downloaded,
+                total: data.total,
+                percent: data.percent,
+                speed: data.speed,
+                eta: data.eta,
+                message: data.message,
+              })
+              return newMap
             })
-            return newMap
-          })
+          }
         }
       } catch (err) {
-        console.error('Failed to parse WebSocket message:', err)
+        console.error('Failed to poll download status:', err)
       }
     }
 
-    return () => {
-      ws.close()
-    }
-  }, [])
+    // Poll every 500ms while downloading
+    const interval = setInterval(pollProgress, 500)
+    return () => clearInterval(interval)
+  }, [downloadingModel])
 
   const loadModels = async () => {
     try {
@@ -87,6 +99,7 @@ export default function ModelManager() {
 
   const handleDownloadModel = async (modelKey: string) => {
     setError(null)
+    setDownloadingModel(modelKey)
     
     // Set initial downloading state
     setDownloadProgress(prev => {
@@ -94,7 +107,9 @@ export default function ModelManager() {
       newMap.set(modelKey, {
         model: modelKey,
         status: 'downloading',
-        progress: 0,
+        downloaded: 0,
+        total: 0,
+        percent: 0,
       })
       return newMap
     })
@@ -118,10 +133,11 @@ export default function ModelManager() {
           newMap.set(modelKey, {
             model: modelKey,
             status: 'completed',
-            progress: 100,
+            percent: 100,
           })
           return newMap
         })
+        setDownloadingModel(null)
         await loadModels()
       } else {
         throw new Error('Download failed')
@@ -137,11 +153,36 @@ export default function ModelManager() {
         })
         return newMap
       })
+      setDownloadingModel(null)
     }
   }
 
   const getDownloadProgress = (modelKey: string): ModelDownloadProgress | null => {
     return downloadProgress.get(modelKey) || null
+  }
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round((bytes / Math.pow(k, i)) * 10) / 10 + ' ' + sizes[i]
+  }
+
+  const formatSpeed = (bytesPerSec: number | undefined): string => {
+    if (!bytesPerSec) return ''
+    return formatBytes(bytesPerSec) + '/s'
+  }
+
+  const formatETA = (seconds: number | undefined): string => {
+    if (!seconds || seconds <= 0) return ''
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = Math.floor(seconds % 60)
+    
+    if (hours > 0) return `${hours}h ${minutes}m`
+    if (minutes > 0) return `${minutes}m ${secs}s`
+    return `${secs}s`
   }
 
   return (
@@ -252,18 +293,28 @@ export default function ModelManager() {
               </div>
 
               {/* Download Progress */}
-              {isDownloading && (
+              {isDownloading && downloadInfo && (
                 <div className="mt-3">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-jarvis-blue">Downloading...</span>
-                    <span className="text-jarvis-cyan font-mono">{downloadInfo.progress || 0}%</span>
+                    <span className="text-jarvis-cyan font-mono">{Math.round(downloadInfo.percent || 0)}%</span>
                   </div>
                   <div className="w-full h-2 bg-jarvis-dark rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-jarvis-blue to-jarvis-cyan transition-all duration-300"
-                      style={{ width: `${downloadInfo.progress || 0}%` }}
+                      style={{ width: `${downloadInfo.percent || 0}%` }}
                     />
                   </div>
+                  
+                  {/* Download Stats */}
+                  <div className="flex justify-between text-xs text-gray-400 mt-2">
+                    <div>{formatBytes(downloadInfo.downloaded || 0)} / {formatBytes(downloadInfo.total || 0)}</div>
+                    <div>
+                      {formatSpeed(downloadInfo.speed)}
+                      {downloadInfo.eta && ` ETA: ${formatETA(downloadInfo.eta)}`}
+                    </div>
+                  </div>
+                  
                   {downloadInfo.message && (
                     <p className="text-xs text-gray-400 mt-1">{downloadInfo.message}</p>
                   )}
@@ -282,7 +333,7 @@ export default function ModelManager() {
               {downloadError && (
                 <div className="mt-3 p-2 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-400 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
-                  <span>{downloadInfo.message || 'Download failed'}</span>
+                  <span>{downloadInfo?.message || 'Download failed'}</span>
                 </div>
               )}
 

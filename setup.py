@@ -219,9 +219,9 @@ class JarvisSetup:
     
     def print_next_steps(self):
         """Zeigt nächste Schritte"""
-        print(f"\n{Colors.CYAN}{Colors.BOLD}="*60)
+        print(f"\n{Colors.CYAN}{Colors.BOLD}{'='*60}")
         print("✅ SETUP ABGESCHLOSSEN!")
-        print(f"="*60{Colors.END}\n")
+        print(f"{'='*60}{Colors.END}\n")
         
         print(f"{Colors.GREEN}{Colors.BOLD}NÄCHSTE SCHRITTE:{Colors.END}\n")
         

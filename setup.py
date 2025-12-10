@@ -88,8 +88,7 @@ class JarvisSetup:
         try:
             subprocess.run(
                 [sys.executable, "-m", "venv", str(self.venv_path)],
-                check=True,
-                capture_output=True
+                check=True
             )
             print(f"{Colors.GREEN}✅ Virtuelle Umgebung erstellt{Colors.END}\n")
         except subprocess.CalledProcessError as e:
@@ -97,13 +96,13 @@ class JarvisSetup:
             sys.exit(1)
     
     def get_pip_path(self):
-        """Gibt Pfad zu pip in venv zurük"""
+        """Gibt Pfad zu pip in venv zurück"""
         if self.os_type == "Windows":
             return self.venv_path / "Scripts" / "pip.exe"
         return self.venv_path / "bin" / "pip"
     
     def get_python_path(self):
-        """Gibt Pfad zu Python in venv zurük"""
+        """Gibt Pfad zu Python in venv zurück"""
         if self.os_type == "Windows":
             return self.venv_path / "Scripts" / "python.exe"
         return self.venv_path / "bin" / "python"
@@ -111,9 +110,10 @@ class JarvisSetup:
     def install_dependencies(self):
         """Installiert Dependencies"""
         print(f"{Colors.CYAN}➤ Installiere Dependencies...{Colors.END}")
-        print(f"{Colors.YELLOW}(Dies kann einige Minuten dauern){Colors.END}\n")
+        print(f"{Colors.YELLOW}(Dies kann einige Minuten dauern)\n{Colors.END}")
         
         pip = str(self.get_pip_path())
+        python = str(self.get_python_path())
         requirements = self.root / "requirements.txt"
         
         if not requirements.exists():
@@ -121,16 +121,18 @@ class JarvisSetup:
             sys.exit(1)
         
         try:
-            # Upgrade pip
-            print("  🔄 Aktualisiere pip...")
-            subprocess.run(
-                [pip, "install", "--upgrade", "pip"],
-                check=True,
-                capture_output=True
+            # Upgrade pip (show output)
+            print(f"  🔄 Aktualisiere pip...\n")
+            result = subprocess.run(
+                [python, "-m", "pip", "install", "--upgrade", "pip"],
+                check=False  # Don't fail if this doesn't work
             )
             
-            # Install requirements
-            print("  📦 Installiere Pakete...")
+            if result.returncode != 0:
+                print(f"\n{Colors.YELLOW}⚠️  Pip upgrade fehlgeschlagen, fahre trotzdem fort...{Colors.END}\n")
+            
+            # Install requirements (show output)
+            print(f"\n  📦 Installiere Pakete...\n")
             subprocess.run(
                 [pip, "install", "-r", str(requirements)],
                 check=True
@@ -138,8 +140,10 @@ class JarvisSetup:
             
             print(f"\n{Colors.GREEN}✅ Dependencies installiert{Colors.END}\n")
         except subprocess.CalledProcessError as e:
-            print(f"{Colors.RED}❌ Fehler bei der Installation: {e}{Colors.END}")
-            print(f"{Colors.YELLOW}Versuche manuell: pip install -r requirements.txt{Colors.END}")
+            print(f"\n{Colors.RED}❌ Fehler bei der Installation: {e}{Colors.END}")
+            print(f"{Colors.YELLOW}\nVersuche manuell:{Colors.END}")
+            print(f"  1. Aktiviere venv: {Colors.CYAN}venv\\Scripts\\activate{Colors.END}")
+            print(f"  2. Installiere: {Colors.CYAN}pip install -r requirements.txt{Colors.END}\n")
             sys.exit(1)
     
     def configure_settings(self):

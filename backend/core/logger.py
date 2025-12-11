@@ -1,5 +1,6 @@
 import logging
 import sys
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
@@ -21,13 +22,23 @@ class LogBuffer:
             'critical': 0
         }
     
+    @staticmethod
+    def strip_ansi(text: str) -> str:
+        """Remove ANSI color codes"""
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        return ansi_escape.sub('', text)
+    
     def add_log(self, level: str, category: str, message: str, metadata: dict = None):
         with self.lock:
             import uuid
+            
+            # Strip ANSI codes from level
+            clean_level = self.strip_ansi(level).lower()
+            
             log_entry = {
                 'id': str(uuid.uuid4()),
                 'timestamp': datetime.now().isoformat(),
-                'level': level.lower(),
+                'level': clean_level,
                 'category': category,
                 'message': message,
                 'metadata': metadata or {}
@@ -36,9 +47,13 @@ class LogBuffer:
             self.logs.append(log_entry)
             if len(self.logs) > self.max_size:
                 removed = self.logs.pop(0)
-                self.stats[removed['level']] -= 1
+                removed_level = removed['level']
+                if removed_level in self.stats:
+                    self.stats[removed_level] -= 1
             
-            self.stats[level.lower()] += 1
+            # Only increment if level is valid
+            if clean_level in self.stats:
+                self.stats[clean_level] += 1
     
     def get_logs(self, level: str = None, category: str = None, limit: int = 100):
         with self.lock:
@@ -94,8 +109,9 @@ class BufferedHandler(logging.Handler):
                     'lineno': record.lineno
                 }
             )
-        except Exception:
-            self.handleError(record)
+        except Exception as e:
+            # Don't let logging errors break the app
+            print(f"Logging error: {e}", file=sys.stderr)
 
 class ColoredFormatter(logging.Formatter):
     """Colored console output"""
@@ -110,9 +126,19 @@ class ColoredFormatter(logging.Formatter):
     RESET = '\033[0m'
     
     def format(self, record):
+        # Store original level
+        orig_levelname = record.levelname
+        
+        # Color the output
         color = self.COLORS.get(record.levelname, self.RESET)
         record.levelname = f"{color}{record.levelname}{self.RESET}"
-        return super().format(record)
+        
+        result = super().format(record)
+        
+        # Restore original
+        record.levelname = orig_levelname
+        
+        return result
 
 def setup_logger(name: str = 'jarvis', log_file: str = 'jarvis.log', console_level=logging.INFO):
     """Setup comprehensive logger with file, console and buffer handlers"""

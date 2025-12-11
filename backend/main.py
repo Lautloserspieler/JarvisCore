@@ -5,6 +5,13 @@ from datetime import datetime
 import json
 import uuid
 import asyncio
+import sys
+
+# Fix Windows console encoding
+if sys.platform == 'win32':
+    import codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
 app = FastAPI(title="JARVIS Core API", version="1.0.0")
 
@@ -29,11 +36,11 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
-        print(f"✅ Client connected. Total connections: {len(self.active_connections)}")
+        print(f"[+] Client verbunden. Aktive Verbindungen: {len(self.active_connections)}")
 
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
-        print(f"❌ Client disconnected. Total connections: {len(self.active_connections)}")
+        print(f"[-] Client getrennt. Aktive Verbindungen: {len(self.active_connections)}")
 
     async def send_personal_message(self, message: dict, websocket: WebSocket):
         await websocket.send_text(json.dumps(message))
@@ -75,18 +82,26 @@ def generate_jarvis_response(message: str) -> str:
     # Search queries
     if any(word in message_lower for word in ['search', 'suche', 'find', 'finde']):
         query = message.replace('search', '').replace('suche', '').replace('find', '').replace('finde', '').strip()
-        return f"Wissenssuche gestartet für: '{query}'\n\nDurchsuche folgende Quellen:\n→ Lokale Wissensdatenbank\n→ Wikipedia\n→ Wikidata\n→ Wissenschaftliche Datenbanken\n\nErgebnisse werden in Kürze präsentiert."
+        return f"""Wissenssuche gestartet für: '{query}'
+
+Durchsuche folgende Quellen:
+→ Lokale Wissensdatenbank
+→ Wikipedia
+→ Wikidata
+→ Wissenschaftliche Datenbanken
+
+Ergebnisse werden in Kürze präsentiert."""
     
     # System status
     if 'status' in message_lower or 'system' in message_lower:
         return """Systemstatus - Alle Systeme operational:
 
-🖥️  CPU: 45% Auslastung (8 Cores)
-💾  RAM: 24.8GB / 64GB verwendet (39%)
-🎮  GPU: NVIDIA RTX 4090 - 38% Auslastung
-💿  Storage: 2.4TB / 4TB verfügbar
-🌐  Network: Online (250 Mbps)
-⏱️  Uptime: 14h 23m 15s
+CPU: 45% Auslastung (8 Cores)
+RAM: 24.8GB / 64GB verwendet (39%)
+GPU: NVIDIA RTX 4090 - 38% Auslastung
+Storage: 2.4TB / 4TB verfügbar
+Network: Online (250 Mbps)
+Uptime: 14h 23m 15s
 
 Alle Kern-Module sind online und funktionsfähig."""
     
@@ -94,21 +109,21 @@ Alle Kern-Module sind online und funktionsfähig."""
     if 'help' in message_lower or 'hilfe' in message_lower:
         return """JARVIS Kommando-Übersicht:
 
-📋 Allgemein:
+Allgemein:
 • 'help' - Diese Hilfe anzeigen
 • 'system status' - Systemstatus abfragen
 
-🤖 Modelle:
+Modelle:
 • 'load llama3' - LLM laden
 • 'unload model' - Modell entladen
 • 'list models' - Verfügbare Modelle
 
-🔌 Plugins:
+Plugins:
 • 'list plugins' - Plugin-Übersicht
 • 'enable [plugin]' - Plugin aktivieren
 • 'disable [plugin]' - Plugin deaktivieren
 
-🔍 Suche:
+Suche:
 • 'search [query]' - Wissenssuche starten
 
 Was möchten Sie tun?"""

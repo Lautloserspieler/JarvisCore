@@ -22,49 +22,9 @@ class LLMManager:
             with open(self.model_config_path, 'r') as f:
                 self.config = json.load(f)
         else:
-            # Default configuration with real HuggingFace models
+            # Default configuration with UNGATED HuggingFace models
             self.config = {
                 'available_models': [
-                    {
-                        'id': 'llama-3.2-1b',
-                        'name': 'Llama 3.2 1B Instruct',
-                        'provider': 'Meta',
-                        'size': '1B parameters (~2.5GB)',
-                        'hf_model': 'meta-llama/Llama-3.2-1B-Instruct',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'instruction-following']
-                    },
-                    {
-                        'id': 'phi-3-mini',
-                        'name': 'Phi-3 Mini 4K',
-                        'provider': 'Microsoft',
-                        'size': '3.8B parameters (~7.6GB)',
-                        'hf_model': 'microsoft/Phi-3-mini-4k-instruct',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'code', 'reasoning']
-                    },
-                    {
-                        'id': 'gemma-2-2b',
-                        'name': 'Gemma 2 2B',
-                        'provider': 'Google',
-                        'size': '2B parameters (~5GB)',
-                        'hf_model': 'google/gemma-2-2b-it',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'instruction-following']
-                    },
-                    {
-                        'id': 'qwen-2.5-3b',
-                        'name': 'Qwen 2.5 3B Instruct',
-                        'provider': 'Alibaba',
-                        'size': '3B parameters (~6GB)',
-                        'hf_model': 'Qwen/Qwen2.5-3B-Instruct',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'multilingual', 'code']
-                    },
                     {
                         'id': 'tinyllama-1.1b',
                         'name': 'TinyLlama 1.1B Chat',
@@ -73,14 +33,54 @@ class LLMManager:
                         'hf_model': 'TinyLlama/TinyLlama-1.1B-Chat-v1.0',
                         'isActive': False,
                         'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat']
+                        'capabilities': ['text-generation', 'chat', 'fast']
                     },
                     {
                         'id': 'stablelm-2-1.6b',
-                        'name': 'StableLM 2 1.6B',
+                        'name': 'StableLM 2 1.6B Chat',
                         'provider': 'Stability AI',
                         'size': '1.6B parameters (~3.2GB)',
                         'hf_model': 'stabilityai/stablelm-2-1_6b-chat',
+                        'isActive': False,
+                        'isDownloaded': False,
+                        'capabilities': ['text-generation', 'chat', 'instruction-following']
+                    },
+                    {
+                        'id': 'qwen-1.5-0.5b',
+                        'name': 'Qwen 1.5 0.5B Chat',
+                        'provider': 'Alibaba',
+                        'size': '0.5B parameters (~1GB)',
+                        'hf_model': 'Qwen/Qwen1.5-0.5B-Chat',
+                        'isActive': False,
+                        'isDownloaded': False,
+                        'capabilities': ['text-generation', 'chat', 'multilingual', 'tiny']
+                    },
+                    {
+                        'id': 'openhermes-2.5',
+                        'name': 'OpenHermes 2.5 Mistral 7B',
+                        'provider': 'Teknium',
+                        'size': '7B parameters (~14GB)',
+                        'hf_model': 'teknium/OpenHermes-2.5-Mistral-7B',
+                        'isActive': False,
+                        'isDownloaded': False,
+                        'capabilities': ['text-generation', 'chat', 'reasoning', 'code']
+                    },
+                    {
+                        'id': 'orca-2-7b',
+                        'name': 'Orca 2 7B',
+                        'provider': 'Microsoft',
+                        'size': '7B parameters (~14GB)',
+                        'hf_model': 'microsoft/Orca-2-7b',
+                        'isActive': False,
+                        'isDownloaded': False,
+                        'capabilities': ['text-generation', 'chat', 'reasoning', 'instruction-following']
+                    },
+                    {
+                        'id': 'redpajama-3b',
+                        'name': 'RedPajama 3B Instruct',
+                        'provider': 'Together',
+                        'size': '3B parameters (~6GB)',
+                        'hf_model': 'togethercomputer/RedPajama-INCITE-Instruct-3B-v1',
                         'isActive': False,
                         'isDownloaded': False,
                         'capabilities': ['text-generation', 'chat', 'instruction-following']
@@ -155,21 +155,16 @@ class LLMManager:
             model_path.mkdir(exist_ok=True)
             
             log_info(f"Downloading to {model_path}", category='model')
+            log_info(f"This may take several minutes depending on model size ({model['size']})", category='model')
             
             # Download the model
-            def progress_callback(current, total):
-                if total > 0:
-                    progress = int((current / total) * 100)
-                    self.download_progress[model_id]['progress'] = progress
-                    if progress % 10 == 0:  # Log every 10%
-                        log_info(f"Download progress: {progress}%", category='model')
-            
-            # Download model from HuggingFace
             snapshot_download(
                 repo_id=model['hf_model'],
                 local_dir=str(model_path),
                 local_dir_use_symlinks=False,
-                resume_download=True
+                resume_download=True,
+                allow_patterns=["*.json", "*.safetensors", "*.model", "*.txt", "tokenizer*"],  # Only download necessary files
+                ignore_patterns=["*.msgpack", "*.h5", "*.ot"]  # Skip unnecessary formats
             )
             
             # Mark as downloaded
@@ -177,6 +172,7 @@ class LLMManager:
             self.save_config()
             
             log_info(f"Successfully downloaded {model['name']}", category='model')
+            log_info(f"Model saved to: {model_path}", category='model')
             
             if model_id in self.download_progress:
                 del self.download_progress[model_id]
@@ -184,10 +180,22 @@ class LLMManager:
             return {'success': True, 'message': f"{model['name']} erfolgreich heruntergeladen"}
             
         except Exception as e:
-            log_error(f"Failed to download {model['name']}: {str(e)}", category='model', exc_info=True)
+            error_msg = str(e)
+            
+            # Better error messages
+            if "401" in error_msg or "GatedRepoError" in error_msg:
+                error_msg = "Dieses Modell erfordert HuggingFace Login. Bitte wähle ein anderes Modell."
+            elif "404" in error_msg:
+                error_msg = "Modell nicht gefunden auf HuggingFace."
+            elif "timeout" in error_msg.lower():
+                error_msg = "Download-Timeout. Bitte prüfe deine Internetverbindung."
+            
+            log_error(f"Failed to download {model['name']}: {error_msg}", category='model', exc_info=True)
+            
             if model_id in self.download_progress:
                 del self.download_progress[model_id]
-            return {'success': False, 'message': f'Download fehlgeschlagen: {str(e)}'}
+            
+            return {'success': False, 'message': f'Download fehlgeschlagen: {error_msg}'}
     
     def get_download_progress(self, model_id: str) -> Optional[Dict[str, Any]]:
         """Get download progress for a model"""
@@ -223,6 +231,7 @@ class LLMManager:
         self.save_config()
         
         log_info(f"Loaded model: {model['name']}", category='model')
+        log_info(f"Model path: {model_path}", category='model')
         return True
     
     def unload_model(self) -> bool:

@@ -10,7 +10,7 @@ class LLMManager:
     """Manager for local LLM models from Hugging Face"""
     
     # Version number for config - increment when model list changes
-    CONFIG_VERSION = 2
+    CONFIG_VERSION = 3
     
     def __init__(self, models_dir: str = "./models"):
         self.models_dir = Path(models_dir)
@@ -22,7 +22,7 @@ class LLMManager:
         self.scan_downloaded_models()  # Scan on startup
     
     def get_default_config(self):
-        """Get default configuration with UNGATED HuggingFace models"""
+        """Get default configuration with 100% UNGATED HuggingFace models"""
         return {
             'config_version': self.CONFIG_VERSION,
             'available_models': [
@@ -47,14 +47,34 @@ class LLMManager:
                     'capabilities': ['text-generation', 'chat', 'instruction-following']
                 },
                 {
-                    'id': 'qwen-1.5-0.5b',
-                    'name': 'Qwen 1.5 0.5B Chat',
-                    'provider': 'Alibaba',
-                    'size': '0.5B parameters (~1GB)',
-                    'hf_model': 'Qwen/Qwen1.5-0.5B-Chat',
+                    'id': 'redpajama-3b',
+                    'name': 'RedPajama 3B Instruct',
+                    'provider': 'Together',
+                    'size': '3B parameters (~6GB)',
+                    'hf_model': 'togethercomputer/RedPajama-INCITE-Instruct-3B-v1',
                     'isActive': False,
                     'isDownloaded': False,
-                    'capabilities': ['text-generation', 'chat', 'multilingual', 'tiny']
+                    'capabilities': ['text-generation', 'chat', 'instruction-following']
+                },
+                {
+                    'id': 'pythia-1.4b',
+                    'name': 'Pythia 1.4B',
+                    'provider': 'EleutherAI',
+                    'size': '1.4B parameters (~2.8GB)',
+                    'hf_model': 'EleutherAI/pythia-1.4b',
+                    'isActive': False,
+                    'isDownloaded': False,
+                    'capabilities': ['text-generation', 'versatile']
+                },
+                {
+                    'id': 'gpt2-xl',
+                    'name': 'GPT-2 XL',
+                    'provider': 'OpenAI',
+                    'size': '1.5B parameters (~6GB)',
+                    'hf_model': 'gpt2-xl',
+                    'isActive': False,
+                    'isDownloaded': False,
+                    'capabilities': ['text-generation', 'classic', 'proven']
                 },
                 {
                     'id': 'openhermes-2.5',
@@ -65,26 +85,6 @@ class LLMManager:
                     'isActive': False,
                     'isDownloaded': False,
                     'capabilities': ['text-generation', 'chat', 'reasoning', 'code']
-                },
-                {
-                    'id': 'orca-2-7b',
-                    'name': 'Orca 2 7B',
-                    'provider': 'Microsoft',
-                    'size': '7B parameters (~14GB)',
-                    'hf_model': 'microsoft/Orca-2-7b',
-                    'isActive': False,
-                    'isDownloaded': False,
-                    'capabilities': ['text-generation', 'chat', 'reasoning', 'instruction-following']
-                },
-                {
-                    'id': 'redpajama-3b',
-                    'name': 'RedPajama 3B Instruct',
-                    'provider': 'Together',
-                    'size': '3B parameters (~6GB)',
-                    'hf_model': 'togethercomputer/RedPajama-INCITE-Instruct-3B-v1',
-                    'isActive': False,
-                    'isDownloaded': False,
-                    'capabilities': ['text-generation', 'chat', 'instruction-following']
                 }
             ],
             'active_model': None
@@ -283,17 +283,6 @@ class LLMManager:
             log_info(f"Downloading to {model_path}", category='model')
             log_info(f"This may take several minutes depending on model size ({model['size']})", category='model')
             
-            # Track progress with tqdm callback
-            downloaded_files = {'count': 0, 'total': 0}
-            
-            def progress_callback(current_file):
-                downloaded_files['count'] += 1
-                if downloaded_files['total'] > 0:
-                    progress = 10 + int((downloaded_files['count'] / downloaded_files['total']) * 80)
-                    self.download_progress[model_id]['progress'] = progress
-                    self.download_progress[model_id]['message'] = f'Datei {downloaded_files["count"]}/{downloaded_files["total"]}'
-                    log_info(f"Download progress: {progress}% ({downloaded_files['count']}/{downloaded_files['total']} files)", category='model')
-            
             # Download the model
             log_info("Starting file download from HuggingFace Hub...", category='model')
             result_path = snapshot_download(
@@ -301,9 +290,10 @@ class LLMManager:
                 local_dir=str(model_path),
                 local_dir_use_symlinks=False,
                 resume_download=True,
-                allow_patterns=["*.json", "*.safetensors", "*.model", "*.txt", "tokenizer*"],
-                ignore_patterns=["*.msgpack", "*.h5", "*.ot"],
-                max_workers=4  # Parallel downloads
+                allow_patterns=["*.json", "*.safetensors", "*.model", "*.bin", "*.txt", "tokenizer*", "config.json", "vocab*", "merges.txt"],
+                ignore_patterns=["*.msgpack", "*.h5", "*.ot", "pytorch_model.bin.index.json"],
+                max_workers=4,  # Parallel downloads
+                token=False  # Explicitly no auth
             )
             
             # Mark as completed

@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Any
 from pathlib import Path
 import asyncio
 from datetime import datetime
+import threading
 
 class LLMManager:
     """Manager for local LLM models from Hugging Face"""
@@ -190,6 +191,10 @@ class LLMManager:
                 model['isDownloaded'] = len(files) > 0
             else:
                 model['isDownloaded'] = False
+            
+            # Add progress if downloading
+            if model['id'] in self.download_progress:
+                model['downloadProgress'] = self.download_progress[model['id']]
         
         return self.config['available_models']
     
@@ -201,6 +206,21 @@ class LLMManager:
                 if model['id'] == active_id:
                     return model
         return None
+    
+    async def _send_progress_update(self, model_id: str, progress: int, message: str):
+        """Send progress update via WebSocket"""
+        try:
+            from core.eventsystem import get_ws_manager
+            ws_manager = get_ws_manager()
+            await ws_manager.broadcast({
+                'type': 'model_download_progress',
+                'modelId': model_id,
+                'progress': progress,
+                'message': message
+            })
+        except Exception as e:
+            from core.logger import log_debug
+            log_debug(f"Could not send WS update: {e}", category='model')
     
     async def download_model(self, model_id: str) -> Dict[str, Any]:
         """Download model from Hugging Face using huggingface_hub"""
@@ -229,7 +249,11 @@ class LLMManager:
                 return {'success': True, 'message': f"{model['name']} bereits heruntergeladen"}
         
         # Mark as downloading
-        self.download_progress[model_id] = {'progress': 0, 'status': 'downloading'}
+        self.download_progress[model_id] = {
+            'progress': 0, 
+            'status': 'initializing',
+            'message': 'Initialisiere Download...'
+        }
         
         try:
             # Try to import huggingface_hub
@@ -238,6 +262,9 @@ class LLMManager:
                 log_info("Using huggingface_hub for download", category='model')
             except ImportError:
                 log_info("huggingface_hub not installed. Installing...", category='model')
+                self.download_progress[model_id]['message'] = 'Installiere huggingface_hub...'
+                await self._send_progress_update(model_id, 5, 'Installiere Dependencies...')
+                
                 import subprocess
                 subprocess.check_call(["pip", "install", "huggingface_hub"])
                 from huggingface_hub import snapshot_download
@@ -246,18 +273,46 @@ class LLMManager:
             # Create model directory
             model_path.mkdir(exist_ok=True)
             
+            self.download_progress[model_id] = {
+                'progress': 10,
+                'status': 'downloading',
+                'message': f'Lade {model["name"]} herunter...'
+            }
+            await self._send_progress_update(model_id, 10, 'Starte Download...')
+            
             log_info(f"Downloading to {model_path}", category='model')
             log_info(f"This may take several minutes depending on model size ({model['size']})", category='model')
             
+            # Track progress with tqdm callback
+            downloaded_files = {'count': 0, 'total': 0}
+            
+            def progress_callback(current_file):
+                downloaded_files['count'] += 1
+                if downloaded_files['total'] > 0:
+                    progress = 10 + int((downloaded_files['count'] / downloaded_files['total']) * 80)
+                    self.download_progress[model_id]['progress'] = progress
+                    self.download_progress[model_id]['message'] = f'Datei {downloaded_files["count"]}/{downloaded_files["total"]}'
+                    log_info(f"Download progress: {progress}% ({downloaded_files['count']}/{downloaded_files['total']} files)", category='model')
+            
             # Download the model
-            snapshot_download(
+            log_info("Starting file download from HuggingFace Hub...", category='model')
+            result_path = snapshot_download(
                 repo_id=model['hf_model'],
                 local_dir=str(model_path),
                 local_dir_use_symlinks=False,
                 resume_download=True,
                 allow_patterns=["*.json", "*.safetensors", "*.model", "*.txt", "tokenizer*"],
-                ignore_patterns=["*.msgpack", "*.h5", "*.ot"]
+                ignore_patterns=["*.msgpack", "*.h5", "*.ot"],
+                max_workers=4  # Parallel downloads
             )
+            
+            # Mark as completed
+            self.download_progress[model_id] = {
+                'progress': 100,
+                'status': 'completed',
+                'message': 'Download abgeschlossen!'
+            }
+            await self._send_progress_update(model_id, 100, 'Download abgeschlossen!')
             
             # Mark as downloaded
             model['isDownloaded'] = True
@@ -266,6 +321,8 @@ class LLMManager:
             log_info(f"Successfully downloaded {model['name']}", category='model')
             log_info(f"Model saved to: {model_path}", category='model')
             
+            # Clean up progress after 3 seconds
+            await asyncio.sleep(3)
             if model_id in self.download_progress:
                 del self.download_progress[model_id]
             
@@ -284,6 +341,14 @@ class LLMManager:
             
             log_error(f"Failed to download {model['name']}: {error_msg}", category='model', exc_info=True)
             
+            self.download_progress[model_id] = {
+                'progress': 0,
+                'status': 'failed',
+                'message': f'Fehler: {error_msg}'
+            }
+            await self._send_progress_update(model_id, 0, f'Fehler: {error_msg}')
+            
+            await asyncio.sleep(5)
             if model_id in self.download_progress:
                 del self.download_progress[model_id]
             

@@ -3,6 +3,7 @@
 """
 J.A.R.V.I.S. - Deutscher KI-Sprachassistent
 Hauptmodul für den Start der Anwendung
+Unterstützt Desktop UI (Dear ImGui), Web UI (FastAPI/React) oder Headless-Modus
 """
 
 import sys
@@ -12,6 +13,7 @@ import time
 import webbrowser
 import json
 import subprocess
+import uvicorn
 from datetime import datetime, timedelta
 from pathlib import Path
 from concurrent.futures import Future
@@ -89,7 +91,7 @@ class HeadlessGUI:
 
 
 class WebInterfaceBridge(HeadlessGUI):
-    """Brücke zwischen Kernlogik und Weboberfläche (DEPRECATED - Web-UI wurde entfernt)."""
+    """Brücke zwischen Kernlogik und Weboberfläche."""
 
     def update_status(self, message: str) -> None:
         super().update_status(message)
@@ -132,6 +134,8 @@ class JarvisAssistant:
         self._desktop_cfg: Dict[str, Any] = {}
         self.desktop_app_enabled = False
         self.desktop_gui = None
+        self._web_ui_thread: Optional[threading.Thread] = None
+        self._web_server: Optional[uvicorn.Server] = None
 
         # Komponenten initialisieren
         self.plugin_manager = PluginManager(self.logger)
@@ -546,10 +550,70 @@ class JarvisAssistant:
             self.logger.debug("Plugin-Übersicht nicht verfügbar: %s", exc)
             return []
 
+    def _should_enable_web_ui(self) -> bool:
+        """Prüft, ob Web UI aktiviert sein soll."""
+        env_flag = os.getenv("JARVIS_WEB_UI", "").strip().lower()
+        if env_flag in {"1", "true", "yes"}:
+            return True
+        try:
+            web_cfg = self.settings.get("web_ui", {}) if self.settings else {}
+            return bool(web_cfg.get("enabled", False))
+        except Exception:
+            return False
+
+    def _start_web_ui_server(self) -> None:
+        """Startet den FastAPI Web-Server in einem separaten Thread."""
+        try:
+            from api.jarvis_api import app, set_jarvis_instance
+        except ImportError as e:
+            self.logger.warning(f"Web UI konnte nicht geladen werden (api.jarvis_api nicht gefunden): {e}")
+            return
+
+        try:
+            set_jarvis_instance(self)
+            
+            # Konfigurieren von uvicorn
+            config = uvicorn.Config(
+                app=app,
+                host="0.0.0.0",
+                port=8000,
+                log_level="info",
+                access_log=False,
+                use_colors=False,
+            )
+            self._web_server = uvicorn.Server(config=config)
+            
+            # Starten in eigenem Thread
+            self._web_ui_thread = threading.Thread(
+                target=self._run_web_server,
+                daemon=True,
+                name="WebUI-Server"
+            )
+            self._web_ui_thread.start()
+            
+            self.logger.info("🌐 Web UI Server gestartet auf http://localhost:8000")
+        except Exception as e:
+            self.logger.warning(f"Web UI Server konnte nicht gestartet werden: {e}")
+
+    def _run_web_server(self) -> None:
+        """Führt den Web-Server aus (läuft in separatem Thread)."""
+        try:
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(self._web_server.serve())
+        except Exception as e:
+            self.logger.warning(f"Web Server Fehler: {e}")
+
     def start(self):
         self.is_running = True
         self.logger.info("J.A.R.V.I.S. wird gestartet...")
         self._maybe_start_go_services()
+        
+        # Starte Web UI wenn aktiviert
+        if self._should_enable_web_ui():
+            self._start_web_ui_server()
+        
         if self.remote_gateway:
             self.remote_gateway.mark_not_ready()
             self.remote_gateway.start()
@@ -565,6 +629,15 @@ class JarvisAssistant:
     def stop(self):
         self.is_running = False
         self.stop_listening()
+        
+        # Stoppe Web Server
+        if self._web_server:
+            try:
+                self._web_server.should_exit = True
+                self.logger.info("Web UI Server wird beendet")
+            except Exception as e:
+                self.logger.debug(f"Web Server konnte nicht gestoppt werden: {e}")
+        
         try:
             if hasattr(self, "tts") and self.tts:
                 self.tts.shutdown()

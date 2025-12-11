@@ -12,6 +12,7 @@ import threading
 import time
 import json
 import subprocess
+import webbrowser
 import uvicorn
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -112,6 +113,7 @@ class JarvisAssistant:
         self._pending_authenticator_payload: Optional[Dict[str, str]] = None
         self._web_ui_thread: Optional[threading.Thread] = None
         self._web_server: Optional[uvicorn.Server] = None
+        self._browser_opened = False
 
         # Komponenten initialisieren
         self.plugin_manager = PluginManager(self.logger)
@@ -393,6 +395,20 @@ class JarvisAssistant:
         if self.web_interface:
             self.web_interface.mark_ready()
         self._publish_remote_event("status", {"state": "ready"})
+        
+        # Öffne Browser automatisch beim ersten Start
+        if not self._browser_opened:
+            self._open_browser()
+            self._browser_opened = True
+
+    def _open_browser(self) -> None:
+        """Öffnet den Browser automatisch mit der Web UI URL."""
+        url = "http://localhost:8000"
+        try:
+            self.logger.info(f"🌐 Öffne Browser: {url}")
+            webbrowser.open(url, new=1, autoraise=True)
+        except Exception as exc:
+            self.logger.warning(f"Browser konnte nicht automatisch geöffnet werden: {exc}")
 
     def get_runtime_status(self) -> Dict[str, Any]:
         context = getattr(self.command_processor, 'context', {}) or {}

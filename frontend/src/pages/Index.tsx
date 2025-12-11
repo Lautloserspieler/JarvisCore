@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import JarvisCore, { CoreState } from "@/components/JarvisCore";
 import ChatTab from "@/components/tabs/ChatTab";
 import DashboardTab from "@/components/tabs/DashboardTab";
@@ -9,10 +10,34 @@ import MemoryTab from "@/components/tabs/MemoryTab";
 import ModelsTab from "@/components/tabs/ModelsTab";
 import PluginsTab from "@/components/tabs/PluginsTab";
 import SettingsTab from "@/components/tabs/SettingsTab";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const Index = () => {
   const [coreState, setCoreState] = useState<CoreState>("idle");
   const [activeTab, setActiveTab] = useState("chat");
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected');
+
+  // WebSocket connection management
+  const { isConnected } = useWebSocket({
+    onConnect: () => {
+      console.log('WebSocket connected');
+      setConnectionStatus('connected');
+    },
+    onDisconnect: () => {
+      console.log('WebSocket disconnected');
+      setConnectionStatus('disconnected');
+    },
+    onError: (error) => {
+      console.error('WebSocket error:', error);
+      setConnectionStatus('error');
+    },
+  });
+
+  useEffect(() => {
+    if (isConnected()) {
+      setConnectionStatus('connected');
+    }
+  }, [isConnected]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -26,10 +51,22 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">AI Assistant Core System</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="text-xs font-mono text-muted-foreground">
-              Status: <span className="text-primary">ONLINE</span>
+          <div className="flex items-center gap-4">
+            {/* Connection Status */}
+            <div className="flex items-center gap-2">
+              <div className={`h-2 w-2 rounded-full ${
+                connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
+                connectionStatus === 'error' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'
+              }`} />
+              <span className="text-xs font-mono text-muted-foreground">
+                {connectionStatus === 'connected' ? 'ONLINE' :
+                 connectionStatus === 'error' ? 'ERROR' : 'CONNECTING'}
+              </span>
             </div>
+            {/* Status Badge */}
+            <Badge variant="outline" className="font-mono">
+              {coreState.toUpperCase()}
+            </Badge>
           </div>
         </div>
       </header>

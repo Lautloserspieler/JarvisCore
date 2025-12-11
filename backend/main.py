@@ -1,6 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict, Optional
+from typing import Optional
 from datetime import datetime
 import json
 import uuid
@@ -17,11 +17,14 @@ if sys.platform == 'win32':
     sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
     sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
-# Import managers and logger
+# Import core systems
 from utils.system_info import get_all_system_info
 from core.llm_manager import llm_manager
 from core.plugin_manager import plugin_manager
-from core.logger import logger, log_buffer
+from core.logger import logger, log_buffer, log_info, log_error, log_warning
+from core.event_system import (
+    event_bus, get_ws_manager, Event, EventType
+)
 
 app = FastAPI(title="JARVIS Core API", version="1.0.0")
 
@@ -38,31 +41,19 @@ app.add_middleware(
 sessions_db = {}
 messages_db = {}
 
-# Log startup
-logger.info("JARVIS Core API starting...", extra={'category': 'system'})
+log_info("JARVIS Core API initializing...")
 
-# WebSocket connection manager
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
+# Get WebSocket manager
+ws_manager = get_ws_manager()
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-        logger.info(f"Client connected. Active connections: {len(self.active_connections)}", extra={'category': 'websocket'})
+# Subscribe to events for broadcasting
+async def broadcast_event(event: Event):
+    """Broadcast events to all WebSocket clients"""
+    await ws_manager.broadcast(event)
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-        logger.info(f"Client disconnected. Active connections: {len(self.active_connections)}", extra={'category': 'websocket'})
-
-    async def send_personal_message(self, message: dict, websocket: WebSocket):
-        await websocket.send_text(json.dumps(message))
-
-    async def broadcast(self, message: dict):
-        for connection in self.active_connections:
-            await connection.send_text(json.dumps(message))
-
-manager = ConnectionManager()
+# Subscribe to all event types for broadcasting
+for event_type in EventType:
+    event_bus.subscribe(event_type, broadcast_event)
 
 # Smart chat response generator
 def generate_jarvis_response(message: str) -> str:
@@ -100,7 +91,8 @@ Suche:
 # WebSocket endpoint
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+    await ws_manager.connect(websocket)
+    
     try:
         while True:
             data = await websocket.receive_text()
@@ -110,7 +102,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_message = message.get('message', '')
                 session_id = message.get('sessionId', 'default')
                 
-                logger.debug(f"Received message: {user_message[:50]}...", extra={'category': 'chat'})
+                log_info(f"Chat message received: {user_message[:50]}...", category='chat')
                 
                 if session_id not in messages_db:
                     messages_db[session_id] = []
@@ -123,7 +115,13 @@ async def websocket_endpoint(websocket: WebSocket):
                     'timestamp': datetime.now().isoformat()
                 })
                 
-                await manager.send_personal_message({'type': 'typing', 'isTyping': True}, websocket)
+                # Send typing indicator
+                await event_bus.publish(Event(
+                    EventType.TYPING_START,
+                    {'sessionId': session_id},
+                    source='chat'
+                ))
+                
                 await asyncio.sleep(1.5)
                 
                 response_text = generate_jarvis_response(user_message)
@@ -136,21 +134,35 @@ async def websocket_endpoint(websocket: WebSocket):
                     'timestamp': datetime.now().isoformat()
                 })
                 
-                await manager.send_personal_message({
-                    'type': 'chat_response',
-                    'messageId': response_id,
-                    'response': response_text,
-                    'sessionId': session_id,
-                    'timestamp': datetime.now().isoformat()
-                }, websocket)
+                # Send response
+                await event_bus.publish(Event(
+                    EventType.CHAT_RESPONSE,
+                    {
+                        'messageId': response_id,
+                        'response': response_text,
+                        'sessionId': session_id
+                    },
+                    source='chat'
+                ))
                 
-                await manager.send_personal_message({'type': 'typing', 'isTyping': False}, websocket)
+                # Stop typing
+                await event_bus.publish(Event(
+                    EventType.TYPING_STOP,
+                    {'sessionId': session_id},
+                    source='chat'
+                ))
             
             elif message.get('type') == 'ping':
-                await manager.send_personal_message({'type': 'pong'}, websocket)
+                await ws_manager.send_to_client(
+                    websocket,
+                    Event(EventType.HEARTBEAT, {'pong': True}, source='websocket')
+                )
                 
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        ws_manager.disconnect(websocket)
+    except Exception as e:
+        log_error(f"WebSocket error: {e}", category='websocket', exc_info=True)
+        ws_manager.disconnect(websocket)
 
 # System Info API
 @app.get("/api/system/info")
@@ -165,14 +177,16 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "version": "1.0.0",
-        "connections": len(manager.active_connections),
+        "connections": len(ws_manager.connections),
         "system": sys_info
     }
 
-# Models API - Using LLM Manager
+# Models API - Using LLM Manager + Events
 @app.get("/api/models")
 async def get_models():
-    return llm_manager.get_all_models()
+    models = llm_manager.get_all_models()
+    log_info(f"Returning {len(models)} models", category='model')
+    return models
 
 @app.get("/api/models/active")
 async def get_active_model():
@@ -183,9 +197,41 @@ async def get_active_model():
 
 @app.post("/api/models/{model_id}/download")
 async def download_model(model_id: str):
-    logger.info(f"Download request for model: {model_id}", extra={'category': 'model'})
-    result = await llm_manager.download_model(model_id)
-    return result
+    log_info(f"Download request for model: {model_id}", category='model')
+    
+    # Publish download start event
+    await event_bus.publish(Event(
+        EventType.MODEL_DOWNLOAD_START,
+        {'modelId': model_id},
+        source='model_manager'
+    ))
+    
+    try:
+        result = await llm_manager.download_model(model_id)
+        
+        if result['success']:
+            await event_bus.publish(Event(
+                EventType.MODEL_DOWNLOAD_COMPLETE,
+                {'modelId': model_id, 'message': result['message']},
+                source='model_manager'
+            ))
+        else:
+            await event_bus.publish(Event(
+                EventType.MODEL_DOWNLOAD_ERROR,
+                {'modelId': model_id, 'error': result['message']},
+                source='model_manager'
+            ))
+        
+        return result
+        
+    except Exception as e:
+        log_error(f"Model download failed: {e}", category='model', exc_info=True)
+        await event_bus.publish(Event(
+            EventType.MODEL_DOWNLOAD_ERROR,
+            {'modelId': model_id, 'error': str(e)},
+            source='model_manager'
+        ))
+        return {'success': False, 'message': str(e)}
 
 @app.get("/api/models/{model_id}/download/progress")
 async def get_download_progress(model_id: str):
@@ -196,24 +242,89 @@ async def get_download_progress(model_id: str):
 
 @app.post("/api/models/{model_id}/load")
 async def load_model(model_id: str):
-    success = llm_manager.load_model(model_id)
-    return {"success": success, "message": f"Modell {model_id} {'geladen' if success else 'nicht gefunden'}"}
+    log_info(f"Load request for model: {model_id}", category='model')
+    
+    # Publish load start event
+    await event_bus.publish(Event(
+        EventType.MODEL_LOAD_START,
+        {'modelId': model_id},
+        source='model_manager'
+    ))
+    
+    try:
+        success = llm_manager.load_model(model_id)
+        
+        if success:
+            model = llm_manager.get_active_model()
+            await event_bus.publish(Event(
+                EventType.MODEL_LOAD_COMPLETE,
+                {'modelId': model_id, 'model': model},
+                source='model_manager'
+            ))
+            return {"success": True, "message": f"Modell {model_id} geladen", "model": model}
+        else:
+            await event_bus.publish(Event(
+                EventType.MODEL_LOAD_ERROR,
+                {'modelId': model_id, 'error': 'Modell nicht gefunden oder nicht heruntergeladen'},
+                source='model_manager'
+            ))
+            return {"success": False, "message": "Modell nicht gefunden"}
+            
+    except Exception as e:
+        log_error(f"Model load failed: {e}", category='model', exc_info=True)
+        await event_bus.publish(Event(
+            EventType.MODEL_LOAD_ERROR,
+            {'modelId': model_id, 'error': str(e)},
+            source='model_manager'
+        ))
+        return {"success": False, "message": str(e)}
 
 @app.post("/api/models/unload")
 async def unload_model():
-    success = llm_manager.unload_model()
-    return {"success": success, "message": "Modell entladen"}
+    log_info("Unload model request", category='model')
+    
+    try:
+        success = llm_manager.unload_model()
+        
+        if success:
+            await event_bus.publish(Event(
+                EventType.MODEL_UNLOAD,
+                {'message': 'Modell entladen'},
+                source='model_manager'
+            ))
+        
+        return {"success": success, "message": "Modell entladen"}
+        
+    except Exception as e:
+        log_error(f"Model unload failed: {e}", category='model', exc_info=True)
+        return {"success": False, "message": str(e)}
 
-# Plugins API - Using Plugin Manager
+# Plugins API - Using Plugin Manager + Events
 @app.get("/api/plugins")
 async def get_plugins():
-    return plugin_manager.get_all_plugins()
+    plugins = plugin_manager.get_all_plugins()
+    log_info(f"Returning {len(plugins)} plugins", category='plugin')
+    return plugins
 
 @app.post("/api/plugins/{plugin_id}/toggle")
 async def toggle_plugin(plugin_id: str):
-    success = plugin_manager.toggle_plugin(plugin_id)
-    logger.info(f"Plugin {plugin_id} toggled", extra={'category': 'plugin'})
-    return {"success": success}
+    log_info(f"Toggle plugin: {plugin_id}", category='plugin')
+    
+    try:
+        success = plugin_manager.toggle_plugin(plugin_id)
+        
+        if success:
+            await event_bus.publish(Event(
+                EventType.PLUGIN_TOGGLE,
+                {'pluginId': plugin_id},
+                source='plugin_manager'
+            ))
+        
+        return {"success": success}
+        
+    except Exception as e:
+        log_error(f"Plugin toggle failed: {e}", category='plugin', exc_info=True)
+        return {"success": False, "error": str(e)}
 
 # Chat API
 @app.get("/api/chat/sessions")
@@ -225,34 +336,6 @@ async def get_chat_sessions():
         "updatedAt": datetime.now().isoformat(),
         "messages": messages_db.get(session_id, [])
     } for session_id in messages_db.keys()]
-
-@app.post("/api/chat/messages")
-async def send_message(request: dict):
-    message = request.get('message', '')
-    session_id = request.get('sessionId', 'default')
-    
-    if session_id not in messages_db:
-        messages_db[session_id] = []
-    
-    user_msg_id = str(uuid.uuid4())
-    messages_db[session_id].append({
-        'id': user_msg_id,
-        'text': message,
-        'isUser': True,
-        'timestamp': datetime.now().isoformat()
-    })
-    
-    response_text = generate_jarvis_response(message)
-    response_id = str(uuid.uuid4())
-    
-    messages_db[session_id].append({
-        'id': response_id,
-        'text': response_text,
-        'isUser': False,
-        'timestamp': datetime.now().isoformat()
-    })
-    
-    return {"messageId": response_id, "response": response_text, "sessionId": session_id}
 
 # Memory API
 @app.get("/api/memory")
@@ -271,7 +354,8 @@ async def get_memory_stats():
 # Logs API - Using Log Buffer
 @app.get("/api/logs")
 async def get_logs(level: Optional[str] = None, category: Optional[str] = None, limit: int = 100):
-    return log_buffer.get_logs(level=level, category=category, limit=limit)
+    logs = log_buffer.get_logs(level=level, category=category, limit=limit)
+    return logs
 
 @app.get("/api/logs/stats")
 async def get_log_stats():
@@ -280,8 +364,20 @@ async def get_log_stats():
 @app.delete("/api/logs")
 async def clear_logs():
     log_buffer.clear()
-    logger.info("Logs cleared", extra={'category': 'system'})
+    log_info("Logs cleared", category='system')
     return {"success": True, "message": "Logs cleared"}
+
+# Events API
+@app.get("/api/events/history")
+async def get_event_history(event_type: Optional[str] = None, limit: int = 50):
+    """Get event history"""
+    if event_type:
+        try:
+            et = EventType(event_type)
+            return event_bus.get_history(et, limit)
+        except ValueError:
+            return event_bus.get_history(limit=limit)
+    return event_bus.get_history(limit=limit)
 
 @app.get("/")
 async def root():
@@ -292,7 +388,8 @@ async def root():
             "websocket": "/ws",
             "docs": "/docs",
             "health": "/api/health",
-            "system": "/api/system/info"
+            "system": "/api/system/info",
+            "events": "/api/events/history"
         }
     }
 
@@ -304,4 +401,5 @@ if __name__ == "__main__":
     ║         Just A Rather Very Intelligent System        ║
     ╚══════════════════════════════════════════════════════╝
     """)
+    log_info("Starting JARVIS Core API...")
     uvicorn.run(app, host="0.0.0.0", port=5050)

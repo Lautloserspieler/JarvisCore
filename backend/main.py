@@ -17,10 +17,11 @@ if sys.platform == 'win32':
     sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
     sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
-# Import managers
+# Import managers and logger
 from utils.system_info import get_all_system_info
 from core.llm_manager import llm_manager
 from core.plugin_manager import plugin_manager
+from core.logger import logger, log_buffer
 
 app = FastAPI(title="JARVIS Core API", version="1.0.0")
 
@@ -37,6 +38,9 @@ app.add_middleware(
 sessions_db = {}
 messages_db = {}
 
+# Log startup
+logger.info("JARVIS Core API starting...", extra={'category': 'system'})
+
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
@@ -45,11 +49,11 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
-        print(f"[+] Client verbunden. Aktive Verbindungen: {len(self.active_connections)}")
+        logger.info(f"Client connected. Active connections: {len(self.active_connections)}", extra={'category': 'websocket'})
 
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
-        print(f"[-] Client getrennt. Aktive Verbindungen: {len(self.active_connections)}")
+        logger.info(f"Client disconnected. Active connections: {len(self.active_connections)}", extra={'category': 'websocket'})
 
     async def send_personal_message(self, message: dict, websocket: WebSocket):
         await websocket.send_text(json.dumps(message))
@@ -105,6 +109,8 @@ async def websocket_endpoint(websocket: WebSocket):
             if message.get('type') == 'chat_message':
                 user_message = message.get('message', '')
                 session_id = message.get('sessionId', 'default')
+                
+                logger.debug(f"Received message: {user_message[:50]}...", extra={'category': 'chat'})
                 
                 if session_id not in messages_db:
                     messages_db[session_id] = []
@@ -175,6 +181,19 @@ async def get_active_model():
         return model
     return {"message": "Kein Modell aktiv"}
 
+@app.post("/api/models/{model_id}/download")
+async def download_model(model_id: str):
+    logger.info(f"Download request for model: {model_id}", extra={'category': 'model'})
+    result = await llm_manager.download_model(model_id)
+    return result
+
+@app.get("/api/models/{model_id}/download/progress")
+async def get_download_progress(model_id: str):
+    progress = llm_manager.get_download_progress(model_id)
+    if progress:
+        return progress
+    return {"progress": 0, "status": "idle"}
+
 @app.post("/api/models/{model_id}/load")
 async def load_model(model_id: str):
     success = llm_manager.load_model(model_id)
@@ -193,6 +212,7 @@ async def get_plugins():
 @app.post("/api/plugins/{plugin_id}/toggle")
 async def toggle_plugin(plugin_id: str):
     success = plugin_manager.toggle_plugin(plugin_id)
+    logger.info(f"Plugin {plugin_id} toggled", extra={'category': 'plugin'})
     return {"success": success}
 
 # Chat API
@@ -248,25 +268,20 @@ async def get_memory_stats():
         "lastUpdated": datetime.now().isoformat()
     }
 
-# Logs API
+# Logs API - Using Log Buffer
 @app.get("/api/logs")
-async def get_logs():
-    return [{
-        "id": str(uuid.uuid4()),
-        "timestamp": datetime.now().isoformat(),
-        "level": "info",
-        "category": "system",
-        "message": "System läuft normal",
-        "metadata": {}
-    }]
+async def get_logs(level: Optional[str] = None, category: Optional[str] = None, limit: int = 100):
+    return log_buffer.get_logs(level=level, category=category, limit=limit)
 
 @app.get("/api/logs/stats")
 async def get_log_stats():
-    return {
-        "total": 100,
-        "byLevel": {"info": 80, "warning": 15, "error": 5},
-        "byCategory": {"system": 50, "api": 30, "websocket": 20}
-    }
+    return log_buffer.get_stats()
+
+@app.delete("/api/logs")
+async def clear_logs():
+    log_buffer.clear()
+    logger.info("Logs cleared", extra={'category': 'system'})
+    return {"success": True, "message": "Logs cleared"}
 
 @app.get("/")
 async def root():

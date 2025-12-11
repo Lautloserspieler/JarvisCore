@@ -16,11 +16,14 @@ import datetime
 import random
 import difflib
 import os
+import shutil
 import requests
 
 from pathlib import Path
 
 from typing import Dict, Any, Optional, List, Tuple, Set, Sequence, Union
+
+import secrets
 
 FILE_REFERENCE_EXTENSIONS = (
     'txt', 'md', 'rtf', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx',
@@ -2087,8 +2090,53 @@ if __name__ == \"__main__\":
 
 
 
+    def _normalize_user_text(self, text: str) -> str:
+        """Normalisiert Benutzereingabe fuer Intent-Engine"""
+        if not text:
+            return ""
+        # Umlaute normalisieren
+        normalized = text.translate(self._normalize_trans)
+        return normalized.lower()
 
+    def _collect_intent_hints(self, normalized_text: str) -> Optional[Dict[str, Any]]:
+        """Sammelt Hinweise fuer Intent-Matching aus Hotword-Config"""
+        if not self._intent_keyword_lookup:
+            return None
+        
+        engine_input = normalized_text
+        bias_map: Dict[str, float] = {}
+        
+        for keyword, (intent, boost) in self._intent_keyword_lookup.items():
+            if keyword in normalized_text.lower():
+                bias_map[intent] = boost
+        
+        if bias_map:
+            return {"engine_input": engine_input, "bias": bias_map}
+        return None
 
+    def _looks_like_incomplete_command(self, text: str) -> bool:
+        """Prueft ob ein Befehl unvollstaendig wirkt"""
+        if not text:
+            return False
+        
+        incomplete_patterns = (
+            'der', 'die', 'das', 'den', 'dem',
+            'ein', 'eine', 'einen', 'einem',
+            'bitte', 'und', 'oder'
+        )
+        
+        lowered = text.lower().strip()
+        return lowered in incomplete_patterns or lowered.endswith((' bitte', ' und', ' oder'))
+
+    def _sync_media_state(self) -> None:
+        """Synchronisiert Media-Router-Status mit Kontext"""
+        if not self.media_router:
+            return
+        try:
+            state = self.media_router.get_state()
+            self.context['media_state'] = state
+        except Exception:
+            pass
 
     def classify_command(self, command_text):
 
@@ -2154,11 +2202,13 @@ if __name__ == \"__main__\":
 
         """Antwortet auf Fragen nach dem Erbauer."""
 
+        creator_name = getattr(persona, 'creator_name', 'unknown')
+
         statement = (
 
-            f"Ich wurde von {self.creator_name} entwickelt. "
+            f"Ich wurde von {creator_name} entwickelt. "
 
-            f"{self.creator_name} hat mich aufgebaut, um auf diesem System zu helfen."
+            f"{creator_name} hat mich aufgebaut, um auf diesem System zu helfen."
 
         )
 
@@ -2329,6 +2379,19 @@ if __name__ == \"__main__\":
         if not isinstance(candidate, str):
             return False
         secret_bytes = self._get_passphrase_bytes()
+        if not secret_bytes:
+            return False
+        candidate_norm = bytearray(candidate.strip().lower().encode('utf-8'))
+        secret_norm = bytearray(secret_bytes.decode('utf-8').strip().lower().encode('utf-8'))
+        try:
+            is_valid = secrets.compare_digest(secret_norm, candidate_norm)
+        finally:
+            self._zeroize_buffer(candidate_norm)
+            self._zeroize_buffer(secret_norm)
+        if is_valid:
+            self._passphrase_secret.touch()
+        return is_valid
+
     def _has_passphrase(self) -> bool:
         if self._passphrase_secret.borrow_bytes():
             return True
@@ -2355,18 +2418,6 @@ if __name__ == \"__main__\":
     def _zeroize_buffer(buffer: bytearray) -> None:
         for idx in range(len(buffer)):
             buffer[idx] = 0
-        if not secret_bytes:
-            return False
-        candidate_norm = bytearray(candidate.strip().lower().encode('utf-8'))
-        secret_norm = bytearray(secret_bytes.decode('utf-8').strip().lower().encode('utf-8'))
-        try:
-            is_valid = secrets.compare_digest(secret_norm, candidate_norm)
-        finally:
-            self._zeroize_buffer(candidate_norm)
-            self._zeroize_buffer(secret_norm)
-        if is_valid:
-            self._passphrase_secret.touch()
-        return is_valid
 
     def _verify_voice(self, audio_blob: Optional[bytes]) -> Dict[str, Optional[float]]:
         result = {
@@ -2499,7 +2550,105 @@ if __name__ == \"__main__\":
             return
         self.context['voice_mode'] = mode
 
+    def handle_goodbye(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
+        """Verabschiedet den Nutzer."""
+        return "Auf Wiedersehen! Ich bleibe einsatzbereit."
 
+    def handle_knowledge_search(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
+        """Sucht nach Wissen in der Wissensdatenbank."""
+        if not self.knowledge_manager:
+            return "Die Wissensdatenbank ist nicht verfügbar."
+        
+        query = self._extract_search_query(text)
+        if not query:
+            return "Bitte präzisiere deine Frage."
+        
+        try:
+            result = self.knowledge_manager.search_knowledge(query)
+            return result if result else f"Keine Ergebnisse für '{query}' gefunden."
+        except Exception as exc:
+            self.logger.error(f"Wissensuche fehlgeschlagen: {exc}")
+            return "Die Wissensuche ist derzeit nicht verfügbar."
+
+    def handle_time_request(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
+        """Gibt die aktuelle Uhrzeit aus."""
+        from datetime import datetime
+        current_time = datetime.now().strftime("%H:%M:%S")
+        return f"Die aktuelle Uhrzeit ist {current_time}."
+
+    def handle_date_request(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
+        """Gibt das aktuelle Datum aus."""
+        from datetime import datetime
+        current_date = datetime.now().strftime("%d.%m.%Y")
+        return f"Heute ist der {current_date}."
+
+    def handle_help(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
+        """Zeigt verfügbare Hilfe."""
+        return (
+            "Ich kann dir bei folgenden Aufgaben helfen:\n"
+            "- Befehle ausführen\n"
+            "- Informationen suchen\n"
+            "- Dateien erstellen und öffnen\n"
+            "- Systemstatus abfragen\n"
+            "Sag einfach, wobei ich dir helfen kann!"
+        )
+
+    def handle_close_program(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
+        """Schließt ein Programm."""
+        program_key = self._resolve_program_key(text, match)
+        if not program_key:
+            return "Welches Programm soll ich schließen?"
+        
+        display_name = self.program_display_names.get(program_key, program_key)
+        try:
+            if self.system_control.close_program(program_key):
+                return f"{display_name} wurde geschlossen."
+            return f"Ich konnte {display_name} nicht schließen."
+        except Exception as exc:
+            self.logger.error(f"Fehler beim Schließen von {program_key}: {exc}")
+            return f"Fehler beim Schließen von {display_name}."
+
+    def handle_open_program(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
+        """Öffnet ein Programm."""
+        program_key = self._resolve_program_key(text, match)
+        if not program_key:
+            return "Welches Programm soll ich öffnen?"
+        
+        display_name = self.program_display_names.get(program_key, program_key)
+        try:
+            if self.system_control.open_program(program_key):
+                return f"{display_name} wird geöffnet..."
+            return f"Ich konnte {display_name} nicht öffnen."
+        except Exception as exc:
+            self.logger.error(f"Fehler beim Öffnen von {program_key}: {exc}")
+            return f"Fehler beim Öffnen von {display_name}."
+
+    def handle_music_command(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
+        """Handhabt Musikbefehle."""
+        return "Musikfunktion ist derzeit nicht verfügbar."
+
+    def handle_ai_chat(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
+        """Handhabt AI-Chat-Anfragen."""
+        if not self.llm_manager:
+            return "Der LLM-Manager ist nicht verfügbar."
+        
+        try:
+            response = self.llm_manager.generate_response(
+                text,
+                max_tokens=256,
+                use_case="chat",
+            )
+            return response if response else "Ich konnte keine Antwort generieren."
+        except Exception as exc:
+            self.logger.error(f"AI-Chat fehlgeschlagen: {exc}")
+            return "Der AI-Chat ist derzeit nicht verfügbar."
+
+    def handle_unknown_command(self, text: str = '') -> str:
+        """Handhabt unbekannte Befehle."""
+        return (
+            f"Entschuldigung, ich habe den Befehl '{text}' nicht verstanden. "
+            "Sag 'hilfe' für verfügbare Befehle."
+        )
 
     def handle_greeting(self, text: str = '', match: Optional[IntentMatch] = None):
 
@@ -2744,8 +2893,8 @@ if __name__ == \"__main__\":
         else:
             lowered = (text or "").strip().lower()
             normalized = lowered
-            if "f\u00fcr" in normalized:
-                normalized = normalized.replace("f\u00fcr", "fuer")
+            if "für" in normalized:
+                normalized = normalized.replace("für", "fuer")
             if "fuer" in normalized:
                 tail = normalized.split("fuer", 1)[1].strip()
                 if tail:
@@ -2797,6 +2946,7 @@ if __name__ == \"__main__\":
         if any(token in text for token in ('stufe 4', 'leicht', 'session', 'neu starten')):
             return PriorityLevel.MINOR
         return PriorityLevel.from_text(text)
+
     def handle_system_status(self, text: str = '', match: Optional[IntentMatch] = None):
 
         """Gibt den aktuellen Systemstatus zurueck."""
@@ -2914,789 +3064,3 @@ if __name__ == \"__main__\":
         recent_files.append(result_path_str)
         self.context['recent_files'] = recent_files[-10:]
         return " ".join(segments)
-
-    def handle_open_program(self, text: str = '', match: Optional[IntentMatch] = None):
-
-        """Oeffnet ein Programm anhand des Intent-Matchings."""
-
-        program_key = self._resolve_program_key(text, match)
-
-        if not program_key:
-
-            return 'Welches Programm soll ich oeffnen? Bitte nennen Sie es genauer.'
-
-        display = self.program_display_names.get(program_key, program_key)
-
-        if self.system_control.open_program(program_key):
-
-            return f"{display} wurde fuer Sie geoeffnet."
-
-        return f"{display} konnte nicht geoeffnet werden."
-
-
-
-    def handle_close_program(self, text: str = '', match: Optional[IntentMatch] = None):
-
-        """Schliesst ein Programm anhand des Intent-Matchings."""
-
-        program_key = self._resolve_program_key(text, match)
-
-        if not program_key:
-
-            return 'Welches Programm soll ich schliessen? Bitte nennen Sie es genauer.'
-
-        display = self.program_display_names.get(program_key, program_key)
-
-        if self.system_control.close_program(program_key):
-
-            return f"{display} wurde geschlossen."
-
-        return f"{display} konnte nicht geschlossen werden."
-
-
-
-    def handle_music_command(self, text: str = '', match: Optional[IntentMatch] = None) -> str:
-
-        """Steuert YouTube-Wiedergabe über den MediaRouter."""
-
-        if not getattr(self, "media_router", None):
-
-            return "Die Mediensteuerung steht derzeit nicht zur Verfügung."
-
-        self.context['skip_llm_fallback'] = True
-
-        raw_command = text or (match.raw_text if match else "") or (match.matched_text if match else "")
-
-        normalized = self._normalize_user_text(raw_command)
-        normalized = self._normalize_music_command_text(normalized)
-        lowered = normalized.lower()
-
-        entities = (match.entities if match and match.entities else {}) or {}
-
-        target = entities.get("target") or entities.get("medium") or "youtube"
-
-        action = (entities.get("action") or "").lower().strip()
-
-        track = entities.get("track") or ""
-
-        if not action:
-
-            action = self._infer_music_action(lowered)
-
-        if action in {"volume_up", "volume_down"}:
-
-            direction = "up" if action == "volume_up" else "down"
-
-            success = self.media_router.adjust_volume(direction, steps=2)
-            self._sync_media_state()
-
-            if success:
-
-                return "Ich passe die Lautstärke an."
-
-            return "Ich konnte keine laufende YouTube-Wiedergabe finden."
-
-        if action == "mute":
-
-            success = self.media_router.mute_toggle()
-            self._sync_media_state()
-
-            return "Ich habe die Wiedergabe stummgeschaltet." if success else "Ich konnte keine laufende YouTube-Wiedergabe finden."
-
-        if action == "pause":
-
-            success = self.media_router.pause()
-            self._sync_media_state()
-
-            return "Wiedergabe angehalten." if success else "Ich konnte keine laufende YouTube-Wiedergabe finden."
-
-        if action in {"resume", "continue"}:
-
-            success = self.media_router.resume()
-            self._sync_media_state()
-
-            return "Wiedergabe fortgesetzt." if success else "Ich konnte keine laufende YouTube-Wiedergabe finden."
-
-        if action == "next":
-
-            success = self.media_router.next_track()
-            self._sync_media_state()
-
-            return "Ich springe zum nächsten Titel." if success else "Ich konnte keine laufende YouTube-Wiedergabe finden."
-
-        if action == "previous":
-
-            success = self.media_router.previous_track()
-            self._sync_media_state()
-
-            return "Ich springe zurück zum vorherigen Titel." if success else "Ich konnte keine laufende YouTube-Wiedergabe finden."
-
-        if not track:
-
-            track = self._extract_music_track(lowered)
-
-        if not track and action == "play":
-
-            router_state = self.media_router.state()
-
-            if router_state.get("youtube_active"):
-
-                resumed = self.media_router.resume()
-                self._sync_media_state()
-                return "Wiedergabe fortgesetzt." if resumed else "Ich konnte keine laufende YouTube-Wiedergabe finden."
-
-        if not track:
-
-            router_state = self.media_router.state()
-
-            track = (router_state or {}).get('track') or ""
-
-        if not track:
-
-            last_media = self.context.get('media_state', {})
-
-            track = (last_media or {}).get('last_track') or ""
-
-        if not track:
-
-            return "Welchen Titel soll ich auf YouTube abspielen?"
-
-        cleaned_track = track.strip()
-        if cleaned_track.isdigit():
-            return 'Bitte nenne den Titel oder Interpreten, nicht nur eine Zahl.'
-
-        result = self.media_router.play(track, target=target)
-
-        if result.get("success") and result.get("exact"):
-
-            message = f"YouTube >> {track}"
-
-        elif result.get("success"):
-
-            message = f"YouTube-Suche fuer {track} geoeffnet."
-
-        else:
-
-            message = "YouTube konnte nicht gestartet werden."
-
-        self._sync_media_state()
-
-        return message
-
-
-
-    def handle_knowledge_search(self, text: str = '', match: Optional[IntentMatch] = None):
-
-        """Sucht nach Informationen im lokalen oder externen Wissen."""
-
-        query = None
-
-        if match and match.entities:
-
-            for key in ('topic', 'topic_alt', 'topic_info'):
-
-                value = match.entities.get(key)
-
-                if value:
-
-                    query = value
-
-                    break
-
-        if query:
-
-            query = self._extract_search_query(query) or query
-
-        if not query:
-
-            query = self._extract_search_query(text) or ''
-
-        query = query.strip()
-
-        if not query:
-
-            return 'Worueber moechten Sie Informationen? Bitte formulieren Sie die Frage konkret.'
-
-        if self.context.get('conversation_mode') == 'neural':
-            neural_response = self._run_neural_synthesis(query)
-            if neural_response:
-                return neural_response
-            # Falls keine Quellen verknuepft werden konnten, weiter mit Standardlogik
-
-        # Minimal-invasive Policy-Routing gemaess Vorgaben
-        ql = query.lower()
-
-        # 1) Externe News / Live-Daten nur bei expliziten Hinweisen
-        news_triggers = ('aktuell', 'heute', 'jetzt', 'news', 'wetter', 'boerse', 'boersen', 'maerkte', 'maerkte')
-        if any(t in ql for t in news_triggers):
-            result = None
-            try:
-                # Bevorzugt externe Quellen
-                result = self.knowledge_manager.search_external_sources(query)
-            except Exception as exc:
-                self.logger.error(f"News/Live-Abfrage fehlgeschlagen: {exc}")
-            if result:
-                return result.strip()
-            # Fallback auf generische Suche
-            result = self.knowledge_manager.search_knowledge(query)
-            if result:
-                return result.strip()
-            return f'Zu "{query}" habe ich derzeit keine aktuellen Daten gefunden.'
-
-        # 2) Projektdateien nur bei explizitem Projektbezug
-        project_triggers = (
-            'projekt', 'projektordner', 'repo', 'repository', 'status', 'zeige status'
-        )
-        wants_project = any(t in ql for t in project_triggers) or bool(self._extract_file_reference(query))
-        if wants_project:
-            # Bevorzugt lokale Wissensbasis
-            local = self.knowledge_manager.search_local_knowledge(query)
-            if local:
-                return local.strip()
-            # Leichte Hilfeausgabe statt unkontrolliertem externen Lookup
-            return (
-                'Ich habe keinen passenden lokalen Eintrag gefunden. '
-                'Nennen Sie mir bitte den genauen Datei- oder Ordnernamen (z. B. "zeige Status im Projektordner").'
-            )
-
-        # 3) Persoenliche Daten nur mit Bestaetigung (keine automatische Suche)
-        personal_triggers = ('meine dateien', 'meine dokumente', 'persoenlich', 'persoenlich', 'private', 'privat')
-        if any(t in ql for t in personal_triggers):
-            self.context['pending_confirmation'] = {
-                'action': 'search_personal',
-                'query': query,
-            }
-            return (
-                'Soll ich in persoenlichen Daten suchen? Bitte bestaetigen Sie dies explizit '
-                '(z. B. "ja, suche in meinen Dokumenten nach <Thema>").'
-            )
-
-        # 4) Philosophie / Allgemeine Fragen: direkt LLM, keine Dateisuche
-        philosophy_triggers = ('warum', 'philosophie', 'philosophisch', 'allgemein', 'meinung', 'was denkst du')
-        if any(t in ql for t in philosophy_triggers):
-            return self.handle_ai_chat(query)
-
-        # 5) Allgemeines Wissen: immer externe APIs bevorzugen, Antwort schoen in Deutsch
-        try:
-            result = self.knowledge_manager.search_external_sources(query)
-            if result:
-                return result.strip()
-        except Exception as exc:
-            self.logger.error(f"Externe Wissenssuche fehlgeschlagen: {exc}")
-
-        # Fallback: kombinierte Suche (lokal + extern wie bisher)
-        result = self.knowledge_manager.search_knowledge(query)
-        if result:
-            return result.strip()
-
-        return f'Zu "{query}" habe ich aktuell keine Quelle gefunden.'
-
-
-
-    def handle_time_date(self, text: str = '', match: Optional[IntentMatch] = None):
-
-        """Kombinierte Rueckgabe von Zeit und Datum."""
-
-        now = datetime.datetime.now()
-
-        return now.strftime('Es ist %H:%M Uhr am %d.%m.%Y.')
-
-
-
-    def handle_time_request(self, text: str = '', match: Optional[IntentMatch] = None):
-
-        """Antwortet auf eine Uhrzeitanfrage."""
-
-        return datetime.datetime.now().strftime('Es ist %H:%M Uhr.')
-
-
-
-    def handle_date_request(self, text: str = '', match: Optional[IntentMatch] = None):
-
-        """Antwortet auf eine Datumsanfrage."""
-
-        now = datetime.datetime.now()
-
-        weekday_names = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
-
-        weekday = weekday_names[now.weekday()] if 0 <= now.weekday() < len(weekday_names) else 'Heute'
-
-        return f"Heute ist {weekday}, der {now.strftime('%d.%m.%Y')}."
-
-
-
-    def handle_goodbye(self, text: str = '', match: Optional[IntentMatch] = None):
-
-        """Verabschiedet sich freundlich."""
-
-        return 'Bis bald! Wenn Sie mich brauchen, bin ich sofort bereit.'
-
-    def _normalize_user_text(self, value: str) -> str:
-
-        if not value:
-
-            return ''
-
-        simplified = value.translate(self._normalize_trans) if hasattr(self, '_normalize_trans') else value
-
-        return re.sub(r'\s+', ' ', simplified).strip()
-
-
-    def _looks_like_incomplete_command(self, text: str) -> bool:
-        if not text:
-            return True
-        normalized = self._normalize_user_text(text).lower()
-        if not normalized:
-            return True
-        if normalized in self._short_command_whitelist:
-            return False
-        # if the command already contains recognised keywords, accept it
-        for keyword in self._intent_keyword_lookup.keys():
-            if keyword in normalized or HotwordManager.approximate_contains(normalized, keyword, cutoff=0.9):
-                return False
-        words = normalized.split()
-        if len(words) == 1:
-            word = words[0]
-            if word in self._filler_words:
-                return True
-            return len(word) <= 2
-        if len(words) == 2 and all(word in self._filler_words for word in words):
-            return True
-        return False
-
-
-    def _collect_intent_hints(self, normalized_text: str) -> Dict[str, object]:
-        lowered = (normalized_text or '').lower()
-        bias: Dict[str, float] = {}
-        hint_tokens: List[str] = []
-        if not lowered:
-            return {"engine_input": normalized_text, "bias": bias, "program_key": None, "tokens": []}
-
-        for intent, config in (self._intent_hint_config or {}).items():
-            keywords = config.get('keywords') if isinstance(config, dict) else ()
-            if not keywords:
-                continue
-            if self._intent_hit(lowered, keywords):
-                boost = float(config.get('boost', 0.0)) if isinstance(config, dict) else 0.0
-                hint_token = str(config.get('hint') or f"intent_{intent}")
-                hint_tokens.append(hint_token)
-                if boost:
-                    bias[intent] = max(bias.get(intent, 0.0), boost)
-
-        program_key = self._locate_program_keyword(lowered)
-        if program_key:
-            hint_tokens.append(f"program_{program_key}")
-            if 'open_program' in (self._intent_hint_config or {}):
-                bias['open_program'] = max(bias.get('open_program', 0.0), 0.15)
-
-        engine_input = normalized_text
-        if hint_tokens:
-            engine_input = f"{normalized_text} {' '.join(hint_tokens)}"
-        return {
-            "engine_input": engine_input,
-            "bias": bias,
-            "program_key": program_key,
-            "tokens": hint_tokens,
-        }
-
-
-    def _intent_hit(self, text: str, keywords: Sequence[str]) -> bool:
-        if not text or not keywords:
-            return False
-        for keyword in keywords:
-            key = (keyword or '').strip()
-            if not key:
-                continue
-            if key in text:
-                return True
-            if HotwordManager.approximate_contains(text, key, cutoff=0.88):
-                return True
-        return False
-
-    def _sync_media_state(self) -> None:
-        if not getattr(self, "media_router", None):
-            return
-        try:
-            router_state = self.media_router.state()
-        except Exception:
-            router_state = {}
-        snapshot = {
-            'last_track': router_state.get('track'),
-            'target': router_state.get('target'),
-            'url': router_state.get('url'),
-            'youtube_active': router_state.get('youtube_active'),
-            'edge_running': router_state.get('edge_running'),
-            'timestamp': datetime.datetime.now().isoformat(),
-        }
-        self.context['media_state'] = snapshot
-
-    def _infer_music_action(self, lowered_text: str) -> str:
-        """Heuristik zur Aktionsbestimmung fuer Musikbefehle."""
-        if self._text_contains_any(lowered_text, ('pause', 'pausiere', 'stopp', 'stoppe', 'halt an', 'halte an', 'anhalten')):
-            return 'pause'
-        if self._text_contains_any(lowered_text, (
-            'weiter spielen',
-            'weiterspielen',
-            'spiel weiter',
-            'fortsetzen',
-            'weiterlaufen',
-            'resume',
-            'setze die wiedergabe fort',
-            'setze wiedergabe fort',
-            'wiedergabe fortsetzen',
-            'wiedergabe fort',
-            'setze fort',
-            'weiter abspielen',
-        )):
-            return 'resume'
-        if self._text_contains_any(lowered_text, ('naechstes lied', 'nächstes lied', 'naechstes video', 'nächstes video', 'weiter', 'skip', 'nächster titel', 'naechster titel', 'next')):
-            return 'next'
-        if self._text_contains_any(lowered_text, ('vorheriges lied', 'voriges lied', 'vorheriges video', 'zurueck', 'zurück', 'vorher', 'previous', 'zurueckspulen', 'zurückspulen')):
-            return 'previous'
-        if self._text_contains_any(lowered_text, ('mach lauter', 'lauter', 'lautstaerke hoch', 'lautstärke hoch', 'erhoehe lautstaerke', 'erhöhe lautstärke', 'lauter machen')):
-            return 'volume_up'
-        if self._text_contains_any(lowered_text, ('mach leiser', 'leiser', 'lautstaerke runter', 'lautstärke runter', 'senke lautstaerke', 'senke die lautstärke', 'leiser machen')):
-            return 'volume_down'
-        if self._text_contains_any(lowered_text, ('mute', 'stummschalten', 'stumm schalten', 'stumm', 'lautlos')):
-            return 'mute'
-        return 'play'
-
-    def _normalize_music_command_text(self, text: str) -> str:
-        if not text:
-            return ''
-        normalized = text.lower()
-        replacements = {
-            "ab spielen": "abspielen",
-            "ab zu spielen": "abzuspielen",
-            "spiel musik ab": "musik abspielen",
-            "spiele musik ab": "musik abspielen",
-            "spiel die musik": "spiel musik",
-            "spiele die musik": "spiel musik",
-            "spiel bitte": "spiel",
-            "spiele bitte": "spiel",
-            "spiel mal": "spiel",
-            "spiele mal": "spiel",
-            "mach bitte": "mach",
-            "setze die wiedergabe fort": "wiedergabe fortsetzen",
-            "setze wiedergabe fort": "wiedergabe fortsetzen",
-            "spiel die wiedergabe fort": "wiedergabe fortsetzen",
-            "setze die musik fort": "musik fortsetzen",
-            "weiter abspielen": "weiter abspielen",
-        }
-        for src, dst in replacements.items():
-            normalized = re.sub(rf'\b{re.escape(src)}\b', dst, normalized)
-        normalized = re.sub(r'\s+', ' ', normalized).strip()
-        return normalized
-
-    def _extract_music_track(self, lowered_text: str) -> str:
-        """Entfernt Steuerwörter und extrahiert den Rest als Titel."""
-        working = lowered_text
-        removal_patterns = [
-            'hey jarvis',
-            'jarvis',
-            'spiel bitte',
-            'spiele bitte',
-            'spiel mal',
-            'spiele mal',
-            'spiele',
-            'spiel',
-            'auf youtube',
-            'youtube',
-            'bitte',
-            'ab',
-            'die musik',
-            'musik',
-            'den song',
-            'den titel',
-            'das lied',
-            'lied',
-            'song',
-            'video',
-            'die wiedergabe',
-            'wiedergabe',
-            'musik fortsetzen',
-            'fuer mich',
-            'fuer mich',
-            'jetzt',
-        ]
-        for phrase in removal_patterns:
-            working = re.sub(rf'\b{re.escape(phrase)}\b', ' ', working)
-        working = working.strip(' ,-.')
-        words = [word for word in re.split(r'\s+', working) if word]
-        if not words:
-            return ''
-        stopwords = getattr(self, '_music_stopwords', set())
-        while words and words[0] in stopwords:
-            words.pop(0)
-        while words and words[-1] in stopwords:
-            words.pop()
-        if not words:
-            return ''
-        if all(word in stopwords for word in words):
-            return ''
-        candidate = " ".join(words).strip(" ,-.")
-        if len(candidate) <= 2:
-            return ''
-        return candidate
-
-    def _text_contains_any(self, text: str, keywords: Sequence[str]) -> bool:
-        if not text:
-            return False
-        for keyword in keywords:
-            if keyword in text:
-                return True
-        return False
-
-
-
-
-    def handle_help(self, text: str = '', match: Optional[IntentMatch] = None):
-
-        """Erklaert die wichtigsten Funktionen von Jarvis."""
-
-        help_lines = [
-            'Ich unterstuetze Sie bei folgenden Aufgaben:',
-            '- Programme starten und beenden (z. B. "oeffne Notepad")',
-            '- Systemstatus und Ressourcen anzeigen',
-            '- Informationen aus lokalen Dateien und dem Internet recherchieren',
-            '- Uhrzeit, Datum und organisatorische Fragen beantworten',
-            '- Freie Dialoge ueber das integrierte Sprachmodell fuehren'
-        ]
-
-        if self.learning_manager:
-            top_commands = self.learning_manager.get_top_commands(limit=3)
-            if top_commands:
-                help_lines.append('')
-                help_lines.append('Haeufig verwendete Befehle:')
-                for command, count in top_commands:
-                    help_lines.append(f"- {command} ({count}x)")
-            behavior = self.learning_manager.get_behavior_summary()
-            if behavior:
-                peak = behavior.get('peak_hour')
-                quiet = behavior.get('quiet_hour')
-                info_bits = []
-                if isinstance(peak, int):
-                    info_bits.append(f"Peak-Aktivitaet ca. {peak:02d}:00 Uhr")
-                if isinstance(quiet, int):
-                    info_bits.append(f"Ruhephase ca. {quiet:02d}:00 Uhr")
-                if info_bits:
-                    help_lines.append('')
-                    help_lines.append('Verhaltensprofil: ' + ' | '.join(info_bits))
-
-        separator = '\n'
-
-        return separator.join(help_lines)
-
-
-
-    def _intent_to_command_type(self, match: Optional[IntentMatch]) -> Optional[str]:
-
-        if not match:
-
-            return None
-
-        return match.name
-
-
-
-    def handle_unknown_command(self, text):
-
-        """Fallback, falls kein Intent passt."""
-
-        trimmed = (text or '').strip()
-
-        if self.context.get('conversation_mode') == 'entertainment':
-            last_kind = self.context.get('entertainment_last_type') or 'smalltalk'
-            if last_kind == 'jokes':
-                pool = self._entertainment_material['jokes']
-            elif last_kind == 'facts':
-                pool = self._entertainment_material['facts']
-            else:
-                pool = self._entertainment_material['smalltalk'] + self._entertainment_material['prompts']
-            choice = random.choice(pool)
-            self._set_voice_mode('humorvoll')
-            return choice
-
-        skip_llm = bool(self.context.pop('skip_llm_fallback', False))
-
-        if self.llm_manager and trimmed and not skip_llm:
-
-            try:
-
-                llm_response = self.llm_manager.generate_response(
-                    trimmed,
-                    use_case=self.context.get('last_use_case'),
-                    task_hint=self.context.get('logic_path'),
-                )
-
-                if llm_response:
-
-                    return llm_response.strip()
-
-            except Exception as exc:
-
-                self.logger.error(f"LLM-Fallback schlug fehl: {exc}")
-
-        suggestions = self.find_similar_commands(trimmed)
-
-        if suggestions:
-
-            return (
-
-                'Das habe ich nicht eindeutig verstanden. '
-
-                f"Meinten Sie vielleicht: {', '.join(suggestions[:3])}?"
-
-            )
-
-        return 'Das habe ich nicht verstanden. Formulieren Sie den Wunsch bitte noch einmal.'
-
-
-
-
-
-
-
-
-
-
-
-    def find_similar_commands(self, text):
-
-        """Findet sssssssshnliche Befehle basierend auf Textsssssssshnlichkeit"""
-
-        suggestions = []
-
-        text_lower = text.lower()
-
-        
-
-        for command_type, data in self.command_patterns.items():
-
-            patterns = data.get('patterns', [])
-
-            for pattern in patterns:
-
-                # Einfache ssssssssss?hnlichkeitsprssssssssfung
-
-                common_words = set(text_lower.split()) & set(pattern.split())
-
-                if common_words:
-
-                    suggestions.append(pattern)
-
-        
-
-        return suggestions
-
-    
-
-    def add_custom_command(self, pattern, response, category='custom'):
-
-        """Fssssssssgt benutzerdefinierten Befehl hinzu"""
-
-        try:
-
-            if category not in self.command_patterns:
-
-                self.command_patterns[category] = {
-
-                    'patterns': [],
-
-                    'responses': []
-
-                }
-
-            
-
-            self.command_patterns[category]['patterns'].append(pattern.lower())
-
-            self.command_patterns[category]['responses'].append(response)
-
-            
-
-            self.save_command_patterns()
-
-            self.logger.info(f"Neuer Befehl hinzugefssssssssgt: {pattern}")
-
-            
-
-            return True
-
-        except Exception as e:
-
-            self.logger.error(f"Fehler beim Hinzufssssssssgen des Befehls: {e}")
-
-            return False
-
-    
-
-    def handle_ai_chat(self, text):
-
-        """Behandelt erweiterte AI-Chat Anfragen"""
-
-        try:
-
-            if self.llm_manager:
-
-                # LLM fuer komplexere Antworten verwenden
-
-                response = self.llm_manager.generate_response(
-                    text,
-                    use_case=self.context.get('last_use_case'),
-                    task_hint=self.context.get('logic_path'),
-                )
-
-                if response:
-
-                    return response
-
-            
-
-            # Fallback auf erweiterte Pattern-basierte Antworten
-
-            return self.handle_intelligent_fallback(text)
-
-            
-
-        except Exception as e:
-
-            self.logger.error(f"Fehler bei AI-Chat: {e}")
-
-            return "Entschuldigung, ich konnte Ihre Anfrage nicht richtig verarbeiten."
-
-    def handle_intelligent_fallback(self, text):
-
-        """Erzeugt strukturierte Standardantworten fuer schwierigere Anfragen."""
-
-        text_lower = (text or '').lower()
-
-        if any(word in text_lower for word in ['was ist', 'wie funktioniert', 'erklaere', 'erklaer', 'was sind']):
-
-            knowledge_result = self.knowledge_manager.search_knowledge(text)
-
-            if knowledge_result:
-
-                return knowledge_result
-
-            return 'Ich recherchiere das gern naeher. Geben Sie mir einen Moment oder praezisieren Sie die Frage.'
-
-        if any(word in text_lower for word in ['python', 'programmieren', 'code', 'software', 'algorithmus']):
-
-            return 'Zu Programmier- oder Softwarethemen helfe ich gern. Beschreiben Sie bitte konkret, wobei Sie Unterstuetzung brauchen.'
-
-        if any(word in text_lower for word in ['meinung', 'denkst du', 'findest du']):
-
-            return 'Ich habe keine eigenen Meinungen, aber ich kann Fakten, Perspektiven und Quellen bereitstellen.'
-
-        if any(word in text_lower for word in ['geschichte', 'gedicht', 'kreativ', 'schreibe']):
-
-            return 'Wenn Sie einen kreativen Text wuenschen, nennen Sie bitte Form, Stil und ungefaehre Laenge.'
-
-        if any(word in text_lower for word in ['berechne', 'rechne', 'mathematik', 'formel']):
-
-            return 'Nennen Sie mir bitte die konkrete Rechnung oder Formel, dann rechne ich diese Schritt fuer Schritt durch.'
-
-        return 'Das klingt komplex. Beschreiben Sie mir bitte genauer, was Sie dazu wissen oder erreichen moechten.'
-
-

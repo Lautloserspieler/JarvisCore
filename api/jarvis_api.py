@@ -264,7 +264,7 @@ async def websocket_endpoint(websocket: WebSocket):
     
     Server -> Client messages:
     - {"type": "pong"}
-    - {"type": "chat_response", "text": "..."}
+    - {"type": "chat_response", "text": "...", "response": "..."}
     - {"type": "state_change", "state": "listening|processing|speaking|idle"}
     - {"type": "metrics_update", "data": {...}}
     """
@@ -289,12 +289,15 @@ async def websocket_endpoint(websocket: WebSocket):
                     try:
                         await manager.broadcast({"type": "state_change", "state": "processing"})
                         response = jarvis_instance.command_processor.process_command(text)
+                        # Send response with both 'text' and 'response' keys for compatibility
                         await websocket.send_json({
                             "type": "chat_response",
-                            "text": response
+                            "text": response or "Command executed.",
+                            "response": response or "Command executed."
                         })
                         await manager.broadcast({"type": "state_change", "state": "idle"})
                     except Exception as e:
+                        logger.error(f"Chat processing error: {e}")
                         await websocket.send_json({
                             "type": "error",
                             "message": str(e)

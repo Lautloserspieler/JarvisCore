@@ -1,661 +1,217 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-J.A.R.V.I.S. - Deutscher KI-Sprachassistent
-Hauptmodul für den Start mit Web-UI
+JARVIS Core - Unified Startup Script
+Starts both Backend (FastAPI) and Frontend (Vite) simultaneously
 """
 
+import subprocess
 import sys
 import os
-import threading
 import time
-import webbrowser
-import json
-import subprocess
-from datetime import datetime, timedelta
+import signal
 from pathlib import Path
-from typing import Any, Optional, Dict, List
+from typing import List
 
-# Für Web-UI
-try:
-    import uvicorn
-    from api.jarvis_api import app, set_jarvis_instance
-    WEB_UI_AVAILABLE = True
-except ImportError:
-    WEB_UI_AVAILABLE = False
-    print("⚠️  Web-UI nicht verfügbar. Installiere: pip install fastapi uvicorn")
+# Colors for terminal output
+class Colors:
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    BOLD = '\033[1m'
+    END = '\033[0m'
 
-# Lokale Imports
-from core.speech_recognition import SpeechRecognizer
-from core.text_to_speech import TextToSpeech
-from core.command_processor import CommandProcessor
-from core.autonomous_task_core import AutonomousTaskCore
-from core.reinforcement_learning import ReinforcementLearningCore
-from core.long_term_trainer import LongTermTrainer
-from core.knowledge_expansion_agent import KnowledgeExpansionAgent
-from core.plugin_manager import PluginManager
-from core.knowledge_manager import KnowledgeManager
-from core.crawler_client import CrawlerClient
-from core.system_control import SystemControl
-from core.system_monitor import SystemMonitor
-from core.security_protocol import SecurityProtocolManager
-from core.security_manager import SecurityManager
-from core.learning_manager import LearningManager
-from core.voice_biometrics import VoiceBiometricManager
-from core.update_scheduler import UpdateScheduler
-from config.settings import Settings
-from utils.logger import Logger
-from utils.error_reporter import ErrorReporter
-from utils.authenticator import AuthenticatorManager
+def print_banner():
+    """Print JARVIS ASCII banner"""
+    banner = f"""{Colors.CYAN}{Colors.BOLD}
+    ╔═══════════════════════════════════════════════════════╗
+    ║              JARVIS CORE SYSTEM v1.0.0               ║
+    ║         Just A Rather Very Intelligent System        ║
+    ╚═══════════════════════════════════════════════════════╝
+    {Colors.END}"""
+    print(banner)
 
-GO_SERVICES = [
-    {"name": "securityd", "cmd": ["go", "run", "./cmd/securityd"], "env": {}},
-    {"name": "gatewayd", "cmd": ["go", "run", "./cmd/gatewayd"], "env": {}},
-    {"name": "memoryd", "cmd": ["go", "run", "./cmd/memoryd"], "env": {}},
-    {"name": "systemd", "cmd": ["go", "run", "./cmd/systemd"], "env": {}},
-    {"name": "speechtaskd", "cmd": ["go", "run", "./cmd/speechtaskd"], "env": {}},
-    {"name": "commandd", "cmd": ["go", "run", "./cmd/commandd"], "env": {}},
-]
+def check_requirements():
+    """Check if all required dependencies are available"""
+    print(f"{Colors.YELLOW}[CHECK]{Colors.END} Checking system requirements...")
+    
+    # Check Python version
+    if sys.version_info < (3, 8):
+        print(f"{Colors.RED}[ERROR]{Colors.END} Python 3.8 or higher is required")
+        sys.exit(1)
+    
+    # Check if backend directory exists
+    backend_path = Path("backend")
+    if not backend_path.exists():
+        print(f"{Colors.RED}[ERROR]{Colors.END} Backend directory not found")
+        sys.exit(1)
+    
+    # Check if frontend directory exists
+    frontend_path = Path("frontend")
+    if not frontend_path.exists():
+        print(f"{Colors.RED}[ERROR]{Colors.END} Frontend directory not found")
+        sys.exit(1)
+    
+    # Check if node_modules exists
+    node_modules = frontend_path / "node_modules"
+    if not node_modules.exists():
+        print(f"{Colors.YELLOW}[WARN]{Colors.END} Frontend dependencies not installed")
+        print(f"{Colors.BLUE}[INFO]{Colors.END} Running: npm install...")
+        subprocess.run(["npm", "install"], cwd="frontend", check=True)
+    
+    # Check if Python packages are installed
+    try:
+        import fastapi
+        import uvicorn
+    except ImportError:
+        print(f"{Colors.YELLOW}[WARN]{Colors.END} Backend dependencies not installed")
+        print(f"{Colors.BLUE}[INFO]{Colors.END} Running: pip install -r requirements.txt...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "-r", "backend/requirements.txt"], check=True)
+    
+    print(f"{Colors.GREEN}[OK]{Colors.END} All requirements satisfied\n")
 
-
-class JarvisAssistant:
-    """Hauptklasse für den J.A.R.V.I.S. Assistenten mit Web-UI"""
-
+class ProcessManager:
+    """Manage backend and frontend processes"""
+    
     def __init__(self):
-        self.logger = Logger()
-        self.settings = Settings()
-        self.security_manager = SecurityManager(self.settings)
-        self.authenticator = AuthenticatorManager(self.settings)
-        self.is_running = False
-        self.listening = False
-        self._pending_security_request: Optional[dict] = None
-        self._passphrase_attempts = 0
-        self._passphrase_hint: Optional[str] = None
-        self._min_command_words = 3
-        self.remote_gateway = None
-        self._conversation_history: List[Dict[str, Any]] = []
-        self.system_monitor = SystemMonitor(update_interval=2.0)
-        self.speech_thread: Optional[threading.Thread] = None
-        self._pending_authenticator_payload: Optional[Dict[str, str]] = None
-        self._go_processes: List[subprocess.Popen] = []
-        self.web_ui_thread: Optional[threading.Thread] = None
-
-        # Komponenten initialisieren
-        self.plugin_manager = PluginManager(self.logger)
-        self.knowledge_manager = KnowledgeManager()
-        self.crawler_client = CrawlerClient()
-        self.system_control = SystemControl(self.security_manager, self.settings)
-        self.tts = TextToSpeech(self.settings)
-        self.task_core = AutonomousTaskCore(
-            knowledge_manager=self.knowledge_manager,
-            system_control=self.system_control,
-            plugin_manager=self.plugin_manager,
-            security_manager=self.security_manager,
-            logger=self.logger,
-        )
-
-        self.speech_mode = "neutral"
-        self.tts_stream_enabled = True
-        try:
-            self.tts.set_style(self.speech_mode)
-        except Exception:
-            pass
-
-        self.learning_manager = LearningManager()
-        self.reinforcement_core = ReinforcementLearningCore(self.learning_manager, logger=self.logger)
-        self.long_term_trainer = LongTermTrainer(
-            memory_manager=None,
-            learning_manager=self.learning_manager,
-            knowledge_manager=self.knowledge_manager,
-            logger=self.logger,
-        )
-        knowledge_cfg = self.settings.get('knowledge', {}) if self.settings else {}
-        expansion_cfg = knowledge_cfg.get('expansion', {}) if isinstance(knowledge_cfg, dict) else {}
-        self.knowledge_agent = KnowledgeExpansionAgent(
-            knowledge_manager=self.knowledge_manager,
-            learning_manager=self.learning_manager,
-            settings=expansion_cfg if isinstance(expansion_cfg, dict) else {},
-            logger=self.logger,
-        )
-        self.voice_biometrics = VoiceBiometricManager()
-
-        if self.authenticator and self.authenticator.needs_setup():
-            needs_new_secret = not self.authenticator.setup_pending() or not self.authenticator.has_pending_secret()
-            if needs_new_secret:
-                try:
-                    self._pending_authenticator_payload = self.authenticator.begin_setup()
-                except Exception as exc:
-                    self.logger.error("Authenticator-Setup konnte nicht vorbereitet werden: %s", exc)
-                else:
-                    self._persist_authenticator_payload(self._pending_authenticator_payload)
-            else:
-                self._pending_authenticator_payload = self.authenticator.get_pending_setup()
-                self._persist_authenticator_payload(self._pending_authenticator_payload)
-            self.logger.warning(
-                "Authenticator-App fehlt: Öffne die Web-UI und hinterlege eine TOTP-App (z.B. Google Authenticator)."
-            )
-        elif self.authenticator:
-            self._pending_authenticator_payload = self.authenticator.get_pending_setup()
-            self._persist_authenticator_payload(self._pending_authenticator_payload)
-
-        # LLM-Manager initialisieren
-        try:
-            from core.llm_manager import LLMManager
-            self.llm_manager = LLMManager(settings=self.settings)
-            self.logger.info("LLM-Manager erfolgreich initialisiert")
-        except Exception as e:
-            self.logger.warning(f"LLM-Manager konnte nicht initialisiert werden: {e}")
-            self.llm_manager = None
-
-        self.security_protocol = SecurityProtocolManager(
-            system_control=self.system_control,
-            security_manager=self.security_manager,
-            knowledge_manager=self.knowledge_manager,
-            logger=self.logger,
-            settings=self.settings,
-            llm_manager=self.llm_manager,
-            tts=self.tts,
-        )
-
-        self.command_processor = CommandProcessor(
-            self.knowledge_manager,
-            self.system_control,
-            self.tts,
-            self.plugin_manager,
-            self.learning_manager,
-            self.voice_biometrics,
-            task_core=self.task_core,
-            reinforcement_core=self.reinforcement_core,
-            security_protocol=self.security_protocol,
-            llm_manager=self.llm_manager,
-            settings=self.settings,
+        self.processes: List[subprocess.Popen] = []
+        self.running = False
+    
+    def start_backend(self):
+        """Start FastAPI backend server"""
+        print(f"{Colors.BLUE}[BACKEND]{Colors.END} Starting FastAPI server...")
+        
+        backend_cmd = [
+            sys.executable,
+            "-m", "uvicorn",
+            "main:app",
+            "--host", "0.0.0.0",
+            "--port", "8000",
+            "--reload"
+        ]
+        
+        process = subprocess.Popen(
+            backend_cmd,
+            cwd="backend",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
         )
         
-        try:
-            self.long_term_trainer.set_command_processor(self.command_processor)
-        except Exception:
-            pass
-            
-        self.speech_recognizer = SpeechRecognizer(
-            self.on_wake_word_detected,
-            self.on_command_recognized,
-            settings=self.settings,
+        self.processes.append(process)
+        print(f"{Colors.GREEN}[BACKEND]{Colors.END} Server started on {Colors.CYAN}http://localhost:8000{Colors.END}")
+        print(f"{Colors.GREEN}[BACKEND]{Colors.END} WebSocket on {Colors.CYAN}ws://localhost:8000/ws{Colors.END}")
+        print(f"{Colors.GREEN}[BACKEND]{Colors.END} API Docs: {Colors.CYAN}http://localhost:8000/docs{Colors.END}\n")
+        
+        return process
+    
+    def start_frontend(self):
+        """Start Vite development server"""
+        print(f"{Colors.MAGENTA}[FRONTEND]{Colors.END} Starting Vite dev server...")
+        
+        frontend_cmd = ["npm", "run", "dev"]
+        
+        process = subprocess.Popen(
+            frontend_cmd,
+            cwd="frontend",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
         )
         
-        try:
-            speech_cfg = self.settings.get('speech', {}) or {}
-            self.wake_word_enabled = bool(speech_cfg.get('wake_word_enabled', True))
-            self._min_command_words = max(1, int(speech_cfg.get('min_command_words', 3)))
-            self.tts_stream_enabled = bool(speech_cfg.get('stream_tts', True))
-        except Exception:
-            self.wake_word_enabled = True
-            self._min_command_words = 3
-            self.tts_stream_enabled = True
-            
-        try:
-            security_cfg = self.settings.get('security', {}) if self.settings else {}
-            if not isinstance(security_cfg, dict):
-                security_cfg = {}
-            auth_cfg = security_cfg.get('auth', {}) if isinstance(security_cfg, dict) else {}
-            if not isinstance(auth_cfg, dict):
-                auth_cfg = {}
-            hint = auth_cfg.get('passphrase_hint')
-            if isinstance(hint, str) and hint.strip():
-                self._passphrase_hint = hint.strip()
-        except Exception:
-            self._passphrase_hint = None
-
-        self.knowledge_manager.register_progress_callback(self._handle_knowledge_progress)
+        self.processes.append(process)
+        print(f"{Colors.GREEN}[FRONTEND]{Colors.END} Server started on {Colors.CYAN}http://localhost:8080{Colors.END}\n")
         
-        self._initialise_remote_gateway()
-
-        try:
-            security_cfg = self.settings.get('security', {}) if self.settings else {}
-            if not isinstance(security_cfg, dict):
-                security_cfg = {}
-            automation_cfg = security_cfg.get('automation', {})
-            if not isinstance(automation_cfg, dict):
-                automation_cfg = {}
-            if bool(automation_cfg.get('startup_diagnostics', True)):
-                self.security_protocol.run_startup_check()
-        except Exception as exc:
-            self.logger.warning(f"Autodiagnose konnte nicht ausgefuehrt werden: {exc}")
-
-        crawler_interval = getattr(getattr(self.crawler_client, "config", None), "sync_interval_sec", 1800)
-        self.update_scheduler = UpdateScheduler(
-            self.knowledge_manager,
-            self.learning_manager,
-            llm_manager=self.llm_manager,
-            long_term_trainer=self.long_term_trainer,
-            crawler_client=self.crawler_client,
-            crawler_sync_interval=crawler_interval,
-        )
-        self.update_scheduler.start()
-
-        self.logger.info("🤖 J.A.R.V.I.S. Core initialisiert")
-
-    def _persist_authenticator_payload(self, payload: Optional[Dict[str, Any]]) -> None:
-        """Speichert das aktuelle Pending-Payload sicher auf der Platte."""
-        secure_root = Path("data") / "secure"
-        try:
-            secure_root.mkdir(parents=True, exist_ok=True)
-            target = secure_root / "authenticator_pending.json"
-            if not payload:
-                if target.exists():
-                    target.unlink()
-                return
-            target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        except Exception as exc:
-            self.logger.debug("Authenticator-Status konnte nicht persistiert werden: %s", exc)
-
-    def _handle_knowledge_progress(self, payload):
-        """Leitet Lernfortschritt an Remote-Clients weiter."""
-        normalized = payload if isinstance(payload, dict) else {"message": str(payload)}
-        self._publish_remote_event("knowledge_progress", normalized)
-
-    def _should_start_go_services(self) -> bool:
-        env_flag = os.getenv("JARVIS_START_GO", "").strip().lower()
-        if env_flag in {"1", "true", "yes"}:
-            return True
-        try:
-            go_cfg = self.settings.get("go_services", {}) if self.settings else {}
-            return bool(go_cfg.get("auto_start", False))
-        except Exception:
-            return False
-
-    def _maybe_start_go_services(self) -> None:
-        if not self._should_start_go_services():
-            return
-        go_root = Path(__file__).resolve().parent / "go"
-        if not go_root.exists():
-            return
-        for svc in GO_SERVICES:
-            name = svc.get("name")
-            cmd = svc.get("cmd") or []
-            if not cmd:
-                continue
-            try:
-                proc = subprocess.Popen(
-                    cmd,
-                    cwd=str(go_root),
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    env={**os.environ, **svc.get("env", {})},
-                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
-                )
-                self._go_processes.append(proc)
-                self.logger.info("Go-Service '%s' gestartet (PID %s)", name, proc.pid)
-            except Exception as exc:
-                self.logger.warning("Go-Service '%s' konnte nicht gestartet werden: %s", name, exc)
-
-    def _stop_go_services(self) -> None:
-        for proc in self._go_processes:
-            try:
-                if proc.poll() is None:
-                    proc.terminate()
-            except Exception:
-                pass
-        self._go_processes.clear()
-
-    def _initialise_remote_gateway(self) -> None:
-        try:
-            remote_cfg = self.settings.get('remote_control', {}) or {}
-        except Exception:
-            remote_cfg = {}
-        if not isinstance(remote_cfg, dict) or not remote_cfg.get('enabled'):
-            self.remote_gateway = None
-            return
-        try:
-            from core.websocket_gateway import RemoteCommandGateway
-            self.remote_gateway = RemoteCommandGateway(self, remote_cfg, logger=self.logger)
-            self.logger.info(
-                "Remote-WebSocket vorbereitet (ws://%s:%s)",
-                remote_cfg.get('host', '127.0.0.1'),
-                remote_cfg.get('port', 8765),
-            )
-        except Exception as exc:
-            self.logger.error(f"Remote-Control konnte nicht initialisiert werden: {exc}")
-            self.remote_gateway = None
-
-    def _publish_remote_event(self, event_type: str, payload: Optional[Dict[str, Any]] = None) -> None:
-        if self.remote_gateway:
-            try:
-                self.remote_gateway.publish(event_type, payload or {})
-            except Exception as exc:
-                self.logger.debug("Remote-Event konnte nicht gesendet werden: %s", exc)
-
-    def get_runtime_status(self) -> Dict[str, Any]:
-        context = getattr(self.command_processor, 'context', {}) or {}
-        return {
-            "running": self.is_running,
-            "listening": self.listening,
-            "speech_mode": self.speech_mode,
-            "wake_word_enabled": getattr(self, "wake_word_enabled", True),
-            "pending_security": bool(self._pending_security_request),
-            "last_command": context.get('last_command'),
-            "conversation_mode": context.get('conversation_mode'),
-        }
-
-    def get_system_metrics(self, include_details: bool = False) -> Dict[str, Any]:
-        """Returns system metrics with proper mapping from SystemMonitor"""
-        # Default fallback values
-        monitor_summary = {
-            "cpu_percent": 0.0,
-            "memory_percent": 0.0,
-            "memory_used_gb": 0.0,
-            "memory_total_gb": 0.0,
-            "disk_percent": 0.0,
-        }
+        return process
+    
+    def monitor_processes(self):
+        """Monitor process outputs"""
+        print(f"{Colors.BOLD}{Colors.GREEN}[JARVIS]{Colors.END} System is online!")
+        print(f"{Colors.BOLD}═══════════════════════════════════════════════════════{Colors.END}")
+        print(f"{Colors.CYAN}Frontend:{Colors.END} http://localhost:8080")
+        print(f"{Colors.CYAN}Backend API:{Colors.END} http://localhost:8000")
+        print(f"{Colors.CYAN}API Docs:{Colors.END} http://localhost:8000/docs")
+        print(f"{Colors.CYAN}WebSocket:{Colors.END} ws://localhost:8000/ws")
+        print(f"{Colors.BOLD}═══════════════════════════════════════════════════════{Colors.END}")
+        print(f"{Colors.YELLOW}Press Ctrl+C to shutdown{Colors.END}\n")
         
-        if self.system_monitor:
-            try:
-                # Get summary from SystemMonitor
-                raw_summary = self.system_monitor.get_system_summary(include_details=False)
+        self.running = True
+        
+        try:
+            while self.running:
+                time.sleep(0.5)
                 
-                # Map SystemMonitor structure to UI format
-                if raw_summary and isinstance(raw_summary, dict):
-                    # CPU
-                    cpu = raw_summary.get('cpu', {})
-                    if isinstance(cpu, dict):
-                        monitor_summary['cpu_percent'] = float(cpu.get('usage_percent', 0.0) or 0.0)
-                    
-                    # Memory
-                    memory = raw_summary.get('memory', {})
-                    if isinstance(memory, dict):
-                        monitor_summary['memory_percent'] = float(memory.get('percent', 0.0) or 0.0)
-                        total_bytes = memory.get('total', 0) or 0
-                        used_bytes = memory.get('used', 0) or 0
-                        monitor_summary['memory_total_gb'] = round(total_bytes / (1024**3), 1)
-                        monitor_summary['memory_used_gb'] = round(used_bytes / (1024**3), 1)
-                    
-                    # Disk (get first partition)
-                    if include_details:
-                        disk_info = self.system_monitor.get_disk_info()
-                        disks = disk_info.get('disks', {})
-                        if disks:
-                            first_disk = next(iter(disks.values()))
-                            monitor_summary['disk_percent'] = float(first_disk.get('percent', 0.0) or 0.0)
-                    else:
-                        # Quick disk check
-                        try:
-                            import psutil
-                            usage = psutil.disk_usage('/')
-                            monitor_summary['disk_percent'] = float(usage.percent)
-                        except Exception:
-                            pass
-                
-                self.logger.debug(f"System Metrics: {monitor_summary}")
-                
-            except Exception as exc:
-                self.logger.error(f"Fehler beim Abrufen der System-Metriken: {exc}")
+                # Check if any process died
+                for i, process in enumerate(self.processes):
+                    if process.poll() is not None:
+                        name = "Backend" if i == 0 else "Frontend"
+                        print(f"{Colors.RED}[ERROR]{Colors.END} {name} process died unexpectedly")
+                        self.shutdown()
+                        return
         
-        return {
-            "status": {},
-            "summary": monitor_summary,
-            "details": {},
-        }
-
-    def get_llm_status(self) -> Dict[str, Any]:
-        manager = getattr(self, "llm_manager", None)
-        if not manager:
-            self.logger.warning("LLM-Manager nicht verfügbar")
-            return {"available": {}, "current": None, "loaded": [], "active": False}
-        try:
-            available = manager.get_model_overview()
-            loaded = list(getattr(manager, "loaded_models", {}).keys())
-            metadata = getattr(manager, "model_metadata", {})
-            current = getattr(manager, "current_model", None)
-            active = bool(getattr(manager, "model_loaded", False))
-            
-            self.logger.info(f"LLM Status: available={len(available)}, current={current}, active={active}")
-            
-            return {
-                "available": available,
-                "current": current,
-                "loaded": loaded,
-                "active": active,
-                "metadata": metadata,
-            }
-        except Exception as exc:
-            self.logger.error(f"Fehler beim Abrufen des LLM-Status: {exc}")
-            return {"available": {}, "current": None, "loaded": [], "active": False}
-
-    def control_llm_model(self, action: str, model_key: Optional[str] = None) -> Dict[str, Any]:
-        """Steuert LLM Models (load/unload/download)"""
-        manager = getattr(self, "llm_manager", None)
-        if not manager:
-            raise RuntimeError("LLM-Manager nicht verfügbar.")
-        
-        model = (model_key or manager.current_model or "mistral").strip()
-        action_normalized = (action or "").strip().lower()
-        
-        if action_normalized == "load":
-            self.logger.info(f"Loading LLM model: {model}")
-            try:
-                success = bool(manager.load_model(model))
-                return {"action": "load", "success": success, "model": manager.current_model}
-            except Exception as exc:
-                self.logger.error(f"Failed to load model {model}: {exc}")
-                raise
-        
-        elif action_normalized == "unload":
-            self.logger.info("Unloading current LLM model")
-            try:
-                manager.unload_model()
-                return {"action": "unload", "success": True}
-            except Exception as exc:
-                self.logger.error(f"Failed to unload model: {exc}")
-                raise
-        
-        elif action_normalized == "download":
-            self.logger.info(f"Downloading LLM model: {model}")
-            try:
-                success = bool(manager.download_model(model))
-                return {"action": "download", "success": success, "model": model}
-            except Exception as exc:
-                self.logger.error(f"Failed to download model {model}: {exc}")
-                raise
-        
-        raise ValueError(f"Unbekannte Modellaktion: {action}")
-
-    def get_plugin_overview(self) -> List[Dict[str, Any]]:
-        if not self.plugin_manager:
-            self.logger.warning("Plugin-Manager nicht verfügbar")
-            return []
-        try:
-            plugins = self.plugin_manager.get_plugin_overview()
-            self.logger.info(f"Plugin Overview: {len(plugins)} plugins")
-            return plugins
-        except Exception as exc:
-            self.logger.error(f"Fehler beim Abrufen der Plugin-Übersicht: {exc}")
-            return []
-
-    def start(self):
-        """Startet JARVIS mit Web-UI"""
-        self.is_running = True
-        self.logger.info("🚀 J.A.R.V.I.S. wird gestartet...")
-        
-        # Go-Services starten
-        self._maybe_start_go_services()
-        
-        # Remote Gateway starten
-        if self.remote_gateway:
-            self.remote_gateway.start()
-
-        # Web-UI starten
-        if WEB_UI_AVAILABLE:
-            self._start_web_ui()
-        else:
-            self.logger.warning("⚠️  Web-UI nicht verfügbar. Headless-Modus.")
-
-        # Speech Recognition starten
-        if self.settings.get('first_run', True):
-            self.run_debug_mode()
-            self.settings.set('first_run', False)
-
-        self.start_listening()
-        self.logger.info("✅ J.A.R.V.I.S. läuft")
-        
-        # Hauptthread am Leben halten
-        try:
-            while self.is_running:
-                time.sleep(1)
         except KeyboardInterrupt:
-            self.logger.info("\n👋 Beende JARVIS...")
-            self.stop()
-
-    def _start_web_ui(self):
-        """Startet FastAPI Web-UI in Background-Thread"""
-        if not WEB_UI_AVAILABLE:
-            return
+            print(f"\n{Colors.YELLOW}[SHUTDOWN]{Colors.END} Received shutdown signal...")
+            self.shutdown()
+    
+    def shutdown(self):
+        """Gracefully shutdown all processes"""
+        self.running = False
+        print(f"{Colors.YELLOW}[SHUTDOWN]{Colors.END} Stopping all services...")
         
-        # JARVIS-Instanz an API übergeben
-        set_jarvis_instance(self)
-        
-        # Check ob Frontend gebaut ist
-        frontend_dist = Path("frontend/dist")
-        if not frontend_dist.exists():
-            self.logger.warning("⚠️  Frontend nicht gebaut!")
-            self.logger.warning("Führe aus: cd frontend && npm install && npm run build")
-        
-        # FastAPI in Background-Thread starten
-        def run_uvicorn():
+        for i, process in enumerate(self.processes):
+            name = "Backend" if i == 0 else "Frontend"
             try:
-                uvicorn.run(
-                    app,
-                    host="0.0.0.0",
-                    port=8000,
-                    log_level="info",
-                    access_log=False
-                )
-            except Exception as exc:
-                self.logger.error(f"Web-UI Fehler: {exc}")
+                print(f"{Colors.BLUE}[SHUTDOWN]{Colors.END} Stopping {name}...")
+                process.terminate()
+                process.wait(timeout=5)
+                print(f"{Colors.GREEN}[SHUTDOWN]{Colors.END} {name} stopped")
+            except subprocess.TimeoutExpired:
+                print(f"{Colors.YELLOW}[SHUTDOWN]{Colors.END} Force killing {name}...")
+                process.kill()
+                process.wait()
         
-        self.web_ui_thread = threading.Thread(target=run_uvicorn, daemon=True)
-        self.web_ui_thread.start()
-        
-        # Browser nach 2 Sekunden öffnen
-        def open_browser():
-            time.sleep(2)
-            url = "http://localhost:8000"
-            try:
-                webbrowser.open(url)
-                self.logger.info(f"🌐 Web-UI: {url}")
-            except Exception as exc:
-                self.logger.warning(f"Browser konnte nicht geöffnet werden: {exc}")
-                self.logger.info(f"🌐 Öffne manuell: {url}")
-        
-        threading.Thread(target=open_browser, daemon=True).start()
-        
-        self.logger.info("📡 Web-UI gestartet")
-        self.logger.info("📡 API Docs: http://localhost:8000/api/docs")
-        self.logger.info("🔌 WebSocket: ws://localhost:8000/ws")
-
-    def stop(self):
-        """Stoppt JARVIS"""
-        self.is_running = False
-        self.stop_listening()
-        
-        try:
-            if hasattr(self, "tts") and self.tts:
-                self.tts.shutdown()
-        except Exception:
-            pass
-        
-        if self.plugin_manager:
-            self.plugin_manager.shutdown()
-        
-        if hasattr(self, "update_scheduler") and self.update_scheduler:
-            self.update_scheduler.stop()
-        
-        if self.remote_gateway:
-            try:
-                self.remote_gateway.stop()
-            except Exception as exc:
-                self.logger.debug("Remote-Gateway konnte nicht gestoppt werden: %s", exc)
-        
-        self.logger.info("👋 J.A.R.V.I.S. wird beendet")
-        self._stop_go_services()
-
-    def run_debug_mode(self):
-        self.logger.info("Debug-Modus: Systemprüfungen werden durchgeführt...")
-        self.logger.info("Debug-Modus abgeschlossen")
-
-    def on_wake_word_detected(self):
-        if self.is_running:
-            self.listening = True
-            if getattr(self, "wake_word_enabled", True):
-                try:
-                    self.tts.speak("Ja, ich höre.")
-                except Exception as exc:
-                    self.logger.error(f"Akustische Rückmeldung fehlgeschlagen: {exc}")
-                self.logger.info("Wake-Word erkannt")
-
-    def on_command_recognized(self, command_text):
-        if not self.is_running:
-            return
-        self.logger.info('Befehl erkannt: %s', command_text)
-        self.listening = False
-
-    def start_listening(self) -> bool:
-        recognizer = getattr(self, "speech_recognizer", None)
-        if not recognizer:
-            return False
-        self.listening = True
-        if getattr(self, "speech_thread", None) and self.speech_thread.is_alive():
-            return True
-        self.speech_thread = threading.Thread(target=recognizer.start_listening, daemon=True)
-        self.speech_thread.start()
-        return True
-
-    def stop_listening(self) -> bool:
-        self.listening = False
-        recognizer = getattr(self, "speech_recognizer", None)
-        if not recognizer:
-            return False
-        try:
-            recognizer.stop_listening()
-        except Exception as exc:
-            self.logger.debug("Spracherkennung konnte nicht gestoppt werden: %s", exc)
-            return False
-        return True
-
+        print(f"{Colors.GREEN}[SHUTDOWN]{Colors.END} All services stopped")
+        print(f"{Colors.CYAN}{Colors.BOLD}Thank you for using JARVIS!{Colors.END}")
 
 def main():
-    """Hauptfunktion - Startet JARVIS mit Web-UI"""
-    print("🤖" + "="*60)
-    print("  J.A.R.V.I.S. - Just A Rather Very Intelligent System")
-    print("  Version 2.0.0 - Web UI Edition")
-    print("="*61)
-    print()
+    """Main entry point"""
+    print_banner()
+    
+    # Check requirements
+    check_requirements()
+    
+    # Initialize process manager
+    manager = ProcessManager()
+    
+    # Setup signal handlers
+    def signal_handler(signum, frame):
+        manager.shutdown()
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     
     try:
-        os.makedirs("data", exist_ok=True)
-        os.makedirs("logs", exist_ok=True)
-        os.makedirs("models", exist_ok=True)
+        # Start services
+        print(f"{Colors.BOLD}{Colors.GREEN}[JARVIS]{Colors.END} Initializing system...\n")
         
-        from utils.logger import Logger
-        Logger().set_level("DEBUG")
-        print("📜 Debug-Logs: logs/jarvis.log")
-        print()
-
-        try:
-            settings_for_reporting = Settings()
-            ErrorReporter(settings_for_reporting).install_global_hook()
-        except Exception as _err:
-            Logger().warning(f"Fehler-Reporter konnte nicht installiert werden: {_err}")
-
-        jarvis = JarvisAssistant()
-        jarvis.start()
-
-    except KeyboardInterrupt:
-        print("\n👋 J.A.R.V.I.S. wird beendet...")
+        backend_process = manager.start_backend()
+        time.sleep(2)  # Wait for backend to initialize
+        
+        frontend_process = manager.start_frontend()
+        time.sleep(3)  # Wait for frontend to initialize
+        
+        # Monitor processes
+        manager.monitor_processes()
+        
     except Exception as e:
-        print(f"❌ Fehler beim Start: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"{Colors.RED}[ERROR]{Colors.END} Failed to start system: {e}")
+        manager.shutdown()
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

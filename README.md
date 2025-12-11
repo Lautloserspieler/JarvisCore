@@ -1,289 +1,219 @@
-# 🤖 J.A.R.V.I.S. Core
+# 🤖 JARVIS Core System
+
+<div align="center">
 
 **Just A Rather Very Intelligent System**
 
-Ein modularer, erweiterbarer KI-Assistent mit LLM-Integration, Wissensdatenbank und Speech-Processing.
+A modern AI assistant with a beautiful holographic UI inspired by Iron Man's JARVIS
+
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green.svg)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18.3+-cyan.svg)](https://reactjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue.svg)](https://typescriptlang.org)
+
+</div>
+
+---
+
+## ✨ Features
+
+### 🎨 Frontend
+- ✅ **Holographic UI** - Stunning JARVIS-inspired interface
+- ✅ **Real-time Chat** - WebSocket-based live communication
+- ✅ **Voice Interface** - Visual voice input feedback
+- ✅ **Multi-tab Navigation** - Chat, Dashboard, Memory, Models, Plugins, Logs, Settings
+- ✅ **Responsive Design** - Works on all screen sizes
+- ✅ **Dark Theme** - Cyberpunk aesthetic with glowing effects
+
+### 🚀 Backend
+- ✅ **FastAPI Server** - High-performance async API
+- ✅ **WebSocket Support** - Real-time bidirectional communication
+- ✅ **RESTful API** - Complete REST endpoints
+- ✅ **Model Management** - Switch between AI models
+- ✅ **Plugin System** - Extensible architecture
+- ✅ **Memory Storage** - Conversation history & context
+- ✅ **System Logs** - Comprehensive logging
 
 ---
 
 ## 🚀 Quick Start
 
+### Prerequisites
+- Python 3.8+
+- Node.js 18+
+- npm or yarn
+
 ### Installation
 
 ```bash
-# 1. Repository klonen
+# Clone the repository
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 
-# 2. Automatisches Setup
-python setup.py
-
-# 3. Virtuelle Umgebung aktivieren
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
-
-# 4. JARVIS starten
-python main_web.py
-
-# 5. Browser öffnen
-# http://localhost:8000
+# Start everything with one command!
+python main.py
 ```
 
----
-
-## 🌐 Web UI
-
-**Die neue futuristische Web-Oberfläche!**
-
-### Features
-- ✨ JARVIS-Design (Arc Reactor inspiriert)
-- 💬 Realtime Chat mit WebSocket
-- 📊 System Metrics Dashboard
-- 🧠 Model Management
-- 🧩 Plugin Control
-- 📜 Live Logs
-- 🎙️ Voice Visualizer
-
-### Starten
-
-```bash
-# Production (serve built frontend)
-python main_web.py
-
-# Development (hot reload)
-python main_web.py
-```
-
-**URL:** http://localhost:8000  
-**API Docs:** http://localhost:8000/api/docs
+That's it! The unified `main.py` script will:
+1. ✅ Check all requirements
+2. ✅ Install missing dependencies
+3. ✅ Start the backend server
+4. ✅ Start the frontend dev server
+5. ✅ Open your browser automatically
 
 ---
 
-## 📚 Dokumentation
+## 🌐 Access Points
 
-### Guides
-- [Web UI Setup](docs/WEB_UI_MIGRATION.md)
-- [API Documentation](docs/API.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [Migration Guide](docs/MIGRATION_DESKTOP_TO_WEB.md)
+Once started, you can access:
 
-### Architecture
-- [System Overview](docs/ARCHITECTURE.md)
-- [Plugin System](docs/PLUGINS.md)
-- [LLM Integration](docs/LLM.md)
-- [Design System](docs/DESIGN_SYSTEM_JARVIS.md)
+- 🎨 **Frontend UI**: http://localhost:8080
+- 🔧 **Backend API**: http://localhost:8000
+- 📚 **API Documentation**: http://localhost:8000/docs
+- 🔌 **WebSocket**: ws://localhost:8000/ws
 
 ---
 
-## ⚙️ Features
-
-### 🧠 LLM Integration
-- **llama.cpp** Backend
-- Mehrere Modelle (Llama3, Mistral, Phi3, Gemma2)
-- GPU-Acceleration (CUDA/ROCm/Metal)
-- Streaming-Antworten
-
-### 📚 Wissensdatenbank
-- Wikipedia Integration
-- Wikidata SPARQL
-- PubMed Medical Research
-- Semantic Scholar
-- OpenStreetMap Geocoding
-- ISBN Lookup (OpenLibrary)
-
-### 🎙️ Speech
-- **Speech-to-Text:** faster-whisper
-- **Text-to-Speech:** Coqui TTS
-- Wake-Word Detection
-- Voice Commands
-
-### 📡 Web Interface
-- FastAPI Backend
-- React + TypeScript Frontend
-- WebSocket für Realtime Updates
-- Responsive Design
-- Mobile-friendly
-
-### 🔌 Remote Control
-- WebSocket Server
-- REST API
-- Multi-Client Support
-
----
-
-## 📦 Tech Stack
-
-### Backend
-- **Python 3.11+**
-- FastAPI + Uvicorn
-- llama-cpp-python
-- faster-whisper
-- Coqui TTS
-
-### Frontend
-- **React 18+**
-- TypeScript
-- Vite
-- Tailwind CSS
-- Orbitron + Space Grotesk Fonts
-
-### LLM
-- llama.cpp
-- GGUF Models
-- CUDA/ROCm/Metal Support
-
----
-
-## 📁 Projektstruktur
+## 📁 Project Structure
 
 ```
 JarvisCore/
-├── api/                  # FastAPI Backend
-│   └── jarvis_api.py
-├── frontend/             # React Web UI
+├── main.py                 # 🚀 Unified startup script
+├── backend/
+│   ├── main.py            # FastAPI server
+│   ├── requirements.txt   # Python dependencies
+│   └── README.md
+├── frontend/
 │   ├── src/
-│   │   ├── pages/
-│   │   │   └── Index.tsx
-│   │   ├── components/
-│   │   │   └── VoiceVisualizer.tsx
-│   │   └── lib/
-│   │       └── api.ts
+│   │   ├── components/    # React components
+│   │   │   ├── ui/       # shadcn/ui components
+│   │   │   ├── tabs/     # Tab components
+│   │   │   └── *.tsx     # Main components
+│   │   ├── services/      # API & WebSocket services
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── pages/         # Page components
+│   │   └── lib/           # Utilities
 │   ├── package.json
 │   └── vite.config.ts
-├── core/                 # Python Core
-│   ├── jarvis.py
-│   ├── command_processor.py
-│   ├── llm_manager.py
-│   └── ...
-├── plugins/              # Knowledge Plugins
-│   ├── wikipedia.py
-│   ├── wikidata.py
-│   └── ...
-├── data/                 # User Data
-│   ├── settings.json
-│   └── secure/
-├── models/               # LLM Models
-│   ├── llm/
-│   ├── stt/
-│   └── tts/
-├── logs/                 # Logs
-├── main_web.py           # Web UI Entry Point
-├── setup.py              # Automated Setup
-├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## 🔧 Development
+## 🛠️ Development
 
-### Frontend Development
+### Manual Start (Development Mode)
 
+#### Backend
 ```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Dev server (hot reload)
-npm run dev
-# http://localhost:5173
-
-# Build for production
-npm run build
-```
-
-### Backend Development
-
-```bash
-# Start with auto-reload
-uvicorn api.jarvis_api:app --reload --port 8000
-```
-
-### Run Tests
-
-```bash
-pytest tests/
-```
-
----
-
-## ⚠️ Migration von alter Desktop UI
-
-**Die alte DearPyGui/ImGui Desktop UI wurde entfernt!**
-
-➡️ Verwende jetzt die **Web UI**: [Migration Guide](docs/MIGRATION_DESKTOP_TO_WEB.md)
-
-### Quick Migration
-
-```bash
-# Old (deprecated)
-# python desktop/jarvis_imgui_app_full.py
-
-# New
-python main_web.py
-# http://localhost:8000
-```
-
----
-
-## 🐛 Troubleshooting
-
-### ModuleNotFoundError
-
-```bash
-# Fix: Install in venv
-venv\Scripts\activate
+cd backend
 pip install -r requirements.txt
+python main.py
 ```
 
-### Pandas Conflict
-
-```bash
-python scripts/fix_pandas_conflict.py
-```
-
-### Frontend not loading
-
+#### Frontend
 ```bash
 cd frontend
 npm install
-npm run build
+npm run dev
 ```
 
-**Mehr:** [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
+---
+
+## 🔌 API Endpoints
+
+### Chat
+- `GET /api/chat/sessions` - Get all chat sessions
+- `POST /api/chat/sessions` - Create new session
+- `POST /api/chat/messages` - Send message
+
+### Models
+- `GET /api/models` - List all models
+- `GET /api/models/active` - Get active model
+- `POST /api/models/{id}/activate` - Set active model
+
+### Plugins
+- `GET /api/plugins` - List all plugins
+- `POST /api/plugins/{id}/enable` - Enable plugin
+- `POST /api/plugins/{id}/disable` - Disable plugin
+
+### Memory
+- `GET /api/memory` - Get memories
+- `POST /api/memory/search` - Search memories
+- `GET /api/memory/stats` - Memory statistics
+
+### Logs
+- `GET /api/logs` - Get system logs
+- `GET /api/logs/stats` - Log statistics
 
 ---
 
-## 📜 License
+## 🎨 Technology Stack
 
-MIT License - siehe [LICENSE](LICENSE)
+### Frontend
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **UI Library**: shadcn/ui (Radix UI + Tailwind CSS)
+- **Routing**: React Router
+- **State Management**: TanStack Query
+- **WebSocket**: Native WebSocket API
+- **Icons**: Lucide React
 
----
-
-## 👥 Contributing
-
-Contributions sind willkommen!
-
-1. Fork the repo
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Open Pull Request
-
----
-
-## 📧 Contact
-
-- **GitHub:** [Lautloserspieler](https://github.com/Lautloserspieler)
-- **Issues:** [GitHub Issues](https://github.com/Lautloserspieler/JarvisCore/issues)
+### Backend
+- **Framework**: FastAPI
+- **Server**: Uvicorn
+- **WebSocket**: FastAPI WebSocket
+- **Type Safety**: Pydantic
 
 ---
 
-## ⭐ Star History
+## 🎯 Features Roadmap
 
-Wenn dir JARVIS gefällt, gib dem Projekt einen Stern! ⭐
+### Current (v1.0.0)
+- ✅ Basic UI with all tabs
+- ✅ WebSocket integration
+- ✅ REST API endpoints
+- ✅ Unified startup script
+
+### Planned (v1.1.0)
+- 🔄 Real AI model integration (OpenAI, Anthropic)
+- 🔄 Voice input/output
+- 🔄 Database integration (PostgreSQL)
+- 🔄 User authentication
+- 🔄 Multi-user support
+
+### Future (v2.0.0)
+- 📋 Advanced plugin marketplace
+- 📋 Docker deployment
+- 📋 Cloud deployment (AWS/GCP)
+- 📋 Mobile app
 
 ---
 
-**Built with ❤️ by the JARVIS Team**
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+---
+
+## 📄 License
+
+MIT License - feel free to use this project for any purpose.
+
+---
+
+## 🙏 Acknowledgments
+
+- Inspired by JARVIS from Iron Man
+- Built with [shadcn/ui](https://ui.shadcn.com/)
+- Powered by [FastAPI](https://fastapi.tiangolo.com/)
+
+---
+
+<div align="center">
+
+**Made with ❤️ by the JARVIS Team**
+
+*"Sometimes you gotta run before you can walk."* - Tony Stark
+
+</div>

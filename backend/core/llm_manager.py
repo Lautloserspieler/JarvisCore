@@ -8,6 +8,9 @@ from datetime import datetime
 class LLMManager:
     """Manager for local LLM models from Hugging Face"""
     
+    # Version number for config - increment when model list changes
+    CONFIG_VERSION = 2
+    
     def __init__(self, models_dir: str = "./models"):
         self.models_dir = Path(models_dir)
         self.models_dir.mkdir(exist_ok=True)
@@ -17,87 +20,116 @@ class LLMManager:
         self.load_config()
         self.scan_downloaded_models()  # Scan on startup
     
+    def get_default_config(self):
+        """Get default configuration with UNGATED HuggingFace models"""
+        return {
+            'config_version': self.CONFIG_VERSION,
+            'available_models': [
+                {
+                    'id': 'tinyllama-1.1b',
+                    'name': 'TinyLlama 1.1B Chat',
+                    'provider': 'TinyLlama',
+                    'size': '1.1B parameters (~2.2GB)',
+                    'hf_model': 'TinyLlama/TinyLlama-1.1B-Chat-v1.0',
+                    'isActive': False,
+                    'isDownloaded': False,
+                    'capabilities': ['text-generation', 'chat', 'fast']
+                },
+                {
+                    'id': 'stablelm-2-1.6b',
+                    'name': 'StableLM 2 1.6B Chat',
+                    'provider': 'Stability AI',
+                    'size': '1.6B parameters (~3.2GB)',
+                    'hf_model': 'stabilityai/stablelm-2-1_6b-chat',
+                    'isActive': False,
+                    'isDownloaded': False,
+                    'capabilities': ['text-generation', 'chat', 'instruction-following']
+                },
+                {
+                    'id': 'qwen-1.5-0.5b',
+                    'name': 'Qwen 1.5 0.5B Chat',
+                    'provider': 'Alibaba',
+                    'size': '0.5B parameters (~1GB)',
+                    'hf_model': 'Qwen/Qwen1.5-0.5B-Chat',
+                    'isActive': False,
+                    'isDownloaded': False,
+                    'capabilities': ['text-generation', 'chat', 'multilingual', 'tiny']
+                },
+                {
+                    'id': 'openhermes-2.5',
+                    'name': 'OpenHermes 2.5 Mistral 7B',
+                    'provider': 'Teknium',
+                    'size': '7B parameters (~14GB)',
+                    'hf_model': 'teknium/OpenHermes-2.5-Mistral-7B',
+                    'isActive': False,
+                    'isDownloaded': False,
+                    'capabilities': ['text-generation', 'chat', 'reasoning', 'code']
+                },
+                {
+                    'id': 'orca-2-7b',
+                    'name': 'Orca 2 7B',
+                    'provider': 'Microsoft',
+                    'size': '7B parameters (~14GB)',
+                    'hf_model': 'microsoft/Orca-2-7b',
+                    'isActive': False,
+                    'isDownloaded': False,
+                    'capabilities': ['text-generation', 'chat', 'reasoning', 'instruction-following']
+                },
+                {
+                    'id': 'redpajama-3b',
+                    'name': 'RedPajama 3B Instruct',
+                    'provider': 'Together',
+                    'size': '3B parameters (~6GB)',
+                    'hf_model': 'togethercomputer/RedPajama-INCITE-Instruct-3B-v1',
+                    'isActive': False,
+                    'isDownloaded': False,
+                    'capabilities': ['text-generation', 'chat', 'instruction-following']
+                }
+            ],
+            'active_model': None
+        }
+    
     def load_config(self):
-        """Load models configuration"""
+        """Load models configuration with version checking"""
+        from core.logger import log_info, log_warning
+        
         if self.model_config_path.exists():
             with open(self.model_config_path, 'r') as f:
-                self.config = json.load(f)
+                loaded_config = json.load(f)
+            
+            # Check config version
+            config_version = loaded_config.get('config_version', 1)
+            
+            if config_version < self.CONFIG_VERSION:
+                log_warning(f"Config version outdated ({config_version} < {self.CONFIG_VERSION}). Resetting to defaults...", category='model')
+                self.config = self.get_default_config()
+                self.save_config()
+                log_info("Model configuration reset to latest version", category='model')
+            else:
+                self.config = loaded_config
         else:
-            # Default configuration with UNGATED HuggingFace models
-            self.config = {
-                'available_models': [
-                    {
-                        'id': 'tinyllama-1.1b',
-                        'name': 'TinyLlama 1.1B Chat',
-                        'provider': 'TinyLlama',
-                        'size': '1.1B parameters (~2.2GB)',
-                        'hf_model': 'TinyLlama/TinyLlama-1.1B-Chat-v1.0',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'fast']
-                    },
-                    {
-                        'id': 'stablelm-2-1.6b',
-                        'name': 'StableLM 2 1.6B Chat',
-                        'provider': 'Stability AI',
-                        'size': '1.6B parameters (~3.2GB)',
-                        'hf_model': 'stabilityai/stablelm-2-1_6b-chat',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'instruction-following']
-                    },
-                    {
-                        'id': 'qwen-1.5-0.5b',
-                        'name': 'Qwen 1.5 0.5B Chat',
-                        'provider': 'Alibaba',
-                        'size': '0.5B parameters (~1GB)',
-                        'hf_model': 'Qwen/Qwen1.5-0.5B-Chat',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'multilingual', 'tiny']
-                    },
-                    {
-                        'id': 'openhermes-2.5',
-                        'name': 'OpenHermes 2.5 Mistral 7B',
-                        'provider': 'Teknium',
-                        'size': '7B parameters (~14GB)',
-                        'hf_model': 'teknium/OpenHermes-2.5-Mistral-7B',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'reasoning', 'code']
-                    },
-                    {
-                        'id': 'orca-2-7b',
-                        'name': 'Orca 2 7B',
-                        'provider': 'Microsoft',
-                        'size': '7B parameters (~14GB)',
-                        'hf_model': 'microsoft/Orca-2-7b',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'reasoning', 'instruction-following']
-                    },
-                    {
-                        'id': 'redpajama-3b',
-                        'name': 'RedPajama 3B Instruct',
-                        'provider': 'Together',
-                        'size': '3B parameters (~6GB)',
-                        'hf_model': 'togethercomputer/RedPajama-INCITE-Instruct-3B-v1',
-                        'isActive': False,
-                        'isDownloaded': False,
-                        'capabilities': ['text-generation', 'chat', 'instruction-following']
-                    }
-                ],
-                'active_model': None
-            }
+            log_info("No config found, creating default configuration", category='model')
+            self.config = self.get_default_config()
             self.save_config()
     
     def scan_downloaded_models(self):
         """Scan models directory and update download status"""
-        from core.logger import log_info, log_debug
+        from core.logger import log_info, log_debug, log_warning
         
         log_info("Scanning models directory for downloaded models...", category='model')
         
         downloaded_count = 0
+        
+        # First, get list of valid model IDs
+        valid_model_ids = {model['id'] for model in self.config['available_models']}
+        
+        # Scan models directory for unknown folders
+        if self.models_dir.exists():
+            for item in self.models_dir.iterdir():
+                if item.is_dir() and item.name not in valid_model_ids and item.name != 'models_config.json':
+                    log_warning(f"Unknown model directory found: '{item.name}' - This model is not in the current list", category='model')
+        
+        # Check configured models
         for model in self.config['available_models']:
             model_path = self.models_dir / model['id']
             
@@ -114,26 +146,34 @@ class LLMManager:
                     total_size = sum(f.stat().st_size for f in files)
                     size_gb = total_size / (1024**3)
                     
-                    log_info(f"Found: {model['name']} ({size_gb:.2f} GB, {len(files)} files)", category='model')
+                    log_info(f"✓ Found: {model['name']} ({size_gb:.2f} GB, {len(files)} files)", category='model')
                 else:
                     model['isDownloaded'] = False
-                    log_debug(f"Empty directory: {model['name']}", category='model')
+                    log_debug(f"✗ Empty directory: {model['name']}", category='model')
             else:
                 model['isDownloaded'] = False
+                log_debug(f"✗ Not found: {model['name']}", category='model')
         
         # Validate active model still exists
         active_id = self.config.get('active_model')
         if active_id:
             active_model = next((m for m in self.config['available_models'] if m['id'] == active_id), None)
-            if active_model and not active_model['isDownloaded']:
-                log_info(f"Active model '{active_model['name']}' no longer found, clearing...", category='model')
+            if active_model:
+                if not active_model['isDownloaded']:
+                    log_warning(f"Active model '{active_model['name']}' no longer found, clearing...", category='model')
+                    self.config['active_model'] = None
+                    for m in self.config['available_models']:
+                        m['isActive'] = False
+            else:
+                log_warning(f"Active model ID '{active_id}' not in model list, clearing...", category='model')
                 self.config['active_model'] = None
-                for m in self.config['available_models']:
-                    m['isActive'] = False
         
         self.save_config()
         
-        log_info(f"Model scan complete: {downloaded_count}/{len(self.config['available_models'])} models downloaded", category='model')
+        if downloaded_count > 0:
+            log_info(f"✓ Model scan complete: {downloaded_count}/{len(self.config['available_models'])} models downloaded", category='model')
+        else:
+            log_info(f"Model scan complete: No models downloaded yet", category='model')
     
     def save_config(self):
         """Save models configuration"""

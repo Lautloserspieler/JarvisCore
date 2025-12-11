@@ -1,86 +1,159 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, Trash2, Search, Clock, Database, Timer, Sparkles, Construction } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Brain, Trash2, RefreshCw } from "lucide-react";
+import { apiRequest } from "@/lib/api";
+
+interface Memory {
+  id: string;
+  type: string;
+  content: string;
+  timestamp: string;
+  relevance: number;
+}
+
+interface MemoryStats {
+  totalMemories: number;
+  byType: Record<string, number>;
+  storageUsed: number;
+  lastUpdated: string;
+}
 
 const MemoryTab = () => {
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [stats, setStats] = useState<MemoryStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMemories = async () => {
+      try {
+        const [memoriesData, statsData] = await Promise.all([
+          apiRequest<Memory[]>('/api/memory'),
+          apiRequest<MemoryStats>('/api/memory/stats')
+        ]);
+        setMemories(memoriesData);
+        setStats(statsData);
+      } catch (error) {
+        console.error('Fehler beim Laden des Gedächtnisses:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMemories();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[600px]">
+        <div className="text-muted-foreground">Lade Gedächtnis...</div>
+      </div>
+    );
+  }
+
+  const storagePercentage = stats ? (stats.storageUsed / 10000000) * 100 : 0;
+
   return (
-    <div className="p-4 space-y-4">
-      <Card className="border-yellow-500/50 bg-yellow-500/10">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-2">
-            <Construction className="h-5 w-5 text-yellow-500" />
-            <p className="text-sm">Memory management features are currently being developed. Preview mode available.</p>
+    <div className="space-y-6">
+      {/* Memory Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="holo-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Gesamte Erinnerungen</CardTitle>
+            <Brain className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.totalMemories || 0}</div>
+            <p className="text-xs text-muted-foreground mt-2">Gespeicherte Einträge</p>
+          </CardContent>
+        </Card>
+
+        <Card className="holo-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Speichernutzung</CardTitle>
+            <Brain className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats ? (stats.storageUsed / 1024).toFixed(1) : 0} KB
+            </div>
+            <Progress value={storagePercentage} className="mt-2" />
+          </CardContent>
+        </Card>
+
+        <Card className="holo-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Letzte Aktualisierung</CardTitle>
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm font-bold">
+              {stats?.lastUpdated ? new Date(stats.lastUpdated).toLocaleTimeString('de-DE') : 'N/A'}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Heute</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Memory Types */}
+      {stats && (
+        <Card className="holo-panel">
+          <CardHeader>
+            <CardTitle>Erinnerungstypen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {Object.entries(stats.byType).map(([type, count]) => (
+                <div key={type} className="flex items-center justify-between">
+                  <span className="text-sm capitalize">{type}</span>
+                  <Badge variant="outline">{count}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Memories */}
+      <Card className="holo-panel">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Kürzliche Erinnerungen</CardTitle>
+              <CardDescription>Zuletzt gespeicherte Informationen</CardDescription>
+            </div>
+            <Button variant="outline" size="sm">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Alle löschen
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {memories.map((memory) => (
+              <div key={memory.id} className="p-4 rounded-lg border border-border/40 bg-card/50">
+                <div className="flex items-start justify-between mb-2">
+                  <Badge variant="outline" className="text-xs">
+                    {memory.type}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(memory.timestamp).toLocaleString('de-DE')}
+                  </span>
+                </div>
+                <p className="text-sm">{memory.content}</p>
+                <div className="mt-2">
+                  <Progress value={memory.relevance * 100} className="h-1" />
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Relevanz: {(memory.relevance * 100).toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
-
-      <Tabs defaultValue="short-term" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="short-term">
-            <Clock className="h-4 w-4 mr-2" />
-            Short-term
-          </TabsTrigger>
-          <TabsTrigger value="long-term">
-            <Database className="h-4 w-4 mr-2" />
-            Long-term
-          </TabsTrigger>
-          <TabsTrigger value="semantic">
-            <Sparkles className="h-4 w-4 mr-2" />
-            Semantic
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="short-term" className="space-y-4">
-          <div className="flex gap-2">
-            <Input placeholder="Search memory..." />
-            <Button variant="outline">
-              <Search className="h-4 w-4" />
-            </Button>
-            <Button variant="outline">
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button variant="destructive">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span>Memory Entry {i}</span>
-                    <span className="text-xs text-muted-foreground">2 minutes ago</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">{"memory".content}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="long-term" className="space-y-4">
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Long-term memory storage coming soon</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="semantic" className="space-y-4">
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Vector memory search coming soon</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 };

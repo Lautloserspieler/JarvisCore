@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
 import threading
-import json
 
 class LogBuffer:
     """Thread-safe log buffer for real-time log access"""
@@ -147,13 +146,14 @@ def setup_logger(name: str = 'jarvis', log_file: str = 'jarvis.log', console_lev
     log_path = Path('logs')
     log_path.mkdir(exist_ok=True)
     
+    # Get or create logger
     logger = logging.getLogger(name)
+    
+    # Only setup once
+    if logger.handlers:
+        return logger
+    
     logger.setLevel(logging.DEBUG)
-    
-    # Remove existing handlers
-    logger.handlers.clear()
-    
-    # Prevent propagation to root logger
     logger.propagate = False
     
     # === FILE HANDLER (DETAILED) ===
@@ -181,11 +181,15 @@ def setup_logger(name: str = 'jarvis', log_file: str = 'jarvis.log', console_lev
     buffer_handler.setLevel(logging.DEBUG)
     logger.addHandler(buffer_handler)
     
-    # Initial log entries
+    # Force flush initial logs
     logger.info("="*60, extra={'category': 'system'})
     logger.info("JARVIS CORE SYSTEM STARTED", extra={'category': 'system'})
     logger.info(f"Log file: {log_path / log_file}", extra={'category': 'system'})
     logger.info("="*60, extra={'category': 'system'})
+    
+    # Force flush all handlers
+    for handler in logger.handlers:
+        handler.flush()
     
     return logger
 
@@ -195,12 +199,20 @@ logger = setup_logger()
 # Helper functions for quick logging
 def log_info(message: str, category: str = 'system'):
     logger.info(message, extra={'category': category})
+    for handler in logger.handlers:
+        handler.flush()
 
 def log_error(message: str, category: str = 'system', exc_info=False):
     logger.error(message, extra={'category': category}, exc_info=exc_info)
+    for handler in logger.handlers:
+        handler.flush()
 
 def log_warning(message: str, category: str = 'system'):
     logger.warning(message, extra={'category': category})
+    for handler in logger.handlers:
+        handler.flush()
 
 def log_debug(message: str, category: str = 'system'):
     logger.debug(message, extra={'category': category})
+    for handler in logger.handlers:
+        handler.flush()

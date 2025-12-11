@@ -1,7 +1,6 @@
-import Index from './pages/Index'
+// #web UI - App Component
+// Placeholder for new UI implementation
 
-function App() {
-  return <Index />
+export default function App() {
+  return null;
 }
-
-export default App

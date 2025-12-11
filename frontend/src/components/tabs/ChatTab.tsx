@@ -16,14 +16,14 @@ const ChatTab = ({ onStateChange }: ChatTabProps) => {
   const [isListening, setIsListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll nach unten bei neuen Nachrichten
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Update Core state based on activity
+  // Core-Status basierend auf Aktivität aktualisieren
   useEffect(() => {
     if (isListening) {
       onStateChange("listening");
@@ -31,7 +31,6 @@ const ChatTab = ({ onStateChange }: ChatTabProps) => {
       onStateChange("processing");
     } else if (messages.length > 0 && messages[messages.length - 1]?.isUser === false) {
       onStateChange("speaking");
-      // Return to idle after "speaking"
       const timer = setTimeout(() => onStateChange("idle"), 2000);
       return () => clearTimeout(timer);
     } else {
@@ -45,8 +44,7 @@ const ChatTab = ({ onStateChange }: ChatTabProps) => {
     try {
       await sendMessage(text);
     } catch (error) {
-      console.error("Failed to send message:", error);
-      // Could show error toast here
+      console.error("Nachricht konnte nicht gesendet werden:", error);
     }
   };
 
@@ -56,27 +54,27 @@ const ChatTab = ({ onStateChange }: ChatTabProps) => {
 
   return (
     <div className="flex flex-col h-[600px]">
-      {/* Connection Status Warning */}
+      {/* Verbindungsstatus-Warnung */}
       {!isConnected && (
         <Alert variant="destructive" className="mb-4">
           <WifiOff className="h-4 w-4" />
           <AlertDescription>
-            WebSocket disconnected. Messages will be sent via REST API. Reconnecting...
+            WebSocket getrennt. Nachrichten werden über REST API gesendet. Verbinde neu...
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Chat Messages */}
+      {/* Chat-Nachrichten */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-muted-foreground">Loading messages...</div>
+            <div className="text-muted-foreground">Lade Nachrichten...</div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-muted-foreground">
-              <p className="text-lg mb-2">Welcome to JARVIS</p>
-              <p className="text-sm">Start a conversation to begin</p>
+              <p className="text-lg mb-2">Willkommen bei JARVIS</p>
+              <p className="text-sm">Starten Sie eine Konversation</p>
             </div>
           </div>
         ) : (
@@ -85,7 +83,7 @@ const ChatTab = ({ onStateChange }: ChatTabProps) => {
           ))
         )}
         
-        {/* Typing Indicator */}
+        {/* Tipp-Indikator */}
         {isTyping && (
           <div className="flex items-center gap-2 p-4">
             <div className="flex gap-1">
@@ -93,12 +91,12 @@ const ChatTab = ({ onStateChange }: ChatTabProps) => {
               <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
               <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
-            <span className="text-sm text-muted-foreground">JARVIS is thinking...</span>
+            <span className="text-sm text-muted-foreground">JARVIS denkt nach...</span>
           </div>
         )}
       </ScrollArea>
 
-      {/* Chat Input */}
+      {/* Chat-Eingabe */}
       <ChatInput 
         onSend={handleSendMessage} 
         onToggleListening={handleToggleListening}

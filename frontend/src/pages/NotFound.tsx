@@ -14,25 +14,25 @@ const NotFound = () => {
         </div>
         
         <h1 className="text-6xl font-display font-bold glow-text mb-4">404</h1>
-        <h2 className="text-2xl font-display font-semibold mb-4">System Error</h2>
+        <h2 className="text-2xl font-display font-semibold mb-4">Systemfehler</h2>
         
         <p className="text-muted-foreground mb-6">
-          The requested resource could not be located in the JARVIS Core System.
+          Die angeforderte Ressource konnte im JARVIS Kernsystem nicht gefunden werden.
         </p>
         
         <div className="flex flex-col gap-2">
           <Button onClick={() => navigate("/")} className="w-full gap-2">
             <Home className="h-4 w-4" />
-            Return to Main Interface
+            Zurück zur Hauptoberfläche
           </Button>
           <Button variant="outline" onClick={() => window.history.back()} className="w-full">
-            Go Back
+            Zurück
           </Button>
         </div>
         
         <div className="mt-6 pt-6 border-t border-border/40">
           <p className="text-xs text-muted-foreground font-mono">
-            Error Code: 404_RESOURCE_NOT_FOUND
+            Fehlercode: 404_RESSOURCE_NICHT_GEFUNDEN
           </p>
         </div>
       </Card>

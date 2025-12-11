@@ -40,7 +40,7 @@ const ChatInput = ({ onSend, onToggleListening, isListening, disabled = false }:
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder={disabled ? "JARVIS is processing..." : "Type your message... (Enter to send, Shift+Enter for new line)"}
+          placeholder={disabled ? "JARVIS verarbeitet..." : "Nachricht eingeben... (Enter zum Senden, Shift+Enter für neue Zeile)"}
           className="min-h-[80px] resize-none"
           disabled={disabled}
         />
@@ -51,6 +51,7 @@ const ChatInput = ({ onSend, onToggleListening, isListening, disabled = false }:
             size="icon"
             className={isListening ? "bg-red-500 hover:bg-red-600" : ""}
             disabled={disabled}
+            title="Spracheingabe"
           >
             <Mic className="h-4 w-4" />
           </Button>
@@ -58,6 +59,7 @@ const ChatInput = ({ onSend, onToggleListening, isListening, disabled = false }:
             onClick={handleSend} 
             size="icon"
             disabled={!input.trim() || disabled}
+            title="Senden"
           >
             <Send className="h-4 w-4" />
           </Button>

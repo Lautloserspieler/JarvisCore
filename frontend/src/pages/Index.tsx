@@ -20,15 +20,15 @@ const Index = () => {
   // WebSocket connection management
   const { isConnected } = useWebSocket({
     onConnect: () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket verbunden');
       setConnectionStatus('connected');
     },
     onDisconnect: () => {
-      console.log('WebSocket disconnected');
+      console.log('WebSocket getrennt');
       setConnectionStatus('disconnected');
     },
     onError: (error) => {
-      console.error('WebSocket error:', error);
+      console.error('WebSocket Fehler:', error);
       setConnectionStatus('error');
     },
   });
@@ -39,20 +39,27 @@ const Index = () => {
     }
   }, [isConnected]);
 
+  const stateLabels: Record<CoreState, string> = {
+    idle: "BEREIT",
+    listening: "HÖRE ZU",
+    processing: "VERARBEITE",
+    speaking: "ANTWORTE"
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header with JARVIS Core */}
+      {/* Header mit JARVIS Core */}
       <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <JarvisCore state={coreState} isActive={true} size="sm" />
             <div>
               <h1 className="text-2xl font-display font-bold glow-text">JARVIS</h1>
-              <p className="text-sm text-muted-foreground">AI Assistant Core System</p>
+              <p className="text-sm text-muted-foreground">KI-Assistent Kernsystem</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {/* Connection Status */}
+            {/* Verbindungsstatus */}
             <div className="flex items-center gap-2">
               <div className={`h-2 w-2 rounded-full ${
                 connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
@@ -60,29 +67,29 @@ const Index = () => {
               }`} />
               <span className="text-xs font-mono text-muted-foreground">
                 {connectionStatus === 'connected' ? 'ONLINE' :
-                 connectionStatus === 'error' ? 'ERROR' : 'CONNECTING'}
+                 connectionStatus === 'error' ? 'FEHLER' : 'VERBINDE'}
               </span>
             </div>
             {/* Status Badge */}
             <Badge variant="outline" className="font-mono">
-              {coreState.toUpperCase()}
+              {stateLabels[coreState]}
             </Badge>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Hauptinhalt */}
       <main className="flex-1 container mx-auto px-4 py-6">
         <Card className="holo-panel">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-7 lg:w-auto">
               <TabsTrigger value="chat">Chat</TabsTrigger>
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="memory">Memory</TabsTrigger>
-              <TabsTrigger value="models">Models</TabsTrigger>
+              <TabsTrigger value="memory">Gedächtnis</TabsTrigger>
+              <TabsTrigger value="models">Modelle</TabsTrigger>
               <TabsTrigger value="plugins">Plugins</TabsTrigger>
-              <TabsTrigger value="logs">Logs</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
+              <TabsTrigger value="logs">Protokolle</TabsTrigger>
+              <TabsTrigger value="settings">Einstellungen</TabsTrigger>
             </TabsList>
 
             <TabsContent value="chat" className="mt-4">
@@ -119,7 +126,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border/40 py-4">
         <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
-          <p>JARVIS Core System v1.0.0 | Powered by Advanced AI Technology</p>
+          <p>JARVIS Kernsystem v1.0.0 | Angetrieben durch fortschrittliche KI-Technologie</p>
         </div>
       </footer>
     </div>

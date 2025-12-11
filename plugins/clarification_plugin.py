@@ -63,7 +63,8 @@ class ClarificationPlugin(ConversationPlugin):
             self._pending_command_id = None
             self._pending_command_text = None
 
-        needs_clarification, prompt = self.module.needs_clarification(command_id, message, history)
+        # Fix: needs_clarification returns a bool, not a tuple
+        needs_clarification = self.module.needs_clarification(command_id, message, history)
         if not needs_clarification:
             if self._pending_command_id and command_id == self._pending_command_id:
                 self.module.clear_pending_command(self._pending_command_id)
@@ -71,7 +72,8 @@ class ClarificationPlugin(ConversationPlugin):
                 self._pending_command_text = None
             return None
 
-        clarification_prompt = prompt or random.choice(self._suggestion_templates).format(command=message)
+        # Generate clarification prompt
+        clarification_prompt = random.choice(self._suggestion_templates).format(command=message)
         self.module.store_pending_command(
             command_id,
             message,

@@ -15,10 +15,10 @@ if sys.platform == 'win32':
 
 app = FastAPI(title="JARVIS Core API", version="1.0.0")
 
-# CORS Configuration
+# CORS Configuration - Updated to port 5000
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://localhost:5173"],
+    allow_origins=["http://localhost:5000", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -473,4 +473,4 @@ if __name__ == "__main__":
     ║         Just A Rather Very Intelligent System        ║
     ╚══════════════════════════════════════════════════════╝
     """)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=5050)

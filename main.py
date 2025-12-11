@@ -29,10 +29,10 @@ class Colors:
 def print_banner():
     """Print JARVIS ASCII banner"""
     banner = f"""{Colors.CYAN}{Colors.BOLD}
-    ╔═══════════════════════════════════════════════════════╗
+    ╔══════════════════════════════════════════════════════╗
     ║              JARVIS CORE SYSTEM v1.0.0               ║
     ║         Just A Rather Very Intelligent System        ║
-    ╚═══════════════════════════════════════════════════════╝
+    ╚══════════════════════════════════════════════════════╝
     {Colors.END}"""
     print(banner)
 
@@ -124,7 +124,7 @@ class ProcessManager:
             "-m", "uvicorn",
             "main:app",
             "--host", "0.0.0.0",
-            "--port", "8000",
+            "--port", "5050",
             "--reload",
             "--log-level", "info"
         ]
@@ -146,7 +146,7 @@ class ProcessManager:
         reader.start()
         self.readers.append(reader)
         
-        print(f"{Colors.GREEN}✓{Colors.END} Backend started on {Colors.CYAN}http://localhost:8000{Colors.END}")
+        print(f"{Colors.GREEN}✓{Colors.END} Backend started on {Colors.CYAN}http://localhost:5050{Colors.END}")
         
         return process
     
@@ -156,9 +156,9 @@ class ProcessManager:
         
         # Use different commands based on OS
         if sys.platform == "win32":
-            frontend_cmd = ["npm.cmd", "run", "dev"]
+            frontend_cmd = ["npm.cmd", "run", "dev", "--", "--port", "5000"]
         else:
-            frontend_cmd = ["npm", "run", "dev"]
+            frontend_cmd = ["npm", "run", "dev", "--", "--port", "5000"]
         
         process = subprocess.Popen(
             frontend_cmd,
@@ -177,19 +177,19 @@ class ProcessManager:
         reader.start()
         self.readers.append(reader)
         
-        print(f"{Colors.GREEN}✓{Colors.END} Frontend started on {Colors.CYAN}http://localhost:8080{Colors.END}")
+        print(f"{Colors.GREEN}✓{Colors.END} Frontend started on {Colors.CYAN}http://localhost:5000{Colors.END}")
         
         return process
     
     def monitor_processes(self):
         """Monitor process health"""
         print(f"\n{Colors.BOLD}{Colors.GREEN}✓ JARVIS System Online!{Colors.END}")
-        print(f"{Colors.BOLD}─" * 60 + f"{Colors.END}")
-        print(f"{Colors.CYAN}🌐 Frontend:{Colors.END}     http://localhost:8080")
-        print(f"{Colors.CYAN}🔧 Backend API:{Colors.END}  http://localhost:8000")
-        print(f"{Colors.CYAN}📚 API Docs:{Colors.END}     http://localhost:8000/docs")
-        print(f"{Colors.CYAN}🔌 WebSocket:{Colors.END}    ws://localhost:8000/ws")
-        print(f"{Colors.BOLD}─" * 60 + f"{Colors.END}")
+        print(f"{Colors.BOLD}" + "─" * 60 + f"{Colors.END}")
+        print(f"{Colors.CYAN}🌐 Frontend:{Colors.END}     http://localhost:5000")
+        print(f"{Colors.CYAN}🔧 Backend API:{Colors.END}  http://localhost:5050")
+        print(f"{Colors.CYAN}📚 API Docs:{Colors.END}     http://localhost:5050/docs")
+        print(f"{Colors.CYAN}🔌 WebSocket:{Colors.END}    ws://localhost:5050/ws")
+        print(f"{Colors.BOLD}" + "─" * 60 + f"{Colors.END}")
         print(f"{Colors.YELLOW}🔑 Press Ctrl+C to shutdown{Colors.END}\n")
         
         self.running = True

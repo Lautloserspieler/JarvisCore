@@ -3,7 +3,7 @@ import './App.css'
 
 function App() {
   const [status, setStatus] = useState<string>('Connecting...')
-  const [messages, setMessages] = useState<Array<{type: string, text: string}>>([]
+  const [messages, setMessages] = useState<Array<{type: string, text: string}>>([])
   const [inputValue, setInputValue] = useState('')
   const [ws, setWs] = useState<WebSocket | null>(null)
 

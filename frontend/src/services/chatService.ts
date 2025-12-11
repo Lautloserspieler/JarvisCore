@@ -28,31 +28,31 @@ export interface SendMessageResponse {
 
 class ChatService {
   async getSessions(): Promise<ChatSession[]> {
-    return apiService.get<ChatSession[]>('/chat/sessions');
+    return apiService.get<ChatSession[]>('/api/chat/sessions');
   }
 
   async getSession(sessionId: string): Promise<ChatSession> {
-    return apiService.get<ChatSession>(`/chat/sessions/${sessionId}`);
+    return apiService.get<ChatSession>(`/api/chat/sessions/${sessionId}`);
   }
 
   async createSession(title?: string): Promise<ChatSession> {
-    return apiService.post<ChatSession>('/chat/sessions', { title });
+    return apiService.post<ChatSession>('/api/chat/sessions', { title });
   }
 
   async deleteSession(sessionId: string): Promise<void> {
-    return apiService.delete(`/chat/sessions/${sessionId}`);
+    return apiService.delete(`/api/chat/sessions/${sessionId}`);
   }
 
   async sendMessage(data: SendMessageRequest): Promise<SendMessageResponse> {
-    return apiService.post<SendMessageResponse>('/chat/messages', data);
+    return apiService.post<SendMessageResponse>('/api/chat/messages', data);
   }
 
   async getMessages(sessionId: string): Promise<Message[]> {
-    return apiService.get<Message[]>(`/chat/sessions/${sessionId}/messages`);
+    return apiService.get<Message[]>(`/api/chat/sessions/${sessionId}/messages`);
   }
 
   async clearHistory(sessionId: string): Promise<void> {
-    return apiService.delete(`/chat/sessions/${sessionId}/messages`);
+    return apiService.delete(`/api/chat/sessions/${sessionId}/messages`);
   }
 }
 

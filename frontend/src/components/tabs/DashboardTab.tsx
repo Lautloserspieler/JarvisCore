@@ -5,58 +5,83 @@ import { Badge } from "@/components/ui/badge";
 import { Activity, Cpu, HardDrive, Zap, Database, Globe } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 
-interface SystemStats {
-  cpu: number;
-  ram: { used: number; total: number };
-  gpu: number;
-  storage: { used: number; total: number };
-  network: string;
+interface SystemInfo {
+  cpu: {
+    cores: number;
+    threads: number;
+    utilization: number;
+    name: string;
+  };
+  gpu: {
+    name: string;
+    utilization: number;
+    memory_used: number;
+    memory_total: number;
+    available: boolean;
+  };
+  memory: {
+    total: number;
+    used: number;
+    available: number;
+    percent: number;
+  };
+  disk: {
+    total: number;
+    used: number;
+    free: number;
+    percent: number;
+  };
+  network: {
+    status: string;
+    interfaces: number;
+  };
   uptime: string;
 }
 
 const DashboardTab = () => {
-  const [stats, setStats] = useState<SystemStats | null>(null);
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchSystemInfo = async () => {
       try {
-        const data = await apiRequest<any>('/api/health');
-        // Parse stats from health endpoint or create default
-        setStats({
-          cpu: 45,
-          ram: { used: 24.8, total: 64 },
-          gpu: 38,
-          storage: { used: 2.4, total: 4 },
-          network: 'Online',
-          uptime: '14h 23m'
-        });
+        const data = await apiRequest<{ system: SystemInfo }>('/api/system/info');
+        setSystemInfo(data.system || data as any);
+        setError(null);
       } catch (error) {
-        console.error('Fehler beim Laden der Systemstatus:', error);
+        console.error('Fehler beim Laden der Systeminfos:', error);
+        setError('Verbindung zum Backend fehlgeschlagen');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
-    const interval = setInterval(fetchStats, 5000);
+    fetchSystemInfo();
+    const interval = setInterval(fetchSystemInfo, 3000);
     return () => clearInterval(interval);
   }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[600px]">
-        <div className="text-muted-foreground">Lade Dashboard...</div>
+        <div className="text-muted-foreground">Lade System-Informationen...</div>
       </div>
     );
   }
 
-  const ramPercentage = stats ? (stats.ram.used / stats.ram.total) * 100 : 0;
-  const storagePercentage = stats ? (stats.storage.used / stats.storage.total) * 100 : 0;
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[600px]">
+        <div className="text-destructive">{error}</div>
+      </div>
+    );
+  }
+
+  if (!systemInfo) return null;
 
   return (
     <div className="space-y-6">
-      {/* System Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -64,9 +89,11 @@ const DashboardTab = () => {
             <Cpu className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.cpu}%</div>
-            <Progress value={stats?.cpu} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">8 Kerne aktiv</p>
+            <div className="text-2xl font-bold">{systemInfo.cpu.utilization.toFixed(1)}%</div>
+            <Progress value={systemInfo.cpu.utilization} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-2">
+              {systemInfo.cpu.cores} Kerne / {systemInfo.cpu.threads} Threads
+            </p>
           </CardContent>
         </Card>
 
@@ -77,22 +104,26 @@ const DashboardTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.ram.used}GB / {stats?.ram.total}GB
+              {systemInfo.memory.used}GB / {systemInfo.memory.total}GB
             </div>
-            <Progress value={ramPercentage} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">{Math.round(ramPercentage)}% belegt</p>
+            <Progress value={systemInfo.memory.percent} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-2">
+              {systemInfo.memory.percent.toFixed(1)}% belegt
+            </p>
           </CardContent>
         </Card>
 
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">GPU Auslastung</CardTitle>
+            <CardTitle className="text-sm font-medium">GPU</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.gpu}%</div>
-            <Progress value={stats?.gpu} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">NVIDIA RTX 4090</p>
+            <div className="text-2xl font-bold">
+              {systemInfo.gpu.available ? `${systemInfo.gpu.utilization.toFixed(1)}%` : 'N/A'}
+            </div>
+            <Progress value={systemInfo.gpu.utilization} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-2">{systemInfo.gpu.name}</p>
           </CardContent>
         </Card>
 
@@ -103,10 +134,12 @@ const DashboardTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.storage.used}TB / {stats?.storage.total}TB
+              {systemInfo.disk.used.toFixed(1)}GB / {systemInfo.disk.total.toFixed(1)}GB
             </div>
-            <Progress value={storagePercentage} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">{Math.round(storagePercentage)}% belegt</p>
+            <Progress value={systemInfo.disk.percent} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-2">
+              {systemInfo.disk.percent.toFixed(1)}% belegt
+            </p>
           </CardContent>
         </Card>
 
@@ -116,8 +149,10 @@ const DashboardTab = () => {
             <Globe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.network}</div>
-            <Badge variant="outline" className="mt-2">250 Mbps</Badge>
+            <div className="text-2xl font-bold">{systemInfo.network.status}</div>
+            <Badge variant="outline" className="mt-2">
+              {systemInfo.network.interfaces} Schnittstellen
+            </Badge>
             <p className="text-xs text-muted-foreground mt-2">Stabile Verbindung</p>
           </CardContent>
         </Card>
@@ -128,16 +163,15 @@ const DashboardTab = () => {
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.uptime}</div>
+            <div className="text-2xl font-bold">{systemInfo.uptime}</div>
             <Badge variant="outline" className="mt-2 bg-green-500/10 text-green-500 border-green-500/20">
-              Operational
+              Online
             </Badge>
             <p className="text-xs text-muted-foreground mt-2">Alle Systeme aktiv</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Active Services */}
       <Card className="holo-panel">
         <CardHeader>
           <CardTitle>Aktive Dienste</CardTitle>

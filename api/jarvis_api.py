@@ -85,6 +85,10 @@ class CommandRequest(BaseModel):
     command: str
     mode: Optional[str] = "text"
 
+class ChatMessageRequest(BaseModel):
+    text: str
+    stream: Optional[bool] = False
+
 class LLMActionRequest(BaseModel):
     action: str  # load, unload, download
     model: Optional[str] = None
@@ -298,6 +302,36 @@ async def execute_command(request: CommandRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/chat/message")
+async def chat_message(request: ChatMessageRequest):
+    """🔴 FIX: Chat endpoint - sends message to command processor"""
+    try:
+        jarvis = get_jarvis()
+        processor = getattr(jarvis, "command_processor", None)
+        if not processor:
+            raise HTTPException(status_code=503, detail="Command Processor nicht verfügbar")
+        
+        print(f"[API] Processing chat message: {request.text}")
+        
+        # 🔴 Run in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            _executor,
+            processor.process_command,
+            request.text
+        )
+        
+        print(f"[API] Chat response: {response}")
+        
+        return {
+            "success": True,
+            "response": response,
+            "text": response
+        }
+    except Exception as e:
+        print(f"[API] Chat error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/settings")
 async def save_setting(request: SettingRequest):
     """Speichert eine Einstellung"""
@@ -409,6 +443,42 @@ async def websocket_endpoint(websocket: WebSocket):
                         "message": str(e)
                     })
             
+            elif msg_type == "chat":
+                chat_text = message.get("text", "")
+                print(f"[WS] Processing chat: {chat_text}")
+                
+                try:
+                    jarvis = get_jarvis()
+                    processor = getattr(jarvis, "command_processor", None)
+                    if processor:
+                        # 🔴 FIX: Run blocking command in thread pool
+                        loop = asyncio.get_event_loop()
+                        response = await loop.run_in_executor(
+                            _executor,
+                            processor.process_command,
+                            chat_text
+                        )
+                        
+                        print(f"[WS] Chat response: {response}")
+                        
+                        await websocket.send_json({
+                            "type": "chat_response",
+                            "text": response,
+                            "response": response
+                        })
+                    else:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "Command Processor nicht verfügbar"
+                        })
+                        
+                except Exception as e:
+                    print(f"[WS] Chat error: {e}")
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": str(e)
+                    })
+    
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         print("❌ WebSocket disconnected")

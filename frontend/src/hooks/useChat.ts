@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import chatService, { Message, ChatSession } from '@/services/chatService';
-import useWebSocket from './useWebSocket';
+import { useWebSocket } from './useWebSocket';
 
 export const useChat = (sessionId?: string) => {
   const queryClient = useQueryClient();
@@ -53,7 +53,7 @@ export const useChat = (sessionId?: string) => {
 
       // Send via WebSocket if connected, otherwise use API
       if (isConnected()) {
-        send('chat_message', { message, sessionId });
+        send({ type: 'chat_message', message, sessionId });
         return Promise.resolve({ messageId: userMessage.id, response: '', sessionId: sessionId || '' });
       } else {
         return chatService.sendMessage({ message, sessionId });

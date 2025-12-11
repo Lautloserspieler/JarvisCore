@@ -15,6 +15,7 @@ class LLMManager:
         self.model_config_path = self.models_dir / "models_config.json"
         self.download_progress = {}
         self.load_config()
+        self.scan_downloaded_models()  # Scan on startup
     
     def load_config(self):
         """Load models configuration"""
@@ -90,17 +91,66 @@ class LLMManager:
             }
             self.save_config()
     
+    def scan_downloaded_models(self):
+        """Scan models directory and update download status"""
+        from core.logger import log_info, log_debug
+        
+        log_info("Scanning models directory for downloaded models...", category='model')
+        
+        downloaded_count = 0
+        for model in self.config['available_models']:
+            model_path = self.models_dir / model['id']
+            
+            # Check if model directory exists and has files
+            if model_path.exists():
+                # Count files (excluding hidden files and directories)
+                files = [f for f in model_path.iterdir() if f.is_file() and not f.name.startswith('.')]
+                
+                if len(files) > 0:
+                    model['isDownloaded'] = True
+                    downloaded_count += 1
+                    
+                    # Calculate size
+                    total_size = sum(f.stat().st_size for f in files)
+                    size_gb = total_size / (1024**3)
+                    
+                    log_info(f"Found: {model['name']} ({size_gb:.2f} GB, {len(files)} files)", category='model')
+                else:
+                    model['isDownloaded'] = False
+                    log_debug(f"Empty directory: {model['name']}", category='model')
+            else:
+                model['isDownloaded'] = False
+        
+        # Validate active model still exists
+        active_id = self.config.get('active_model')
+        if active_id:
+            active_model = next((m for m in self.config['available_models'] if m['id'] == active_id), None)
+            if active_model and not active_model['isDownloaded']:
+                log_info(f"Active model '{active_model['name']}' no longer found, clearing...", category='model')
+                self.config['active_model'] = None
+                for m in self.config['available_models']:
+                    m['isActive'] = False
+        
+        self.save_config()
+        
+        log_info(f"Model scan complete: {downloaded_count}/{len(self.config['available_models'])} models downloaded", category='model')
+    
     def save_config(self):
         """Save models configuration"""
         with open(self.model_config_path, 'w') as f:
             json.dump(self.config, f, indent=2)
     
     def get_all_models(self) -> List[Dict[str, Any]]:
-        """Get all available models"""
-        # Check if models are actually downloaded
+        """Get all available models with current download status"""
+        # Re-check download status on every get (in case files were manually added/removed)
         for model in self.config['available_models']:
             model_path = self.models_dir / model['id']
-            model['isDownloaded'] = model_path.exists() and any(model_path.iterdir())
+            if model_path.exists():
+                files = [f for f in model_path.iterdir() if f.is_file() and not f.name.startswith('.')]
+                model['isDownloaded'] = len(files) > 0
+            else:
+                model['isDownloaded'] = False
+        
         return self.config['available_models']
     
     def get_active_model(self) -> Optional[Dict[str, Any]]:
@@ -130,11 +180,13 @@ class LLMManager:
         
         # Check if already downloaded
         model_path = self.models_dir / model_id
-        if model_path.exists() and any(model_path.iterdir()):
-            log_warning(f"Model {model['name']} already downloaded", category='model')
-            model['isDownloaded'] = True
-            self.save_config()
-            return {'success': True, 'message': f"{model['name']} bereits heruntergeladen"}
+        if model_path.exists():
+            files = [f for f in model_path.iterdir() if f.is_file() and not f.name.startswith('.')]
+            if len(files) > 0:
+                log_warning(f"Model {model['name']} already downloaded", category='model')
+                model['isDownloaded'] = True
+                self.save_config()
+                return {'success': True, 'message': f"{model['name']} bereits heruntergeladen"}
         
         # Mark as downloading
         self.download_progress[model_id] = {'progress': 0, 'status': 'downloading'}
@@ -145,7 +197,7 @@ class LLMManager:
                 from huggingface_hub import snapshot_download
                 log_info("Using huggingface_hub for download", category='model')
             except ImportError:
-                log_error("huggingface_hub not installed. Installing...", category='model')
+                log_info("huggingface_hub not installed. Installing...", category='model')
                 import subprocess
                 subprocess.check_call(["pip", "install", "huggingface_hub"])
                 from huggingface_hub import snapshot_download
@@ -163,8 +215,8 @@ class LLMManager:
                 local_dir=str(model_path),
                 local_dir_use_symlinks=False,
                 resume_download=True,
-                allow_patterns=["*.json", "*.safetensors", "*.model", "*.txt", "tokenizer*"],  # Only download necessary files
-                ignore_patterns=["*.msgpack", "*.h5", "*.ot"]  # Skip unnecessary formats
+                allow_patterns=["*.json", "*.safetensors", "*.model", "*.txt", "tokenizer*"],
+                ignore_patterns=["*.msgpack", "*.h5", "*.ot"]
             )
             
             # Mark as downloaded
@@ -217,8 +269,13 @@ class LLMManager:
         
         # Check if downloaded
         model_path = self.models_dir / model_id
-        if not (model_path.exists() and any(model_path.iterdir())):
+        if not model_path.exists():
             log_warning(f"Cannot load {model['name']} - not downloaded", category='model')
+            return False
+        
+        files = [f for f in model_path.iterdir() if f.is_file() and not f.name.startswith('.')]
+        if len(files) == 0:
+            log_warning(f"Cannot load {model['name']} - model directory is empty", category='model')
             return False
         
         # Unload current model

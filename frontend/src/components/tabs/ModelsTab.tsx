@@ -9,8 +9,10 @@ interface Model {
   id: string;
   name: string;
   provider: string;
-  type: string;
+  type?: string;
+  size?: string;
   isActive: boolean;
+  isDownloaded?: boolean;
   capabilities: string[];
 }
 
@@ -18,18 +20,22 @@ const ModelsTab = () => {
   const [models, setModels] = useState<Model[]>([]);
   const [activeModel, setActiveModel] = useState<Model | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchModels = async () => {
       try {
         const [modelsData, activeData] = await Promise.all([
           apiRequest<Model[]>('/api/models'),
-          apiRequest<Model>('/api/models/active')
+          apiRequest<Model>('/api/models/active').catch(() => null)
         ]);
-        setModels(modelsData);
+        setModels(modelsData || []);
         setActiveModel(activeData);
+        setError(null);
       } catch (error) {
         console.error('Fehler beim Laden der Modelle:', error);
+        setError('Verbindung zum Backend fehlgeschlagen');
+        setModels([]);
       } finally {
         setLoading(false);
       }
@@ -42,6 +48,14 @@ const ModelsTab = () => {
     return (
       <div className="flex items-center justify-center h-[600px]">
         <div className="text-muted-foreground">Lade Modelle...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[600px]">
+        <div className="text-destructive">{error}</div>
       </div>
     );
   }
@@ -67,7 +81,7 @@ const ModelsTab = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {activeModel.capabilities.map((cap) => (
+              {activeModel.capabilities?.map((cap) => (
                 <Badge key={cap} variant="outline">
                   {cap}
                 </Badge>
@@ -80,49 +94,66 @@ const ModelsTab = () => {
       {/* Available Models */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Verfügbare Modelle</h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          {models.map((model) => (
-            <Card key={model.id} className="holo-card">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">{model.name}</CardTitle>
-                    <CardDescription>{model.provider}</CardDescription>
+        {models.length === 0 ? (
+          <Card className="holo-card">
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">Keine Modelle verfügbar</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {models.map((model) => (
+              <Card key={model.id} className="holo-card">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base">{model.name}</CardTitle>
+                      <CardDescription>
+                        {model.provider} {model.size && `• ${model.size}`}
+                      </CardDescription>
+                    </div>
+                    {model.isActive ? (
+                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
+                        Aktiv
+                      </Badge>
+                    ) : model.isDownloaded ? (
+                      <Badge variant="outline">Heruntergeladen</Badge>
+                    ) : (
+                      <Badge variant="secondary">Nicht geladen</Badge>
+                    )}
                   </div>
-                  {model.isActive ? (
-                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
-                      Aktiv
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">Inaktiv</Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  {model.capabilities.map((cap) => (
-                    <Badge key={cap} variant="outline" className="text-xs">
-                      {cap}
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  {model.isActive ? (
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Square className="h-4 w-4 mr-2" />
-                      Entladen
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="w-full">
-                      <Play className="h-4 w-4 mr-2" />
-                      Laden
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {model.capabilities?.map((cap) => (
+                      <Badge key={cap} variant="outline" className="text-xs">
+                        {cap}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    {model.isActive ? (
+                      <Button variant="outline" size="sm" className="w-full">
+                        <Square className="h-4 w-4 mr-2" />
+                        Entladen
+                      </Button>
+                    ) : model.isDownloaded ? (
+                      <Button size="sm" className="w-full">
+                        <Play className="h-4 w-4 mr-2" />
+                        Laden
+                      </Button>
+                    ) : (
+                      <Button size="sm" className="w-full" variant="outline">
+                        <Download className="h-4 w-4 mr-2" />
+                        Herunterladen
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Model Management */}

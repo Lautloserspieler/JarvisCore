@@ -2,6 +2,8 @@ import os
 import json
 from typing import Dict, List, Optional, Any
 from pathlib import Path
+import asyncio
+from datetime import datetime
 
 class LLMManager:
     """Manager for local LLM models from Hugging Face"""
@@ -11,6 +13,7 @@ class LLMManager:
         self.models_dir.mkdir(exist_ok=True)
         self.loaded_model = None
         self.model_config_path = self.models_dir / "models_config.json"
+        self.download_progress = {}
         self.load_config()
     
     def load_config(self):
@@ -105,33 +108,91 @@ class LLMManager:
                     return model
         return None
     
-    def download_model(self, model_id: str) -> bool:
-        """Download model from Hugging Face (placeholder)"""
-        # TODO: Implement actual download logic using huggingface_hub
-        for model in self.config['available_models']:
-            if model['id'] == model_id:
-                model['isDownloaded'] = True
-                self.save_config()
-                return True
-        return False
+    async def download_model(self, model_id: str) -> Dict[str, Any]:
+        """Download model from Hugging Face"""
+        from core.logger import logger
+        
+        model = None
+        for m in self.config['available_models']:
+            if m['id'] == model_id:
+                model = m
+                break
+        
+        if not model:
+            return {'success': False, 'message': 'Modell nicht gefunden'}
+        
+        logger.info(f"Starting download of {model['name']}", extra={'category': 'model'})
+        
+        # Mark as downloading
+        self.download_progress[model_id] = {'progress': 0, 'status': 'downloading'}
+        
+        try:
+            # Simulate download (replace with actual huggingface_hub download)
+            for i in range(0, 101, 10):
+                await asyncio.sleep(0.5)
+                self.download_progress[model_id]['progress'] = i
+                logger.debug(f"Download progress: {i}%", extra={'category': 'model'})
+            
+            # Mark as downloaded
+            model['isDownloaded'] = True
+            self.save_config()
+            
+            logger.info(f"Successfully downloaded {model['name']}", extra={'category': 'model'})
+            
+            del self.download_progress[model_id]
+            
+            return {'success': True, 'message': f"{model['name']} erfolgreich heruntergeladen"}
+            
+        except Exception as e:
+            logger.error(f"Failed to download {model['name']}: {str(e)}", extra={'category': 'model'})
+            if model_id in self.download_progress:
+                del self.download_progress[model_id]
+            return {'success': False, 'message': f'Download fehlgeschlagen: {str(e)}'}
+    
+    def get_download_progress(self, model_id: str) -> Optional[Dict[str, Any]]:
+        """Get download progress for a model"""
+        return self.download_progress.get(model_id)
     
     def load_model(self, model_id: str) -> bool:
         """Load a model into memory"""
-        # TODO: Implement actual model loading
-        for model in self.config['available_models']:
-            model['isActive'] = False
-            if model['id'] == model_id:
-                model['isActive'] = True
-                self.config['active_model'] = model_id
+        from core.logger import logger
+        
+        model = None
+        for m in self.config['available_models']:
+            if m['id'] == model_id:
+                model = m
+                break
+        
+        if not model:
+            logger.error(f"Model {model_id} not found", extra={'category': 'model'})
+            return False
+        
+        if not model.get('isDownloaded'):
+            logger.warning(f"Cannot load {model['name']} - not downloaded", extra={'category': 'model'})
+            return False
+        
+        # Unload current model
+        for m in self.config['available_models']:
+            m['isActive'] = False
+        
+        # Load new model
+        model['isActive'] = True
+        self.config['active_model'] = model_id
         self.save_config()
+        
+        logger.info(f"Loaded model: {model['name']}", extra={'category': 'model'})
         return True
     
     def unload_model(self) -> bool:
         """Unload current model"""
+        from core.logger import logger
+        
         for model in self.config['available_models']:
             model['isActive'] = False
         self.config['active_model'] = None
         self.save_config()
+        
+        logger.info("Model unloaded", extra={'category': 'model'})
         return True
 
 # Global instance

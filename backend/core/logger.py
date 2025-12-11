@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
 import threading
+import json
 
 class LogBuffer:
     """Thread-safe log buffer for real-time log access"""
@@ -87,13 +88,34 @@ class BufferedHandler(logging.Handler):
                 level=record.levelname,
                 category=category,
                 message=record.getMessage(),
-                metadata={'module': record.module, 'funcName': record.funcName}
+                metadata={
+                    'module': record.module,
+                    'funcName': record.funcName,
+                    'lineno': record.lineno
+                }
             )
         except Exception:
             self.handleError(record)
 
-def setup_logger(name: str = 'jarvis', log_file: str = 'jarvis.log'):
-    """Setup logger with file and buffer handlers"""
+class ColoredFormatter(logging.Formatter):
+    """Colored console output"""
+    
+    COLORS = {
+        'DEBUG': '\033[36m',     # Cyan
+        'INFO': '\033[32m',      # Green
+        'WARNING': '\033[33m',   # Yellow
+        'ERROR': '\033[31m',     # Red
+        'CRITICAL': '\033[35m',  # Magenta
+    }
+    RESET = '\033[0m'
+    
+    def format(self, record):
+        color = self.COLORS.get(record.levelname, self.RESET)
+        record.levelname = f"{color}{record.levelname}{self.RESET}"
+        return super().format(record)
+
+def setup_logger(name: str = 'jarvis', log_file: str = 'jarvis.log', console_level=logging.INFO):
+    """Setup comprehensive logger with file, console and buffer handlers"""
     
     # Create logs directory
     log_path = Path('logs')
@@ -105,33 +127,54 @@ def setup_logger(name: str = 'jarvis', log_file: str = 'jarvis.log'):
     # Remove existing handlers
     logger.handlers.clear()
     
-    # File handler
-    file_handler = logging.FileHandler(log_path / log_file, encoding='utf-8')
+    # Prevent propagation to root logger
+    logger.propagate = False
+    
+    # === FILE HANDLER (DETAILED) ===
+    file_handler = logging.FileHandler(log_path / log_file, encoding='utf-8', mode='a')
     file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        '%(asctime)s | %(name)s | %(levelname)-8s | %(module)s.%(funcName)s:%(lineno)d | %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
     
-    # Console handler
+    # === CONSOLE HANDLER (COLORED, LESS VERBOSE) ===
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
-    console_formatter = logging.Formatter('%(levelname)s: %(message)s')
+    console_handler.setLevel(console_level)
+    console_formatter = ColoredFormatter(
+        '%(asctime)s | %(levelname)s | %(message)s',
+        datefmt='%H:%M:%S'
+    )
     console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
     
-    # Buffer handler
+    # === BUFFER HANDLER (FOR UI) ===
     buffer_handler = BufferedHandler()
     buffer_handler.setLevel(logging.DEBUG)
-    
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
     logger.addHandler(buffer_handler)
     
-    # Initial log
-    logger.info('Logger initialized', extra={'category': 'system'})
+    # Initial log entries
+    logger.info("="*60, extra={'category': 'system'})
+    logger.info("JARVIS CORE SYSTEM STARTED", extra={'category': 'system'})
+    logger.info(f"Log file: {log_path / log_file}", extra={'category': 'system'})
+    logger.info("="*60, extra={'category': 'system'})
     
     return logger
 
 # Global logger instance
 logger = setup_logger()
+
+# Helper functions for quick logging
+def log_info(message: str, category: str = 'system'):
+    logger.info(message, extra={'category': category})
+
+def log_error(message: str, category: str = 'system', exc_info=False):
+    logger.error(message, extra={'category': category}, exc_info=exc_info)
+
+def log_warning(message: str, category: str = 'system'):
+    logger.warning(message, extra={'category': category})
+
+def log_debug(message: str, category: str = 'system'):
+    logger.debug(message, extra={'category': category})

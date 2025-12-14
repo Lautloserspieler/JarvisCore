@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { RefreshCw, Download, Power, Brain, HardDrive, Cpu, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { API_BASE_URL, WS_URL } from '@/lib/api';
 
 interface Model {
   id: string;
@@ -28,17 +29,15 @@ const ModelsTab = () => {
   const [activeModel, setActiveModel] = useState<Model | null>(null);
   const { toast } = useToast();
 
-  const API_BASE = 'http://localhost:5050/api';
-
   // Fetch models from API
   const fetchModels = async () => {
     try {
-      const response = await fetch(`${API_BASE}/models`);
+      const response = await fetch(`${API_BASE_URL}/api/models`);
       const data = await response.json();
       setModels(data);
       
       // Get active model
-      const activeResponse = await fetch(`${API_BASE}/models/active`);
+      const activeResponse = await fetch(`${API_BASE_URL}/api/models/active`);
       const activeData = await activeResponse.json();
       setActiveModel(activeData);
     } catch (error) {
@@ -56,7 +55,7 @@ const ModelsTab = () => {
   // Download model
   const handleDownload = async (modelId: string) => {
     try {
-      const response = await fetch(`${API_BASE}/models/${modelId}/download`, {
+      const response = await fetch(`${API_BASE_URL}/api/models/${modelId}/download`, {
         method: 'POST'
       });
       const data = await response.json();
@@ -86,7 +85,7 @@ const ModelsTab = () => {
   // Load model
   const handleLoad = async (modelId: string) => {
     try {
-      const response = await fetch(`${API_BASE}/models/${modelId}/load`, {
+      const response = await fetch(`${API_BASE_URL}/api/models/${modelId}/load`, {
         method: 'POST'
       });
       const data = await response.json();
@@ -117,7 +116,7 @@ const ModelsTab = () => {
   // Unload model
   const handleUnload = async () => {
     try {
-      const response = await fetch(`${API_BASE}/models/unload`, {
+      const response = await fetch(`${API_BASE_URL}/api/models/unload`, {
         method: 'POST'
       });
       const data = await response.json();
@@ -138,7 +137,7 @@ const ModelsTab = () => {
   useEffect(() => {
     fetchModels();
     
-    const ws = new WebSocket('ws://localhost:5050/ws');
+    const ws = new WebSocket(WS_URL);
     
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);

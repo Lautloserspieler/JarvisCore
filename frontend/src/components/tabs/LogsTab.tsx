@@ -87,7 +87,7 @@ const LogsTab = () => {
   return (
     <div className="space-y-6">
       {/* Log Stats */}
-      {stats && (
+      {stats && stats.byLevel && Object.keys(stats.byLevel).length > 0 && (
         <div className="grid gap-4 md:grid-cols-5">
           {Object.entries(stats.byLevel).map(([level, count]) => (
             <Card key={level} className="holo-card">
@@ -152,22 +152,28 @@ const LogsTab = () => {
           </div>
 
           <ScrollArea className="h-[400px] w-full rounded-md border border-border/40 p-4">
-            <div className="space-y-2 font-mono text-sm">
-              {filteredLogs.map((log) => (
-                <div key={log.id} className="flex items-start gap-3 p-2 rounded hover:bg-accent/50">
-                  <span className="text-muted-foreground whitespace-nowrap">
-                    {new Date(log.timestamp).toLocaleTimeString('de-DE')}
-                  </span>
-                  <Badge variant={getLevelBadge(log.level) as any} className="uppercase text-xs">
-                    {log.level}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {log.category}
-                  </Badge>
-                  <span className={getLevelColor(log.level)}>{log.message}</span>
-                </div>
-              ))}
-            </div>
+            {filteredLogs.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Keine Protokolle verfügbar</p>
+              </div>
+            ) : (
+              <div className="space-y-2 font-mono text-sm">
+                {filteredLogs.map((log) => (
+                  <div key={log.id} className="flex items-start gap-3 p-2 rounded hover:bg-accent/50">
+                    <span className="text-muted-foreground whitespace-nowrap">
+                      {new Date(log.timestamp).toLocaleTimeString('de-DE')}
+                    </span>
+                    <Badge variant={getLevelBadge(log.level) as any} className="uppercase text-xs">
+                      {log.level}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {log.category}
+                    </Badge>
+                    <span className={getLevelColor(log.level)}>{log.message}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </ScrollArea>
         </CardContent>
       </Card>

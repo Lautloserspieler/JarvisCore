@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+import { API_BASE_URL } from '@/lib/api';
 
 class ApiService {
   private baseUrl: string;
@@ -8,7 +8,9 @@ class ApiService {
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Ensure endpoint starts with /
+    const finalEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${this.baseUrl}${finalEndpoint}`;
     const config: RequestInit = {
       ...options,
       headers: {
@@ -27,7 +29,7 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
-      console.error(`API request failed: ${endpoint}`, error);
+      console.error(`API request failed: ${url}`, error);
       throw error;
     }
   }

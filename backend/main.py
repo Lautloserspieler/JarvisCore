@@ -25,6 +25,8 @@ from core.logger import logger, log_buffer, log_info, log_error, log_warning
 from core.event_system import (
     event_bus, get_ws_manager, Event, EventType
 )
+# Import HF Runtime
+from core.hf_inference import hf_runtime
 
 app = FastAPI(title="JARVIS Core API", version="1.0.0")
 
@@ -55,7 +57,7 @@ async def broadcast_event(event: Event):
 for event_type in EventType:
     event_bus.subscribe(event_type, broadcast_event)
 
-# Smart chat response generator
+# Smart chat response generator (Fallback)
 def generate_jarvis_response(message: str) -> str:
     message_lower = message.lower()
     
@@ -87,6 +89,47 @@ Suche:
     ]
     import random
     return random.choice(responses)
+
+# NEU: AI Response Generator mit HF Runtime
+async def generate_ai_response(message: str, session_id: str) -> str:
+    """
+    Generiert AI-Response mit geladenem HuggingFace Model
+    Falls kein Model geladen ist, wird Fallback-Response zurückgegeben
+    """
+    from core.logger import log_info, log_warning, log_error
+    
+    # Check if model loaded
+    if not hf_runtime.is_loaded():
+        log_warning("No model loaded, using fallback response", category='chat')
+        return "Bitte laden Sie zuerst ein Model unter 'Modelle'."
+    
+    try:
+        # Get chat history for context
+        history = []
+        if session_id in messages_db:
+            for msg in messages_db[session_id][-5:]:  # Last 5 messages
+                history.append({
+                    'role': 'user' if msg['isUser'] else 'assistant',
+                    'content': msg['text']
+                })
+        
+        # Generate response
+        result = hf_runtime.chat(
+            message=message,
+            history=history,
+            system_prompt="Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte präzise und freundlich."
+        )
+        
+        log_info(
+            f"Generated {result['tokens_generated']} tokens with {result['model']} on {result['device']}",
+            category='chat'
+        )
+        
+        return result['text']
+        
+    except Exception as e:
+        log_error(f"AI generation failed: {e}", category='chat', exc_info=True)
+        return f"Fehler bei der Antwort-Generierung: {str(e)}"
 
 # WebSocket endpoint
 @app.websocket("/ws")
@@ -124,7 +167,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 await asyncio.sleep(1.5)
                 
-                response_text = generate_jarvis_response(user_message)
+                # NEU: Use AI Response statt Mock
+                response_text = await generate_ai_response(user_message, session_id)
                 response_id = str(uuid.uuid4())
                 
                 messages_db[session_id].append({
@@ -392,6 +436,21 @@ async def root():
             "events": "/api/events/history"
         }
     }
+
+# NEU: Startup Event - Auto-load letztes Model
+@app.on_event("startup")
+async def startup():
+    log_info("JARVIS Core API starting...", category='startup')
+    
+    # Check if active model exists and load it
+    active_model = llm_manager.get_active_model()
+    if active_model and active_model['isDownloaded']:
+        log_info(f"Auto-loading last active model: {active_model['name']}", category='startup')
+        success = llm_manager.load_model(active_model['id'])
+        if success:
+            log_info(f"✓ {active_model['name']} loaded and ready", category='startup')
+        else:
+            log_warning(f"Failed to auto-load {active_model['name']}", category='startup')
 
 if __name__ == "__main__":
     import uvicorn

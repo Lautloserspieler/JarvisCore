@@ -7,6 +7,8 @@ import uuid
 import asyncio
 import sys
 import os
+import subprocess
+import threading
 
 # Add utils and core to path
 sys.path.insert(0, os.path.dirname(__file__))
@@ -452,13 +454,66 @@ async def startup():
         else:
             log_warning(f"Failed to auto-load {active_model['name']}", category='startup')
 
+# NEU: Frontend Auto-Start
+def start_frontend():
+    """Startet das Frontend in einem separaten Prozess"""
+    try:
+        frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
+        
+        if not os.path.exists(frontend_dir):
+            log_warning("Frontend directory not found, skipping auto-start", category='startup')
+            return
+        
+        log_info("Starting frontend server...", category='startup')
+        
+        # Prüfe ob npm installiert ist
+        try:
+            subprocess.run(['npm', '--version'], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            log_warning("npm not found, skipping frontend auto-start", category='startup')
+            return
+        
+        # Starte Frontend
+        if sys.platform == 'win32':
+            # Windows
+            subprocess.Popen(
+                ['npm', 'run', 'dev'],
+                cwd=frontend_dir,
+                creationflags=subprocess.CREATE_NEW_CONSOLE
+            )
+        else:
+            # Linux/Mac
+            subprocess.Popen(
+                ['npm', 'run', 'dev'],
+                cwd=frontend_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+        
+        log_info("✓ Frontend started on http://localhost:5000", category='startup')
+        
+    except Exception as e:
+        log_error(f"Failed to start frontend: {e}", category='startup')
+
 if __name__ == "__main__":
     import uvicorn
+    
     print("""
     ╔══════════════════════════════════════════════════════╗
     ║          JARVIS Core Backend v1.0.0                  ║
     ║         Just A Rather Very Intelligent System        ║
     ╚══════════════════════════════════════════════════════╝
     """)
+    
     log_info("Starting JARVIS Core API...")
+    
+    # Starte Frontend in separatem Thread
+    frontend_thread = threading.Thread(target=start_frontend, daemon=True)
+    frontend_thread.start()
+    
+    # Warte kurz damit Frontend-Meldung sichtbar ist
+    import time
+    time.sleep(2)
+    
+    # Starte Backend
     uvicorn.run(app, host="0.0.0.0", port=5050)

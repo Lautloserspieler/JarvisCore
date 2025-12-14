@@ -6,6 +6,9 @@ import asyncio
 from datetime import datetime
 import threading
 
+# Import HF Runtime
+from core.hf_inference import hf_runtime
+
 class LLMManager:
     """Manager for local LLM models from Hugging Face"""
     
@@ -236,7 +239,7 @@ class LLMManager:
     async def _send_progress_update(self, model_id: str, progress: int, message: str):
         """Send progress update via WebSocket"""
         try:
-            from core.eventsystem import get_ws_manager
+            from core.event_system import get_ws_manager
             ws_manager = get_ws_manager()
             await ws_manager.broadcast({
                 'type': 'model_download_progress',
@@ -413,11 +416,27 @@ class LLMManager:
         
         log_info(f"Loaded model: {model['name']}", category='model')
         log_info(f"Model path: {model_path}", category='model')
+        
+        # NEU: HF Runtime laden
+        log_info("Loading model into inference runtime...", category='model')
+        success = hf_runtime.load_model(model_path, model_id)
+        
+        if not success:
+            log_error("Failed to load model into runtime", category='model')
+            model['isActive'] = False
+            self.config['active_model'] = None
+            self.save_config()
+            return False
+        
+        log_info(f"✓ Model {model['name']} ready for inference", category='model')
         return True
     
     def unload_model(self) -> bool:
         """Unload current model"""
         from core.logger import log_info
+        
+        # NEU: Runtime unload
+        hf_runtime.unload_model()
         
         for model in self.config['available_models']:
             model['isActive'] = False

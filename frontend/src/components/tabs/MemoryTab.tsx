@@ -98,7 +98,7 @@ const MemoryTab = () => {
       </div>
 
       {/* Memory Types */}
-      {stats && (
+      {stats && stats.byType && Object.keys(stats.byType).length > 0 && (
         <Card className="holo-panel">
           <CardHeader>
             <CardTitle>Erinnerungstypen</CardTitle>
@@ -131,27 +131,34 @@ const MemoryTab = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {memories.map((memory) => (
-              <div key={memory.id} className="p-4 rounded-lg border border-border/40 bg-card/50">
-                <div className="flex items-start justify-between mb-2">
-                  <Badge variant="outline" className="text-xs">
-                    {memory.type}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(memory.timestamp).toLocaleString('de-DE')}
-                  </span>
+          {memories.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Noch keine Erinnerungen gespeichert</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {memories.map((memory) => (
+                <div key={memory.id} className="p-4 rounded-lg border border-border/40 bg-card/50">
+                  <div className="flex items-start justify-between mb-2">
+                    <Badge variant="outline" className="text-xs">
+                      {memory.type}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(memory.timestamp).toLocaleString('de-DE')}
+                    </span>
+                  </div>
+                  <p className="text-sm">{memory.content}</p>
+                  <div className="mt-2">
+                    <Progress value={memory.relevance * 100} className="h-1" />
+                    <span className="text-xs text-muted-foreground mt-1">
+                      Relevanz: {(memory.relevance * 100).toFixed(0)}%
+                    </span>
+                  </div>
                 </div>
-                <p className="text-sm">{memory.content}</p>
-                <div className="mt-2">
-                  <Progress value={memory.relevance * 100} className="h-1" />
-                  <span className="text-xs text-muted-foreground mt-1">
-                    Relevanz: {(memory.relevance * 100).toFixed(0)}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -5,9 +5,293 @@ from pathlib import Path
 import asyncio
 from datetime import datetime
 import threading
+import time
 
 # Import HF Runtime
 from core.hf_inference import hf_runtime
+
+class DownloadTask:
+    """Background download task with real-time progress tracking"""
+    
+    def __init__(self, model_id: str, model: Dict, model_path: Path, llm_manager):
+        self.model_id = model_id
+        self.model = model
+        self.model_path = model_path
+        self.llm_manager = llm_manager
+        self.cancelled = False
+        self.error = None
+        self.start_time = time.time()
+        
+    async def run(self):
+        """Run download in background with progress tracking"""
+        from core.logger import log_info, log_error, log_warning
+        
+        try:
+            # Initialize
+            await self._update_progress(5, 'initializing', 'Initialisiere Download...')
+            
+            # Import or install huggingface_hub
+            try:
+                from huggingface_hub import snapshot_download, HfApi
+                log_info("Using huggingface_hub for download", category='model')
+            except ImportError:
+                log_info("huggingface_hub not installed. Installing...", category='model')
+                await self._update_progress(10, 'installing_deps', 'Installiere Dependencies...')
+                
+                import subprocess
+                result = subprocess.run(
+                    ["pip", "install", "huggingface_hub"],
+                    capture_output=True,
+                    timeout=300  # 5 min timeout
+                )
+                
+                if result.returncode != 0:
+                    raise Exception(f"Failed to install huggingface_hub: {result.stderr.decode()}")
+                
+                from huggingface_hub import snapshot_download, HfApi
+                log_info("huggingface_hub installed successfully", category='model')
+            
+            # Get HF token from environment if available
+            hf_token = os.getenv('HF_TOKEN', None)
+            if hf_token:
+                log_info("Using HuggingFace token from environment", category='model')
+            else:
+                log_info("No HF token found - using public access", category='model')
+            
+            # Create model directory
+            self.model_path.mkdir(exist_ok=True)
+            
+            # Get repository info for size estimation
+            await self._update_progress(15, 'fetching_metadata', 'Lade Modell-Metadaten...')
+            
+            try:
+                api = HfApi()
+                repo_info = api.repo_info(
+                    repo_id=self.model['hf_model'],
+                    repo_type='model',
+                    token=hf_token
+                )
+                
+                # Calculate total size
+                total_size = 0
+                file_count = 0
+                for sibling in repo_info.siblings:
+                    if self._should_download_file(sibling.rfilename):
+                        total_size += sibling.size if sibling.size else 0
+                        file_count += 1
+                
+                total_size_gb = total_size / (1024**3)
+                log_info(f"Model size: {total_size_gb:.2f} GB ({file_count} files)", category='model')
+                
+                # Store for progress calculation
+                self.total_size = total_size
+                self.file_count = file_count
+                
+            except Exception as e:
+                log_warning(f"Could not fetch repo metadata: {e}", category='model')
+                self.total_size = 0
+                self.file_count = 0
+            
+            await self._update_progress(20, 'downloading', f'Lade {self.file_count} Dateien herunter...')
+            
+            log_info(f"Downloading to {self.model_path}", category='model')
+            log_info(f"This may take several minutes depending on model size ({self.model['size']})", category='model')
+            
+            # Start progress monitoring in background
+            monitor_task = asyncio.create_task(self._monitor_download_progress())
+            
+            # Download in thread pool to not block event loop
+            loop = asyncio.get_event_loop()
+            
+            try:
+                result_path = await loop.run_in_executor(
+                    None,
+                    self._download_snapshot,
+                    hf_token
+                )
+            finally:
+                # Stop monitoring
+                monitor_task.cancel()
+                try:
+                    await monitor_task
+                except asyncio.CancelledError:
+                    pass
+            
+            # Verify download
+            await self._update_progress(95, 'verifying', 'Verifiziere Download...')
+            
+            is_complete, status_msg = self.llm_manager._is_model_complete(self.model_path)
+            
+            if not is_complete:
+                raise Exception(f"Download incomplete: {status_msg}")
+            
+            # Calculate final size
+            files = [f for f in self.model_path.iterdir() if f.is_file() and not f.name.startswith('.')]
+            final_size = sum(f.stat().st_size for f in files) / (1024**3)
+            
+            # Success!
+            await self._update_progress(100, 'completed', f'Download abgeschlossen! ({final_size:.2f} GB)')
+            
+            # Mark as downloaded
+            self.model['isDownloaded'] = True
+            self.llm_manager.save_config()
+            
+            elapsed = time.time() - self.start_time
+            log_info(f"Successfully downloaded {self.model['name']} in {elapsed:.1f}s", category='model')
+            log_info(f"Model saved to: {self.model_path}", category='model')
+            
+            # Clean up progress after 5 seconds
+            await asyncio.sleep(5)
+            if self.model_id in self.llm_manager.download_progress:
+                del self.llm_manager.download_progress[self.model_id]
+            
+        except asyncio.CancelledError:
+            log_info(f"Download cancelled: {self.model['name']}", category='model')
+            await self._update_progress(0, 'cancelled', 'Download abgebrochen')
+            raise
+            
+        except Exception as e:
+            error_msg = str(e)
+            
+            # Better error messages
+            if "401" in error_msg or "GatedRepoError" in error_msg:
+                error_msg = "Dieses Modell erfordert HuggingFace Login. Setze HF_TOKEN Umgebungsvariable."
+            elif "404" in error_msg:
+                error_msg = "Modell nicht gefunden auf HuggingFace."
+            elif "timeout" in error_msg.lower():
+                error_msg = "Download-Timeout. Bitte prüfe deine Internetverbindung."
+            elif "403" in error_msg:
+                error_msg = "Zugriff verweigert. Eventuell Rate-Limit erreicht oder Token ungültig."
+            
+            log_error(f"Failed to download {self.model['name']}: {error_msg}", category='model', exc_info=True)
+            
+            await self._update_progress(0, 'failed', f'Fehler: {error_msg}')
+            self.error = error_msg
+            
+            # Clean up after 10 seconds
+            await asyncio.sleep(10)
+            if self.model_id in self.llm_manager.download_progress:
+                del self.llm_manager.download_progress[self.model_id]
+    
+    def _should_download_file(self, filename: str) -> bool:
+        """Check if file should be downloaded"""
+        # Allow patterns
+        allowed_extensions = [".json", ".safetensors", ".model", ".bin", ".txt"]
+        allowed_prefixes = ["tokenizer", "vocab", "merges", "config"]
+        
+        # Check extensions
+        if any(filename.endswith(ext) for ext in allowed_extensions):
+            # Skip index files for multi-shard models (we want single files)
+            if "index.json" in filename and "pytorch_model" in filename:
+                return False
+            return True
+        
+        # Check prefixes
+        if any(filename.startswith(prefix) for prefix in allowed_prefixes):
+            return True
+        
+        return False
+    
+    def _download_snapshot(self, hf_token):
+        """Download snapshot (runs in thread pool)"""
+        from huggingface_hub import snapshot_download
+        
+        return snapshot_download(
+            repo_id=self.model['hf_model'],
+            local_dir=str(self.model_path),
+            local_dir_use_symlinks=False,
+            resume_download=True,
+            allow_patterns=["*.json", "*.safetensors", "*.model", "*.bin", "*.txt", "tokenizer*", "config.json", "vocab*", "merges.txt"],
+            ignore_patterns=["*.msgpack", "*.h5", "*.ot", "*pytorch_model.bin.index.json"],
+            max_workers=4,
+            token=hf_token if hf_token else False,
+            etag_timeout=30,
+            resume_download_timeout=30
+        )
+    
+    async def _monitor_download_progress(self):
+        """Monitor download progress by checking file sizes"""
+        try:
+            while True:
+                await asyncio.sleep(2)  # Check every 2 seconds
+                
+                if not self.model_path.exists():
+                    continue
+                
+                # Calculate current size
+                files = [f for f in self.model_path.iterdir() if f.is_file() and not f.name.startswith('.')]
+                current_size = sum(f.stat().st_size for f in files)
+                current_files = len(files)
+                
+                if self.total_size > 0:
+                    # Calculate progress based on size
+                    progress = int(20 + (current_size / self.total_size) * 75)  # 20-95%
+                    progress = min(95, max(20, progress))
+                    
+                    # Calculate ETA
+                    elapsed = time.time() - self.start_time
+                    if current_size > 0 and elapsed > 0:
+                        speed_bps = current_size / elapsed
+                        remaining_bytes = self.total_size - current_size
+                        eta_seconds = remaining_bytes / speed_bps if speed_bps > 0 else 0
+                        
+                        # Format ETA
+                        if eta_seconds > 60:
+                            eta_str = f"~{int(eta_seconds / 60)}m"
+                        else:
+                            eta_str = f"~{int(eta_seconds)}s"
+                        
+                        # Format speed
+                        speed_mbps = speed_bps / (1024**2)
+                        
+                        current_gb = current_size / (1024**3)
+                        total_gb = self.total_size / (1024**3)
+                        
+                        message = f'Lade herunter: {current_gb:.2f}/{total_gb:.2f} GB ({speed_mbps:.1f} MB/s, ETA: {eta_str})'
+                    else:
+                        current_gb = current_size / (1024**3)
+                        message = f'Lade herunter: {current_gb:.2f} GB ({current_files} Dateien)...'
+                else:
+                    # No size info, use file count
+                    if self.file_count > 0:
+                        progress = int(20 + (current_files / self.file_count) * 75)
+                        progress = min(95, max(20, progress))
+                    else:
+                        progress = min(95, 20 + (current_files * 5))  # Rough estimate
+                    
+                    current_gb = current_size / (1024**3)
+                    message = f'Lade herunter: {current_gb:.2f} GB ({current_files} Dateien)...'
+                
+                await self._update_progress(progress, 'downloading', message)
+                
+        except asyncio.CancelledError:
+            pass
+    
+    async def _update_progress(self, progress: int, status: str, message: str):
+        """Update progress and send via WebSocket"""
+        self.llm_manager.download_progress[self.model_id] = {
+            'progress': progress,
+            'status': status,
+            'message': message,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Send via WebSocket
+        try:
+            from core.event_system import event_bus, Event, EventType
+            await event_bus.publish(Event(
+                EventType.MODEL_DOWNLOAD_PROGRESS,
+                {
+                    'modelId': self.model_id,
+                    'progress': progress,
+                    'status': status,
+                    'message': message
+                },
+                source='llm_manager'
+            ))
+        except Exception:
+            pass  # WebSocket not critical
+
 
 class LLMManager:
     """Manager for local LLM models from Hugging Face"""
@@ -25,6 +309,7 @@ class LLMManager:
         self.loaded_model = None
         self.model_config_path = self.models_dir / "models_config.json"
         self.download_progress = {}
+        self.download_tasks = {}  # Track background tasks
         self.load_config()
         self.scan_downloaded_models()  # Scan on startup
     
@@ -236,24 +521,9 @@ class LLMManager:
                     return model
         return None
     
-    async def _send_progress_update(self, model_id: str, progress: int, message: str):
-        """Send progress update via WebSocket"""
-        try:
-            from core.event_system import get_ws_manager
-            ws_manager = get_ws_manager()
-            await ws_manager.broadcast({
-                'type': 'model_download_progress',
-                'modelId': model_id,
-                'progress': progress,
-                'message': message
-            })
-        except Exception as e:
-            from core.logger import log_debug
-            log_debug(f"Could not send WS update: {e}", category='model')
-    
     async def download_model(self, model_id: str) -> Dict[str, Any]:
-        """Download model from Hugging Face using huggingface_hub"""
-        from core.logger import log_info, log_error, log_warning
+        """Download model from Hugging Face using background task"""
+        from core.logger import log_info, log_warning
         
         model = None
         for m in self.config['available_models']:
@@ -264,8 +534,10 @@ class LLMManager:
         if not model:
             return {'success': False, 'message': 'Modell nicht gefunden'}
         
-        log_info(f"Starting download of {model['name']} from HuggingFace", category='model')
-        log_info(f"Model: {model['hf_model']}", category='model')
+        # Check if already downloading
+        if model_id in self.download_tasks:
+            log_warning(f"Download already in progress: {model['name']}", category='model')
+            return {'success': False, 'message': 'Download bereits aktiv'}
         
         # Check if already downloaded
         model_path = self.models_dir / model_id
@@ -277,107 +549,14 @@ class LLMManager:
             self.save_config()
             return {'success': True, 'message': f"{model['name']} bereits heruntergeladen"}
         
-        # Mark as downloading
-        self.download_progress[model_id] = {
-            'progress': 0, 
-            'status': 'initializing',
-            'message': 'Initialisiere Download...'
-        }
+        log_info(f"Starting background download of {model['name']} from HuggingFace", category='model')
+        log_info(f"Model: {model['hf_model']}", category='model')
         
-        try:
-            # Try to import huggingface_hub
-            try:
-                from huggingface_hub import snapshot_download
-                log_info("Using huggingface_hub for download", category='model')
-            except ImportError:
-                log_info("huggingface_hub not installed. Installing...", category='model')
-                self.download_progress[model_id]['message'] = 'Installiere huggingface_hub...'
-                await self._send_progress_update(model_id, 5, 'Installiere Dependencies...')
-                
-                import subprocess
-                subprocess.check_call(["pip", "install", "huggingface_hub"])
-                from huggingface_hub import snapshot_download
-                log_info("huggingface_hub installed successfully", category='model')
-            
-            # Create model directory
-            model_path.mkdir(exist_ok=True)
-            
-            self.download_progress[model_id] = {
-                'progress': 10,
-                'status': 'downloading',
-                'message': f'Lade {model["name"]} herunter...'
-            }
-            await self._send_progress_update(model_id, 10, 'Starte Download...')
-            
-            log_info(f"Downloading to {model_path}", category='model')
-            log_info(f"This may take several minutes depending on model size ({model['size']})", category='model')
-            
-            # Download the model
-            log_info("Starting file download from HuggingFace Hub...", category='model')
-            result_path = snapshot_download(
-                repo_id=model['hf_model'],
-                local_dir=str(model_path),
-                local_dir_use_symlinks=False,
-                resume_download=True,
-                allow_patterns=["*.json", "*.safetensors", "*.model", "*.bin", "*.txt", "tokenizer*", "config.json", "vocab*", "merges.txt"],
-                ignore_patterns=["*.msgpack", "*.h5", "*.ot", "pytorch_model.bin.index.json"],
-                max_workers=4,  # Parallel downloads
-                token=False  # Explicitly no auth
-            )
-            
-            # Verify download completed successfully
-            is_complete, status_msg = self._is_model_complete(model_path)
-            
-            if not is_complete:
-                raise Exception(f"Download incomplete: {status_msg}")
-            
-            # Mark as completed
-            self.download_progress[model_id] = {
-                'progress': 100,
-                'status': 'completed',
-                'message': 'Download abgeschlossen!'
-            }
-            await self._send_progress_update(model_id, 100, 'Download abgeschlossen!')
-            
-            # Mark as downloaded
-            model['isDownloaded'] = True
-            self.save_config()
-            
-            log_info(f"Successfully downloaded {model['name']}", category='model')
-            log_info(f"Model saved to: {model_path}", category='model')
-            
-            # Clean up progress after 3 seconds
-            await asyncio.sleep(3)
-            if model_id in self.download_progress:
-                del self.download_progress[model_id]
-            
-            return {'success': True, 'message': f"{model['name']} erfolgreich heruntergeladen"}
-            
-        except Exception as e:
-            error_msg = str(e)
-            
-            # Better error messages
-            if "401" in error_msg or "GatedRepoError" in error_msg:
-                error_msg = "Dieses Modell erfordert HuggingFace Login. Bitte wähle ein anderes Modell."
-            elif "404" in error_msg:
-                error_msg = "Modell nicht gefunden auf HuggingFace."
-            elif "timeout" in error_msg.lower():
-                error_msg = "Download-Timeout. Bitte prüfe deine Internetverbindung."
-            
-            log_error(f"Failed to download {model['name']}: {error_msg}", category='model', exc_info=True)
-            
-            self.download_progress[model_id] = {
-                'progress': 0,
-                'status': 'failed',
-                'message': f'Fehler: {error_msg}'
-            }
-            await self._send_progress_update(model_id, 0, f'Fehler: {error_msg}')
-            
-            await asyncio.sleep(5)
-            if model_id in self.download_progress:
-                del self.download_progress[model_id]
-            
-            return {'success': False, 'message': f'Download fehlgeschlagen: {error_msg}'}
+        # Create and start background task
+        task = DownloadTask(model_id, model, model_path, self)
+        self.download_tasks[model_id] = asyncio.create_task(task.run())
+        
+        return {'success': True, 'message': f"Download von {model['name']} gestartet"}
     
     def get_download_progress(self, model_id: str) -> Optional[Dict[str, Any]]:
         """Get download progress for a model"""
@@ -417,7 +596,7 @@ class LLMManager:
         log_info(f"Loaded model: {model['name']}", category='model')
         log_info(f"Model path: {model_path}", category='model')
         
-        # NEU: HF Runtime laden
+        # Load into HF Runtime
         log_info("Loading model into inference runtime...", category='model')
         success = hf_runtime.load_model(model_path, model_id)
         
@@ -435,7 +614,7 @@ class LLMManager:
         """Unload current model"""
         from core.logger import log_info
         
-        # NEU: Runtime unload
+        # Unload from runtime
         hf_runtime.unload_model()
         
         for model in self.config['available_models']:

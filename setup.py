@@ -10,6 +10,7 @@ import os
 import subprocess
 import platform
 import json
+import shutil
 from pathlib import Path
 
 
@@ -77,22 +78,84 @@ class JarvisSetup:
         
         print(f"{Colors.GREEN}✅ Verzeichnisse erstellt{Colors.END}\n")
     
-    def create_venv(self):
-        """Erstellt virtuelle Umgebung"""
+    def is_venv_valid(self):
+        """Prüft ob venv gültig ist"""
+        if not self.venv_path.exists():
+            return False
+        
+        # Check if Python executable exists
+        python_path = self.get_python_path()
+        if not python_path.exists():
+            return False
+        
+        # Check if pip exists
+        pip_path = self.get_pip_path()
+        if not pip_path.exists():
+            return False
+        
+        # Try to run python --version
+        try:
+            result = subprocess.run(
+                [str(python_path), "--version"],
+                capture_output=True,
+                timeout=5
+            )
+            return result.returncode == 0
+        except Exception:
+            return False
+    
+    def create_venv(self, force=False):
+        """Erstellt virtuelle Umgebung mit Validation und Force-Option"""
+        
+        # Check if venv exists
         if self.venv_path.exists():
-            print(f"{Colors.YELLOW}⚠️  Virtuelle Umgebung existiert bereits (venv/)\n{Colors.END}")
-            return
+            # Validate existing venv
+            if self.is_venv_valid():
+                if force:
+                    print(f"{Colors.YELLOW}🔄 Force-Recreate: Lösche existierende venv...{Colors.END}")
+                    try:
+                        shutil.rmtree(self.venv_path)
+                        print(f"{Colors.GREEN}✅ Alte venv gelöscht{Colors.END}")
+                    except Exception as e:
+                        print(f"{Colors.RED}❌ Fehler beim Löschen: {e}{Colors.END}")
+                        print(f"{Colors.YELLOW}Versuche manuell zu löschen: rmdir /s venv{Colors.END}")
+                        sys.exit(1)
+                else:
+                    print(f"{Colors.YELLOW}⚠️  Virtuelle Umgebung existiert bereits und ist gültig (venv/)\n{Colors.END}")
+                    return
+            else:
+                print(f"{Colors.YELLOW}⚠️  Existierende venv ist beschädigt, erstelle neu...{Colors.END}")
+                try:
+                    shutil.rmtree(self.venv_path)
+                    print(f"{Colors.GREEN}✅ Beschädigte venv entfernt{Colors.END}")
+                except Exception as e:
+                    print(f"{Colors.RED}❌ Fehler beim Löschen: {e}{Colors.END}")
+                    sys.exit(1)
         
         print(f"{Colors.CYAN}➤ Erstelle virtuelle Umgebung (venv/)...{Colors.END}")
         
         try:
+            # Create venv with upgraded pip and setuptools
             subprocess.run(
-                [sys.executable, "-m", "venv", str(self.venv_path)],
-                check=True
+                [sys.executable, "-m", "venv", "--upgrade-deps", str(self.venv_path)],
+                check=True,
+                capture_output=False  # Show output
             )
-            print(f"{Colors.GREEN}✅ Virtuelle Umgebung erstellt{Colors.END}\n")
+            print(f"{Colors.GREEN}✅ Virtuelle Umgebung erstellt (mit aktuellen pip/setuptools){Colors.END}")
+            
+            # Verify creation
+            if not self.is_venv_valid():
+                print(f"{Colors.RED}❌ venv-Erstellung fehlgeschlagen (Validation Check failed){Colors.END}")
+                sys.exit(1)
+            
+            print(f"{Colors.GREEN}✅ venv Validation erfolgreich{Colors.END}\n")
+            
         except subprocess.CalledProcessError as e:
             print(f"{Colors.RED}❌ Fehler beim Erstellen der venv: {e}{Colors.END}")
+            print(f"{Colors.YELLOW}\nTroubleshooting:{Colors.END}")
+            print(f"  1. Stelle sicher, dass Python korrekt installiert ist")
+            print(f"  2. Versuche: python -m venv --help")
+            print(f"  3. Installiere venv: apt install python3-venv (Linux)\n")
             sys.exit(1)
     
     def get_pip_path(self):
@@ -121,18 +184,34 @@ class JarvisSetup:
             sys.exit(1)
         
         try:
-            # Upgrade pip (show output)
-            print(f"  🔄 Aktualisiere pip...\n")
+            # Verify pip works
+            print(f"  🔍 Verifiziere pip...\n")
+            result = subprocess.run(
+                [pip, "--version"],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                print(f"  ✅ {result.stdout.strip()}\n")
+            else:
+                print(f"{Colors.RED}❌ pip funktioniert nicht korrekt{Colors.END}")
+                sys.exit(1)
+            
+            # Upgrade pip explicitly (in case --upgrade-deps didn't work)
+            print(f"  🔄 Stelle sicher, dass pip aktuell ist...\n")
             result = subprocess.run(
                 [python, "-m", "pip", "install", "--upgrade", "pip"],
-                check=False  # Don't fail if this doesn't work
+                check=False
             )
             
             if result.returncode != 0:
                 print(f"\n{Colors.YELLOW}⚠️  Pip upgrade fehlgeschlagen, fahre trotzdem fort...{Colors.END}\n")
+            else:
+                print(f"\n{Colors.GREEN}✅ pip aktualisiert{Colors.END}\n")
             
             # Install requirements (show output)
-            print(f"\n  📦 Installiere Pakete...\n")
+            print(f"  📦 Installiere Pakete aus requirements.txt...\n")
             subprocess.run(
                 [pip, "install", "-r", str(requirements)],
                 check=True
@@ -282,13 +361,13 @@ class JarvisSetup:
         except Exception as e:
             print(f"{Colors.RED}❌ Fehler beim Start: {e}{Colors.END}")
     
-    def run(self):
+    def run(self, force_recreate=False):
         """Führt vollständiges Setup durch"""
         try:
             self.print_header()
             self.check_python_version()
             self.create_directories()
-            self.create_venv()
+            self.create_venv(force=force_recreate)
             self.install_dependencies()
             self.configure_settings()
             self.print_next_steps()
@@ -309,8 +388,14 @@ class JarvisSetup:
 
 def main():
     """Entry Point"""
+    # Check for --force flag
+    force = "--force" in sys.argv or "-f" in sys.argv
+    
+    if force:
+        print(f"{Colors.YELLOW}⚠️  Force-Recreate Modus aktiviert{Colors.END}\n")
+    
     setup = JarvisSetup()
-    setup.run()
+    setup.run(force_recreate=force)
 
 
 if __name__ == "__main__":

@@ -100,10 +100,11 @@ class JarvisLauncher:
             return None
         
         try:
-            # Check if npm is available
-            subprocess.run(
+            # Check if npm is available - use shell=True on Windows for PATH resolution
+            check_result = subprocess.run(
                 ["npm", "--version"],
                 capture_output=True,
+                shell=(sys.platform == "win32"),
                 check=True
             )
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -111,15 +112,28 @@ class JarvisLauncher:
             return None
         
         try:
-            # Start frontend
-            frontend_process = subprocess.Popen(
-                ["npm", "run", "dev"],
-                cwd=str(self.frontend_dir),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                universal_newlines=True,
-                bufsize=1
-            )
+            # Start frontend - shell=True fixes Windows PATH issues with npm
+            if sys.platform == "win32":
+                # Windows: Use shell=True to find npm in PATH
+                frontend_process = subprocess.Popen(
+                    "npm run dev",
+                    cwd=str(self.frontend_dir),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                    bufsize=1,
+                    shell=True
+                )
+            else:
+                # Linux/Mac: Keep original method
+                frontend_process = subprocess.Popen(
+                    ["npm", "run", "dev"],
+                    cwd=str(self.frontend_dir),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                    bufsize=1
+                )
             
             self.processes.append(frontend_process)
             

@@ -4,12 +4,14 @@
 
 **Just A Rather Very Intelligent System**
 
-A modern AI assistant with a beautiful holographic UI inspired by Iron Man's JARVIS
+Ein moderner KI-Assistent mit holographischer UI inspiriert von Iron Mans JARVIS
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green.svg)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18.3+-cyan.svg)](https://reactjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue.svg)](https://typescriptlang.org)
+
+[🇬🇧 English Version](./README_GB.md)
 
 </div>
 
@@ -18,91 +20,142 @@ A modern AI assistant with a beautiful holographic UI inspired by Iron Man's JAR
 ## ✨ Features
 
 ### 🎨 Frontend
-- ✅ **Holographic UI** - Stunning JARVIS-inspired interface
-- ✅ **Real-time Chat** - WebSocket-based live communication
-- ✅ **Voice Interface** - Visual voice input feedback
-- ✅ **Multi-tab Navigation** - Chat, Dashboard, Memory, Models, Plugins, Logs, Settings
-- ✅ **Responsive Design** - Works on all screen sizes
-- ✅ **Dark Theme** - Cyberpunk aesthetic with glowing effects
+- ✅ **Holographische UI** - Beeindruckende JARVIS-inspirierte Benutzeroberfläche
+- ✅ **Echtzeit-Chat** - WebSocket-basierte Live-Kommunikation
+- ✅ **Sprach-Interface** - Visuelle Voice-Input-Rückmeldung
+- ✅ **Multi-Tab Navigation** - Chat, Dashboard, Memory, Models, Plugins, Logs, Settings
+- ✅ **Model-Management** - Download und Verwaltung von KI-Modellen (Ollama-Style)
+- ✅ **Download-Queue** - Live-Progress-Tracking mit Speed & ETA
+- ✅ **Responsive Design** - Funktioniert auf allen Bildschirmgrößen
+- ✅ **Dark Theme** - Cyberpunk-Ästhetik mit leuchtenden Effekten
 
 ### 🚀 Backend
-- ✅ **FastAPI Server** - High-performance async API
-- ✅ **WebSocket Support** - Real-time bidirectional communication
-- ✅ **RESTful API** - Complete REST endpoints
-- ✅ **Model Management** - Switch between AI models
-- ✅ **Plugin System** - Extensible architecture
-- ✅ **Memory Storage** - Conversation history & context
-- ✅ **System Logs** - Comprehensive logging
+- ✅ **FastAPI Server** - Hochperformanter Async-API-Server
+- ✅ **WebSocket Support** - Echtzeitkommunikation in beide Richtungen
+- ✅ **RESTful API** - Vollständige REST-Endpunkte
+- ✅ **LLM Download-System** - Ollama-inspiriertes Multi-Registry-System
+- ✅ **Model Management** - Wechseln zwischen KI-Modellen
+- ✅ **Plugin System** - Erweiterbare Architektur
+- ✅ **Memory Storage** - Konversationshistorie & Kontext
+- ✅ **System Logs** - Umfassendes Logging
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Schnellstart
 
-### Prerequisites
+### Voraussetzungen
 - Python 3.8+
 - Node.js 18+
-- npm or yarn
+- npm oder yarn
 
 ### Installation
 
 ```bash
-# Clone the repository
+# Repository klonen
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 
-# Start everything with one command!
+# Alles mit einem Befehl starten!
 python main.py
 ```
 
-That's it! The unified `main.py` script will:
-1. ✅ Check all requirements
-2. ✅ Install missing dependencies
-3. ✅ Start the backend server
-4. ✅ Start the frontend dev server
-5. ✅ Open your browser automatically
+Das war's! Das einheitliche `main.py` Script wird:
+1. ✅ Alle Anforderungen prüfen
+2. ✅ Fehlende Abhängigkeiten installieren
+3. ✅ Backend-Server starten
+4. ✅ Frontend-Dev-Server starten
+5. ✅ Browser automatisch öffnen
 
 ---
 
-## 🌐 Access Points
+## 🌐 Zugriffspunkte
 
-Once started, you can access:
+Nach dem Start erreichst du:
 
-- 🎨 **Frontend UI**: http://localhost:8080
-- 🔧 **Backend API**: http://localhost:8000
-- 📚 **API Documentation**: http://localhost:8000/docs
-- 🔌 **WebSocket**: ws://localhost:8000/ws
+- 🎨 **Frontend UI**: http://localhost:5000
+- 🔧 **Backend API**: http://localhost:5050
+- 📚 **API-Dokumentation**: http://localhost:5050/docs
+- 🔌 **WebSocket**: ws://localhost:5050/ws
 
 ---
 
-## 📁 Project Structure
+## 📦 Model-Download-System
+
+JARVIS Core nutzt ein **Ollama-inspiriertes Download-System** für KI-Modelle:
+
+### Features
+- 🔄 **Multi-Registry-Support** - HuggingFace, Ollama, Custom URLs
+- 📦 **Resume-Downloads** - Unterbrochene Downloads werden fortgesetzt
+- ✅ **SHA256-Verifizierung** - Automatische Integritätsprüfung
+- 📊 **Live-Progress** - Download-Speed, ETA, Fortschrittsbalken
+- 🎯 **Quantization-Varianten** - Q4_K_M, Q5_K_M, Q6_K, Q8_0
+- 🔐 **HuggingFace Token** - Support für private Repositories
+
+### Models verwalten
+
+1. **Web-UI öffnen**: http://localhost:5050
+2. **Models-Tab**: Navigation zur Model-Verwaltung
+3. **Model downloaden**: 
+   - Klick auf "Download" bei gewünschtem Modell
+   - Wähle Quantization-Variante (z.B. Q4_K_M)
+   - Download startet automatisch
+4. **Download-Queue**: 
+   - Sticky Bottom Panel zeigt alle aktiven Downloads
+   - Live-Updates: Speed (MB/s), ETA, Prozent
+   - Abbrechen mit "Cancel"-Button
+
+### Verfügbare Modelle
+
+| Model | Größe | Features | Status |
+|-------|-------|----------|--------|
+| **Mistral 7B Nemo** | ~4-8 GB | Chat, Instruction | ✅ Verfügbar |
+| **Qwen 2.5 7B** | ~4-8 GB | Multilingual, Code | ✅ Verfügbar |
+| **DeepSeek Coder 6.7B** | ~4-7 GB | Code-Spezialist | ✅ Verfügbar |
+
+Weitere Infos: [LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
+
+---
+
+## 📁 Projektstruktur
 
 ```
 JarvisCore/
-├── main.py                 # 🚀 Unified startup script
+├── main.py                 # 🚀 Einheitliches Startup-Script
+├── core/                   # 🧠 Core-Module
+│   ├── llm_manager.py     # LLM-Management
+│   ├── model_downloader.py # Download-Engine
+│   ├── model_registry.py   # Multi-Registry
+│   ├── model_manifest.py   # Metadata-Management
+│   └── ...                # Weitere Module
 ├── backend/
-│   ├── main.py            # FastAPI server
-│   ├── requirements.txt   # Python dependencies
+│   ├── main.py            # FastAPI-Server
+│   ├── requirements.txt   # Python-Abhängigkeiten
 │   └── README.md
 ├── frontend/
 │   ├── src/
-│   │   ├── components/    # React components
-│   │   │   ├── ui/       # shadcn/ui components
-│   │   │   ├── tabs/     # Tab components
-│   │   │   └── *.tsx     # Main components
-│   │   ├── services/      # API & WebSocket services
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── pages/         # Page components
+│   │   ├── components/    # React-Komponenten
+│   │   │   ├── ui/       # shadcn/ui Komponenten
+│   │   │   ├── tabs/     # Tab-Komponenten
+│   │   │   ├── models/   # Model-Management-Komponenten
+│   │   │   └── *.tsx     # Haupt-Komponenten
+│   │   ├── services/      # API & WebSocket Services
+│   │   ├── hooks/         # Custom React Hooks
+│   │   ├── pages/         # Seiten-Komponenten
 │   │   └── lib/           # Utilities
 │   ├── package.json
 │   └── vite.config.ts
+├── docs/                   # 📚 Dokumentation
+│   ├── LLM_DOWNLOAD_SYSTEM.md
+│   ├── ARCHITECTURE.md
+│   └── ...
 └── README.md
 ```
 
 ---
 
-## 🛠️ Development
+## 🛠️ Entwicklung
 
-### Manual Start (Development Mode)
+### Manueller Start (Development-Modus)
 
 #### Backend
 ```bash
@@ -120,35 +173,41 @@ npm run dev
 
 ---
 
-## 🔌 API Endpoints
+## 🔌 API-Endpunkte
 
 ### Chat
-- `GET /api/chat/sessions` - Get all chat sessions
-- `POST /api/chat/sessions` - Create new session
-- `POST /api/chat/messages` - Send message
+- `GET /api/chat/sessions` - Alle Chat-Sessions abrufen
+- `POST /api/chat/sessions` - Neue Session erstellen
+- `POST /api/chat/messages` - Nachricht senden
 
 ### Models
-- `GET /api/models` - List all models
-- `GET /api/models/active` - Get active model
-- `POST /api/models/{id}/activate` - Set active model
+- `GET /api/models` - Alle Modelle auflisten
+- `GET /api/models/available` - Verfügbare Modelle mit Status
+- `GET /api/models/active` - Aktives Modell abrufen
+- `POST /api/models/{id}/activate` - Modell aktivieren
+- `POST /api/models/download` - Model-Download starten
+- `GET /api/models/download/progress` - Download-Progress (SSE)
+- `POST /api/models/cancel` - Download abbrechen
+- `GET /api/models/variants` - Quantization-Varianten abrufen
+- `DELETE /api/models/delete` - Modell löschen
 
 ### Plugins
-- `GET /api/plugins` - List all plugins
-- `POST /api/plugins/{id}/enable` - Enable plugin
-- `POST /api/plugins/{id}/disable` - Disable plugin
+- `GET /api/plugins` - Alle Plugins auflisten
+- `POST /api/plugins/{id}/enable` - Plugin aktivieren
+- `POST /api/plugins/{id}/disable` - Plugin deaktivieren
 
 ### Memory
-- `GET /api/memory` - Get memories
-- `POST /api/memory/search` - Search memories
-- `GET /api/memory/stats` - Memory statistics
+- `GET /api/memory` - Erinnerungen abrufen
+- `POST /api/memory/search` - Erinnerungen durchsuchen
+- `GET /api/memory/stats` - Memory-Statistiken
 
 ### Logs
-- `GET /api/logs` - Get system logs
-- `GET /api/logs/stats` - Log statistics
+- `GET /api/logs` - System-Logs abrufen
+- `GET /api/logs/stats` - Log-Statistiken
 
 ---
 
-## 🎨 Technology Stack
+## 🎨 Technologie-Stack
 
 ### Frontend
 - **Framework**: React 18 + TypeScript
@@ -164,56 +223,74 @@ npm run dev
 - **Server**: Uvicorn
 - **WebSocket**: FastAPI WebSocket
 - **Type Safety**: Pydantic
+- **HTTP Client**: httpx (für Downloads)
 
 ---
 
-## 🎯 Features Roadmap
+## 🎯 Features-Roadmap
 
-### Current (v1.0.0)
-- ✅ Basic UI with all tabs
-- ✅ WebSocket integration
-- ✅ REST API endpoints
-- ✅ Unified startup script
+### Aktuell (v1.0.0)
+- ✅ Basis-UI mit allen Tabs
+- ✅ WebSocket-Integration
+- ✅ REST-API-Endpunkte
+- ✅ Einheitliches Startup-Script
+- ✅ Model-Download-System (Ollama-Style)
+- ✅ Live-Progress-Tracking
+- ✅ Multi-Registry-Support
 
-### Planned (v1.1.0)
-- 🔄 Real AI model integration (OpenAI, Anthropic)
-- 🔄 Voice input/output
-- 🔄 Database integration (PostgreSQL)
-- 🔄 User authentication
-- 🔄 Multi-user support
+### Geplant (v1.1.0)
+- 🔄 Lokale LLM-Inferenz (llama.cpp Integration)
+- 🔄 Voice Input/Output
+- 🔄 Datenbank-Integration (PostgreSQL)
+- 🔄 Benutzer-Authentifizierung
+- 🔄 Multi-User-Support
 
-### Future (v2.0.0)
-- 📋 Advanced plugin marketplace
-- 📋 Docker deployment
-- 📋 Cloud deployment (AWS/GCP)
-- 📋 Mobile app
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
----
-
-## 📄 License
-
-MIT License - feel free to use this project for any purpose.
+### Zukunft (v2.0.0)
+- 📋 Erweiterter Plugin-Marketplace
+- 📋 Docker-Deployment
+- 📋 Cloud-Deployment (AWS/GCP)
+- 📋 Mobile App
+- 📋 RAG (Retrieval-Augmented Generation)
+- 📋 Knowledge-Base-Integration
 
 ---
 
-## 🙏 Acknowledgments
+## 🤝 Mitwirken
 
-- Inspired by JARVIS from Iron Man
-- Built with [shadcn/ui](https://ui.shadcn.com/)
+Beiträge sind willkommen! Bitte fühle dich frei, einen Pull Request einzureichen.
+
+---
+
+## 📄 Lizenz
+
+MIT-Lizenz - Du kannst dieses Projekt für jeden Zweck nutzen.
+
+---
+
+## 🙏 Danksagungen
+
+- Inspiriert von JARVIS aus Iron Man
+- Gebaut mit [shadcn/ui](https://ui.shadcn.com/)
 - Powered by [FastAPI](https://fastapi.tiangolo.com/)
+- Download-System inspiriert von [Ollama](https://ollama.ai/)
+
+---
+
+## 📚 Weitere Dokumentation
+
+- [LLM Download-System](./docs/LLM_DOWNLOAD_SYSTEM.md) - Detaillierte Dokumentation des Download-Systems
+- [Architektur](./docs/ARCHITECTURE.md) - System-Architektur-Übersicht
+- [Schnellstart](./README_QUICKSTART.md) - Ausführlicher Schnellstart-Guide
+- [Backend-API](./backend/README.md) - Backend-spezifische Dokumentation
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by the JARVIS Team**
+**Erstellt mit ❤️ vom JARVIS-Team**
 
-*"Sometimes you gotta run before you can walk."* - Tony Stark
+*"Manchmal muss man rennen, bevor man gehen kann."* - Tony Stark
+
+**Stand:** 16. Dezember 2025
 
 </div>

@@ -7,6 +7,59 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.1] - 2025-12-16
+
+### ✨ **Hinzugefügt**
+
+#### **📦 Models-Page (React Frontend)**
+- **Model-Management-UI** mit Karten-Layout
+  - `frontend/src/pages/ModelsPage.tsx` - Hauptseite
+  - `frontend/src/components/models/ModelCard.tsx` - Model-Karte
+  - `frontend/src/components/models/DownloadQueue.tsx` - Sticky Download-Panel
+  - `frontend/src/components/models/VariantDialog.tsx` - Quantization-Auswahl
+  - `frontend/src/hooks/useModels.ts` - React Hook mit SSE
+- **Download-Features:**
+  - Live-Progress-Tracking (Speed, ETA, Prozent)
+  - Download-Queue mit mehreren gleichzeitigen Downloads
+  - Cancel-Download-Button
+  - Variant-Selection (Q4_K_M, Q5_K_M, Q6_K, Q8_0)
+  - Status-Badges (Bereit, Lädt herunter, Nicht heruntergeladen)
+- **Model-Management:**
+  - Delete-Model-Funktionalität
+  - Load/Unload-Model (vorbereitet für llama.cpp)
+  - Model-Info-Anzeige (Parameter, Context Length)
+
+#### **🔌 API-Endpunkte für Models**
+- `GET /api/models/available` - Model-Übersicht mit Download-Status
+- `POST /api/models/download` - Model-Download starten
+- `GET /api/models/download/progress` - SSE Progress-Stream
+- `POST /api/models/cancel` - Download abbrechen
+- `GET /api/models/variants` - Quantization-Varianten abrufen
+- `DELETE /api/models/delete` - Modell löschen
+
+### 🔄 **Geändert**
+
+#### **📚 Dokumentation**
+- **README.md** komplett auf Deutsch übersetzt
+- **README.md** erweitert mit Model-Download-System-Sektion
+- **IMPLEMENTATION_STATUS.md** korrigiert:
+  - HuggingFace Inference Status auf "⚠️ Geplant" gesetzt
+  - Models-Page als "✅ Implementiert" hinzugefügt
+  - Bekannte Einschränkungen dokumentiert
+- **README_GB.md** als separate englische Version markiert
+
+#### **🎨 Frontend**
+- `App.tsx` - Route `/models` zur Navigation hinzugefügt
+- shadcn/ui Components integriert (Button, Card, Badge, Dialog, Progress)
+- TanStack Query für API-State-Management
+
+### 🐛 **Behoben**
+- **ModelsPage Import** in App.tsx korrigiert (.tsx Extension)
+- **React Component Exports** für Models-Komponenten
+- **SSE Connection Handling** mit automatischem Reconnect
+
+---
+
 ## [1.0.0] - 2025-12-05
 
 ### 🎉 **Erstes Production Release - Desktop Edition**
@@ -186,7 +239,7 @@ Dies ist das erste stabile Release von J.A.R.V.I.S. Core mit **nativer Desktop-A
 ### 📊 **Statistiken**
 
 | Metrik | v0.x (Web UI) | v1.0 (Desktop) | Änderung |
-|--------|---------------|----------------|----------|
+|--------|---------------|----------------|---------|
 | **UI Code** | ~232 KB | 0 KB (Web) + ~150 KB (Desktop) | ➖ -35% |
 | **main.py Zeilen** | 1147 | ~400 | ➖ -65% |
 | **Startup Zeit** | 5-8s | 2-3s + 3-5s | ✅ +60% schneller |
@@ -269,9 +322,10 @@ Dies ist das erste stabile Release von J.A.R.V.I.S. Core mit **nativer Desktop-A
 #### **v1.1 (Q1 2026)**
 - [ ] System Tray Integration (Minimize to Tray)
 - [ ] Global Hotkeys (z.B. Ctrl+Alt+J)
+- [ ] llama.cpp Integration für lokale LLM-Inferenz
+- [ ] Voice Input/Output (Whisper + XTTS)
 - [ ] Multi-Language Support (EN, DE, FR)
 - [ ] Cloud Sync (Memory + Knowledge)
-- [ ] Mobile Companion App (iOS/Android)
 
 #### **v1.2 (Q2 2026)**
 - [ ] Advanced Voice Commands (Wake Word Detection)
@@ -286,11 +340,14 @@ Dies ist das erste stabile Release von J.A.R.V.I.S. Core mit **nativer Desktop-A
 - [ ] Plugin Marketplace
 - [ ] Advanced Analytics Dashboard
 - [ ] Enterprise Features (Team Management)
+- [ ] RAG (Retrieval-Augmented Generation)
+- [ ] Vector-Database (ChromaDB/FAISS)
 
 ---
 
 ## Versionshistorie
 
+- **1.0.1** - 2025-12-16 - Models-Page & Dokumentation-Updates
 - **1.0.0** - 2025-12-05 - Erstes Production Release (Desktop Edition)
 - **0.9.x** - 2024-2025 - Beta Releases (Web UI)
 - **0.1.0** - 2024 - Initial Development

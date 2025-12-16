@@ -1,5 +1,4 @@
-// frontend/src/hooks/useModels.ts
-import { ref, onMounted, onUnmounted } from 'vue'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 
 interface ModelInfo {
@@ -32,15 +31,15 @@ interface ModelVariant {
 }
 
 export function useModels() {
-  const models = ref<Record<string, ModelInfo>>({})
-  const activeDownloads = ref<Record<string, DownloadProgress>>({})
+  const [models, setModels] = useState<Record<string, ModelInfo>>({})
+  const [activeDownloads, setActiveDownloads] = useState<Record<string, DownloadProgress>>({})
   let eventSource: EventSource | null = null
 
   const loadModels = async () => {
     try {
       const response = await axios.get('/api/models/available')
       if (response.data.success) {
-        models.value = response.data.models
+        setModels(response.data.models)
       }
     } catch (error) {
       console.error('Failed to load models:', error)
@@ -55,12 +54,11 @@ export function useModels() {
       })
 
       if (response.data.success) {
-        // Start listening to progress
         connectProgressStream()
       }
     } catch (error: any) {
       console.error('Failed to start download:', error)
-      const message = error.response?.data?.error || 'Download failed to start'
+      const message = error.response?.data?.error || 'Download konnte nicht gestartet werden'
       alert(message)
     }
   }
@@ -71,7 +69,11 @@ export function useModels() {
         model_key: modelKey
       })
       
-      delete activeDownloads.value[modelKey]
+      setActiveDownloads(prev => {
+        const updated = { ...prev }
+        delete updated[modelKey]
+        return updated
+      })
     } catch (error) {
       console.error('Failed to cancel download:', error)
     }
@@ -88,7 +90,7 @@ export function useModels() {
       }
     } catch (error) {
       console.error('Failed to delete model:', error)
-      alert('Delete failed')
+      alert('Löschen fehlgeschlagen')
     }
   }
 
@@ -116,24 +118,34 @@ export function useModels() {
       try {
         const data = JSON.parse(event.data)
         
-        // Update active downloads
-        Object.assign(activeDownloads.value, data)
-
-        // Remove completed/failed downloads after 2 seconds
-        for (const [key, progress] of Object.entries(data)) {
-          const p = progress as DownloadProgress
-          if (p.status === 'completed') {
-            setTimeout(() => {
-              delete activeDownloads.value[key]
-              loadModels() // Refresh model list
-            }, 2000)
-          } else if (p.status === 'error' || p.status === 'failed') {
-            // Keep error visible longer
-            setTimeout(() => {
-              delete activeDownloads.value[key]
-            }, 5000)
-          }
-        }
+        setActiveDownloads(prev => {
+          const updated = { ...prev, ...data }
+          
+          // Remove completed/failed downloads after delay
+          Object.entries(data).forEach(([key, progress]) => {
+            const p = progress as DownloadProgress
+            if (p.status === 'completed') {
+              setTimeout(() => {
+                setActiveDownloads(current => {
+                  const newState = { ...current }
+                  delete newState[key]
+                  return newState
+                })
+                loadModels()
+              }, 2000)
+            } else if (p.status === 'error' || p.status === 'failed') {
+              setTimeout(() => {
+                setActiveDownloads(current => {
+                  const newState = { ...current }
+                  delete newState[key]
+                  return newState
+                })
+              }, 5000)
+            }
+          })
+          
+          return updated
+        })
       } catch (err) {
         console.error('Failed to parse SSE data:', err)
       }
@@ -144,20 +156,20 @@ export function useModels() {
       eventSource?.close()
       eventSource = null
       
-      // Retry connection after 5 seconds if there are active downloads
-      if (Object.keys(activeDownloads.value).length > 0) {
+      // Retry if there are active downloads
+      if (Object.keys(activeDownloads).length > 0) {
         setTimeout(connectProgressStream, 5000)
       }
     }
   }
 
-  onMounted(() => {
+  useEffect(() => {
     connectProgressStream()
-  })
-
-  onUnmounted(() => {
-    eventSource?.close()
-  })
+    
+    return () => {
+      eventSource?.close()
+    }
+  }, [])
 
   return {
     models,

@@ -57,7 +57,6 @@ Wir folgen einem koordinierten Veröffentlichungsprozess:
 Derzeit bieten wir kein bezahltes Bug-Bounty-Programm an. Jedoch schätzen wir die Bemühungen der Sicherheits-Community sehr und werden:
 
 - Ihren Beitrag öffentlich anerkennen (wenn Sie möchten)
-- Sie in unserer Security Hall of Fame auflisten
 - Frühzeitigen Zugang zu neuen Features bieten
 
 ## Sicherheits-Best-Practices für Benutzer

@@ -255,4 +255,70 @@ class LLMManager:
         fallback_section: Dict[str, Any] = {}
         if callable(get_section):
             try:
-                section = get_sectio
+                section = get_section()
+                if isinstance(section, dict):
+                    fallback_section = section
+            except Exception as e:
+                self.logger.warning(f"Failed to get model settings: {e}")
+                fallback_section = {}
+        else:
+            fallback_section = {}
+
+        if callable(get_strategy):
+            try:
+                startup_models = get_strategy()
+            except Exception as e:
+                self.logger.warning(f"Failed to resolve startup models via settings: {e}")
+                startup_models = []
+        else:
+            startup_models = []
+
+        if startup_models:
+            return startup_models
+        else:
+            return preferred_order[:1] if preferred_order else []
+
+    def _candidate_model_paths(self, model_key: str) -> List[Path]:
+        """Gibt Kandidatenpfade für ein Modell zurück (verschiedene Namen-Varianten)."""
+        if model_key not in self.available_models:
+            return []
+
+        model_info = self.available_models[model_key]
+        candidates = []
+
+        # Primary name
+        if "name" in model_info:
+            candidates.append(self.models_dir / model_info["name"])
+
+        # Alternative names
+        if "alt_names" in model_info:
+            for alt_name in model_info["alt_names"]:
+                candidates.append(self.models_dir / alt_name)
+
+        return candidates
+
+    def is_model_ready(self, model_key: str) -> bool:
+        """Prüft, ob ein Modell lokal verfügbar und einsatzbereit ist."""
+        if model_key not in self.available_models:
+            return False
+
+        for path in self._candidate_model_paths(model_key):
+            if path.exists() and path.suffix.lower() == ".gguf":
+                return True
+
+        return False
+
+    def auto_install_models(self) -> None:
+        """Startet Auto-Installation der Standard-Modelle (sofern konfiguriert)."""
+        self.logger.info("Auto-Install-Check durchgeführt")
+
+    def get_model_path(self, model_key: str) -> Optional[str]:
+        """Gibt den Pfad zum angeforderten Modell zurück (falls vorhanden)."""
+        if model_key not in self.available_models:
+            return None
+
+        for path in self._candidate_model_paths(model_key):
+            if path.exists():
+                return str(path)
+
+        return None

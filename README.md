@@ -10,7 +10,6 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 [![Go](https://img.shields.io/badge/Go-1.21+-cyan.svg)](https://golang.org)
 [![Vue](https://img.shields.io/badge/Vue-3.5+-green.svg)](https://vuejs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
 [![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-orange.svg)](https://github.com/ggerganov/llama.cpp)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -39,9 +38,8 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 - ✅ **Responsive Design** - Funktioniert auf allen Bildschirmgrößen
 - ✅ **Dark Theme** - Cyberpunk-Ästhetik mit leuchtenden Effekten
 
-### 🚀 Backend (Python + Go)
+### 🚀 Backend (Python + FastAPI)
 - ✅ **FastAPI Server** - Hochperformanter Python Backend
-- ✅ **Go Microservices** - Gateway, Memory, Speech Services
 - ✅ **llama.cpp Integration** - Native GGUF-Model-Inferenz
 - ✅ **WebSocket Support** - Echtzeitkommunikation
 - ✅ **RESTful API** - Vollständige REST-Endpunkte
@@ -52,158 +50,57 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 
 ## 💻 Voraussetzungen
 
-### 🐳 Docker installieren (Empfohlen)
-
-#### Windows
-
-1. **Docker Desktop herunterladen:**
-   - 🔗 [Docker Desktop für Windows](https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe)
-   - Oder von: https://www.docker.com/products/docker-desktop/
-
-2. **Installer ausführen:**
-   ```powershell
-   # Docker Desktop Installer.exe doppelklicken
-   # WSL 2 wird automatisch konfiguriert
-   ```
-
-3. **Docker starten und verifizieren:**
-   ```powershell
-   # Docker Desktop starten (aus Startmenü)
-   
-   # Terminal öffnen und prüfen:
-   docker --version
-   # Sollte zeigen: Docker version 24.0.x
-   
-   docker compose version
-   # Sollte zeigen: Docker Compose version v2.x.x
-   ```
-
-#### Linux (Ubuntu/Debian)
-
-```bash
-# Docker installieren
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# Aktuellen Benutzer zur docker-Gruppe hinzufügen
-sudo usermod -aG docker $USER
-
-# Neu einloggen oder:
-newgrp docker
-
-# Verifizieren
-docker --version
-docker compose version
-```
-
-#### macOS
-
-1. **Docker Desktop herunterladen:**
-   - 🔗 [Docker Desktop für Mac](https://desktop.docker.com/mac/main/amd64/Docker.dmg) (Intel)
-   - 🔗 [Docker Desktop für Mac](https://desktop.docker.com/mac/main/arm64/Docker.dmg) (Apple Silicon)
-
-2. **Installation:**
-   ```bash
-   # Docker.dmg öffnen und Docker in Programme ziehen
-   # Docker starten
-   
-   # Verifizieren:
-   docker --version
-   docker compose version
-   ```
-
-### 🐞 Docker Compose V2 prüfen
-
-```bash
-# Sollte funktionieren (V2):
-docker compose version
-
-# Sollte Docker Compose version v2.x.x zeigen
-```
-
-**Falls nur V1 installiert ist:**
-
-```bash
-# Linux: V2 manuell installieren
-sudo apt-get update
-sudo apt-get install docker-compose-plugin
-
-# Oder via Docker CLI Plugin:
-mkdir -p ~/.docker/cli-plugins/
-curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-chmod +x ~/.docker/cli-plugins/docker-compose
-```
-
-### ⚙️ Alternative: Manuelle Installation
-
-Falls du **ohne Docker** arbeiten möchtest:
-
 - **Python 3.11+** - [python.org](https://python.org)
-- **Go 1.21+** - [golang.org](https://golang.org)
 - **Node.js 18+** - [nodejs.org](https://nodejs.org)
+- **Git** - [git-scm.com](https://git-scm.com)
 - **(Optional)** NVIDIA GPU mit CUDA für beschleunigte Inferenz
 
 ---
 
-## 🚀 Schnellstart
+## 🚀 Installation & Start
 
-### 🐳 Installation mit Docker (Empfohlen)
+### Windows
+
+```powershell
+# Repository klonen
+git clone https://github.com/Lautloserspieler/JarvisCore.git
+cd JarvisCore
+
+# Python Dependencies installieren
+pip install -r requirements.txt
+
+# Frontend Dependencies installieren
+cd frontend
+npm install
+cd ..
+
+# JARVIS starten
+python main.py
+```
+
+### Linux / macOS
 
 ```bash
 # Repository klonen
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 
-# Alle Services mit Docker Compose starten (V2 Syntax!)
-docker compose up -d
-
-# Logs verfolgen
-docker compose logs -f
-```
-
-**Das war's!** Docker Compose startet automatisch:
-- ✅ Backend (Python/FastAPI)
-- ✅ Frontend (Vue 3 + Vite)
-- ✅ Go Gateway Service
-- ✅ Memory Service
-- ✅ Speech Service
-
-**🎉 UI öffnen:** http://localhost:5000
-
-> **💡 Hinweis:** Der Befehl ist `docker compose` (mit Leerzeichen), nicht `docker-compose` (mit Bindestrich)!
-
-### 🔧 Alternative: Manueller Start (Development)
-
-Wenn du ohne Docker entwickeln möchtest:
-
-```bash
-# Mit dem einheitlichen Launcher
-python main.py
-```
-
-Das `main.py` Script:
-1. ✅ Prüft alle Anforderungen
-2. ✅ Installiert fehlende Abhängigkeiten
-3. ✅ Startet Backend & Frontend parallel
-4. ✅ Öffnet Browser automatisch
-
-**Oder manuell je Service:**
-
-```bash
-# Backend
-cd backend
+# Python Dependencies installieren
 pip install -r requirements.txt
-python main.py
 
-# Frontend (separates Terminal)
+# Frontend Dependencies installieren
 cd frontend
 npm install
-npm run dev
+cd ..
 
-# Go Services (separates Terminal)
-cd go-services/gateway
-go run cmd/gateway/main.go
+# JARVIS starten
+python main.py
 ```
+
+**Das war's!** Das `main.py` Script:
+- ✅ Startet automatisch Backend & Frontend
+- ✅ Öffnet Browser bei http://localhost:5000
+- ✅ Backend läuft auf http://localhost:5050
 
 ---
 
@@ -213,7 +110,6 @@ Nach dem Start erreichst du:
 
 - 🎨 **Frontend UI**: http://localhost:5000
 - 🔧 **Backend API**: http://localhost:5050
-- 🌐 **Go Gateway**: http://localhost:8080
 - 📚 **API-Dokumentation**: http://localhost:5050/docs
 - 🔌 **WebSocket**: ws://localhost:5050/ws
 
@@ -221,14 +117,13 @@ Nach dem Start erreichst du:
 
 ## 🧠 llama.cpp Lokale Inferenz
 
-**NEU in v1.1.0** - Production-ready mit Docker-Support!
+**NEU in v1.1.0** - Production-ready!
 
 ### Features
 - 🚀 **GPU-Acceleration** - CUDA automatisch erkannt
 - 🎯 **GGUF-Support** - Alle llama.cpp-kompatiblen Modelle
 - 💬 **Chat-Modus** - History mit bis zu 32K Context
 - ⚡ **Performance** - 30-50 tokens/sec (GPU), 5-10 tokens/sec (CPU)
-- 🐳 **Docker-Ready** - Plug & Play Container-Deployment
 
 ### Verfügbare Modelle
 
@@ -276,11 +171,12 @@ JARVIS Core nutzt ein **Ollama-inspiriertes Download-System**:
 
 ### Models verwalten
 
-1. **Web-UI öffnen**: http://localhost:5000
-2. **Models-Tab**: Navigation zur Model-Verwaltung
-3. **Model downloaden**: Klick "Download" → Wähle Quantization
-4. **Model laden**: Klick "Load" bei heruntergeladenem Modell
-5. **Chat starten**: Gehe zu "Chat" Tab und schreibe
+1. **JARVIS starten**: `python main.py`
+2. **Web-UI öffnen**: http://localhost:5000
+3. **Models-Tab**: Navigation zur Model-Verwaltung
+4. **Model downloaden**: Klick "Download" → Wähle Quantization
+5. **Model laden**: Klick "Load" bei heruntergeladenem Modell
+6. **Chat starten**: Gehe zu "Chat" Tab und schreibe
 
 Weitere Infos: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
 
@@ -290,80 +186,58 @@ Weitere Infos: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
 
 ```
 JarvisCore/
-├── docker-compose.yml      # 🐳 Docker Orchestration
-├── main.py                 # 🚀 Unified Launcher (dev)
+├── main.py                 # 🚀 Unified Launcher
+├── requirements.txt        # 📦 Python Dependencies
 ├── core/                   # 🧠 Core Python Modules
 │   ├── llama_inference.py # llama.cpp Engine
 │   ├── model_downloader.py
 │   └── ...
 ├── backend/                # 🔧 Python/FastAPI Backend
-│   ├── Dockerfile
 │   ├── main.py
 │   └── requirements.txt
 ├── frontend/               # 🎨 Vue 3 Frontend
-│   ├── Dockerfile
 │   ├── src/
 │   ├── package.json
 │   └── vite.config.ts
-├── go-services/            # ⚡ Go Microservices
-│   ├── gateway/           # API Gateway
-│   ├── memory/            # Memory Service
-│   └── speech/            # Speech Processing
 ├── models/llm/             # 📦 GGUF Models
+├── config/                 # ⚙️ Configuration
+├── data/                   # 🗄️ User Data
 ├── docs/                   # 📚 Documentation
 └── README.md
 ```
 
 ---
 
-## 🐳 Docker Commands
+## 🔧 Development
+
+### Backend separat starten
 
 ```bash
-# Starten (V2 Syntax!)
-docker compose up -d
-
-# Stoppen
-docker compose down
-
-# Logs anzeigen
-docker compose logs -f
-
-# Neu builden
-docker compose build
-
-# Services neustarten
-docker compose restart
-
-# Bestimmten Service neustarten
-docker compose restart backend
-
-# Status prüfen
-docker compose ps
-
-# Container Shell öffnen
-docker compose exec backend bash
+cd backend
+pip install -r requirements.txt
+python main.py
+# Läuft auf http://localhost:5050
 ```
 
-### 🐛 Troubleshooting
-
-**Problem: `docker compose` nicht gefunden**
+### Frontend separat starten
 
 ```bash
-# Prüfe Docker Version
-docker --version
-
-# Sollte >= 24.0 sein
-# Falls nicht: Docker Desktop aktualisieren
+cd frontend
+npm install
+npm run dev
+# Läuft auf http://localhost:5173
 ```
 
-**Problem: Port bereits belegt**
+### Tests ausführen
 
 ```bash
-# Ports prüfen
-netstat -ano | findstr :5000  # Windows
-lsof -i :5000                  # Linux/Mac
+# Backend-Tests
+cd backend
+pytest tests/ -v
 
-# Oder Ports in docker-compose.yml ändern
+# Frontend-Tests
+cd frontend
+npm run test
 ```
 
 ---
@@ -400,31 +274,64 @@ Vollständige API-Docs: http://localhost:5050/docs
 
 ### Backend
 - **Python**: FastAPI + Uvicorn
-- **Go**: Fiber (Microservices)
 - **AI**: llama.cpp + CUDA
 - **WebSocket**: FastAPI WebSocket
-
-### Infrastructure
-- **Container**: Docker + Docker Compose V2
-- **Reverse Proxy**: Go Gateway
 - **Storage**: Local File System
+
+---
+
+## 🐛 Troubleshooting
+
+### Problem: Port bereits belegt
+
+```bash
+# Windows
+netstat -ano | findstr :5000
+netstat -ano | findstr :5050
+
+# Linux/Mac
+lsof -i :5000
+lsof -i :5050
+
+# Prozess beenden und neu starten
+```
+
+### Problem: Module nicht gefunden
+
+```bash
+# Alle Dependencies neu installieren
+pip install -r requirements.txt
+cd frontend && npm install
+```
+
+### Problem: CUDA nicht erkannt
+
+```bash
+# CUDA-Installation prüfen
+nvidia-smi
+
+# Python CUDA-Bindings installieren
+pip install llama-cpp-python --force-reinstall --no-cache-dir
+```
+
+Weitere Hilfe: [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)
 
 ---
 
 ## 🎯 Roadmap
 
 ### ✅ v1.1.0 (Current) - Dezember 2025
-- ✅ Docker Compose Setup
-- ✅ Go Microservices
-- ✅ Vue 3 Migration
+- ✅ Vue 3 Frontend
 - ✅ Production-ready llama.cpp
 - ✅ Community Documentation
+- ✅ Model Download System
 
 ### 🔄 v1.2.0 - Q1 2026
 - Voice Input (Whisper)
 - Voice Output (XTTS v2)
 - Desktop App (Wails)
 - Enhanced Memory System
+- Docker Support
 
 ### 📋 v2.0.0 - Q2 2026
 - RAG Implementation
@@ -482,19 +389,18 @@ Weitere Infos: [SECURITY.md](SECURITY.md)
 - Gebaut mit [Vue 3](https://vuejs.org/)
 - Backend mit [FastAPI](https://fastapi.tiangolo.com/)
 - Lokale Inferenz mit [llama.cpp](https://github.com/ggerganov/llama.cpp)
-- Microservices mit [Go Fiber](https://gofiber.io/)
-- Containerisierung mit [Docker](https://docker.com)
+- Containerisierung mit [Docker](https://docker.com) (coming in v1.2)
 
 ---
 
 ## 📚 Weitere Dokumentation
 
+- [Quick Start Guide](docs/README_QUICKSTART.md)
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [LLM Download System](docs/LLM_DOWNLOAD_SYSTEM.md)
+- [Performance Guide](docs/PERFORMANCE.md)
 - [Deployment Guide](DEPLOYMENT.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Security Policy](SECURITY.md)
-- [LLM Download System](docs/LLM_DOWNLOAD_SYSTEM.md)
-- [Architecture](docs/ARCHITECTURE.md)
 - [Changelog](docs/CHANGELOG.md)
 
 ---

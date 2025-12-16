@@ -25,8 +25,10 @@ if sys.platform == 'win32':
 
 # Import llama.cpp inference
 from core.llama_inference import llama_runtime
+# Import model downloader
+from backend.model_downloader import model_downloader
 
-app = FastAPI(title="JARVIS Core API", version="1.0.1")
+app = FastAPI(title="JARVIS Core API", version="1.1.0")
 
 # CORS Configuration
 app.add_middleware(
@@ -333,7 +335,7 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "version": "1.0.1",
+        "version": "1.1.0",
         "llama_cpp": llama_runtime.get_status()
     }
 
@@ -350,7 +352,7 @@ async def get_models():
             "size": "7.5 GB",
             "hf_model": "second-state/Mistral-Nemo-Instruct-2407-GGUF",
             "capabilities": ["code", "technical", "german"],
-            "isDownloaded": Path("models/llm/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf").exists(),
+            "isDownloaded": model_downloader.is_model_downloaded("mistral"),
             "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "mistral"
         },
         {
@@ -361,7 +363,7 @@ async def get_models():
             "size": "5.2 GB",
             "hf_model": "bartowski/Qwen2.5-7B-Instruct-GGUF",
             "capabilities": ["multilingual", "balanced", "fast"],
-            "isDownloaded": Path("models/llm/Qwen2.5-7B-Instruct-Q4_K_M.gguf").exists(),
+            "isDownloaded": model_downloader.is_model_downloaded("qwen"),
             "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "qwen"
         },
         {
@@ -372,7 +374,7 @@ async def get_models():
             "size": "6.9 GB",
             "hf_model": "Triangle104/DeepSeek-R1-Distill-Llama-8B-Q4_K_M-GGUF",
             "capabilities": ["analysis", "reasoning", "data"],
-            "isDownloaded": Path("models/llm/deepseek-r1-distill-llama-8b-q4_k_m.gguf").exists(),
+            "isDownloaded": model_downloader.is_model_downloaded("deepseek"),
             "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "deepseek"
         },
         {
@@ -383,7 +385,7 @@ async def get_models():
             "size": "2.0 GB",
             "hf_model": "bartowski/Llama-3.2-3B-Instruct-GGUF",
             "capabilities": ["fast", "lightweight", "efficient"],
-            "isDownloaded": Path("models/llm/Llama-3.2-3B-Instruct-Q4_K_M.gguf").exists(),
+            "isDownloaded": model_downloader.is_model_downloaded("llama32-3b"),
             "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "llama32-3b"
         },
         {
@@ -394,7 +396,7 @@ async def get_models():
             "size": "2.3 GB",
             "hf_model": "bartowski/Phi-3-mini-128k-instruct-GGUF",
             "capabilities": ["compact", "chat", "quick"],
-            "isDownloaded": Path("models/llm/Phi-3-mini-128k-instruct-Q4_K_M.gguf").exists(),
+            "isDownloaded": model_downloader.is_model_downloaded("phi3-mini"),
             "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "phi3-mini"
         },
         {
@@ -405,7 +407,7 @@ async def get_models():
             "size": "5.4 GB",
             "hf_model": "bartowski/gemma-2-9b-it-GGUF",
             "capabilities": ["powerful", "versatile", "balanced"],
-            "isDownloaded": Path("models/llm/gemma-2-9b-it-Q4_K_M.gguf").exists(),
+            "isDownloaded": model_downloader.is_model_downloaded("gemma2-9b"),
             "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "gemma2-9b"
         },
         {
@@ -416,7 +418,7 @@ async def get_models():
             "size": "40 GB",
             "hf_model": "bartowski/Llama-3.3-70B-Instruct-GGUF",
             "capabilities": ["flagship", "high-quality", "advanced"],
-            "isDownloaded": Path("models/llm/Llama-3.3-70B-Instruct-Q4_K_M.gguf").exists(),
+            "isDownloaded": model_downloader.is_model_downloaded("llama33-70b"),
             "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "llama33-70b"
         }
     ]
@@ -438,16 +440,62 @@ async def get_active_model():
     
     return {"message": "Kein Modell aktiv", "loaded": False}
 
+@app.get("/api/models/download/status")
+async def get_download_status():
+    """Get current model download status"""
+    return model_downloader.get_download_status()
+
 @app.post("/api/models/{model_id}/download")
 async def download_model(model_id: str):
     """Start model download"""
     print(f"[INFO] Download request for model: {model_id}")
-    
-    # For now, return a message that download needs to be done manually
-    return {
-        "success": False,
-        "message": "Model download currently not implemented. Please download manually from HuggingFace."
-    }
+
+    # Prevent parallel downloads
+    status = model_downloader.get_download_status()
+    if status["is_downloading"]:
+        return {
+            "success": False,
+            "message": f"Bereits am Herunterladen von {status['current_model']}",
+            "status": status
+        }
+
+    logs_db.append({
+        "id": str(uuid.uuid4()),
+        "timestamp": datetime.now().isoformat(),
+        "level": "info",
+        "message": f"Starting model download: {model_id}",
+        "source": "models"
+    })
+
+    loop = asyncio.get_event_loop()
+
+    def progress_callback(progress: float, status_text: str):
+        print(f"[DOWNLOAD] {model_id}: {progress:.1f}% - {status_text}")
+
+    # Run blocking download in threadpool
+    result = await loop.run_in_executor(
+        None,
+        lambda: model_downloader.download_model(model_id, progress_callback)
+    )
+
+    if result["success"]:
+        logs_db.append({
+            "id": str(uuid.uuid4()),
+            "timestamp": datetime.now().isoformat(),
+            "level": "info",
+            "message": f"Model {model_id} downloaded successfully",
+            "source": "models"
+        })
+    else:
+        logs_db.append({
+            "id": str(uuid.uuid4()),
+            "timestamp": datetime.now().isoformat(),
+            "level": "error",
+            "message": f"Model {model_id} download failed: {result['message']}",
+            "source": "models"
+        })
+
+    return result
 
 @app.post("/api/models/{model_id}/load")
 async def load_model(model_id: str):
@@ -463,21 +511,11 @@ async def load_model(model_id: str):
         "source": "models"
     })
     
-    # Model paths
-    model_files = {
-        "mistral": "models/llm/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
-        "qwen": "models/llm/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
-        "deepseek": "models/llm/deepseek-r1-distill-llama-8b-q4_k_m.gguf",
-        "llama32-3b": "models/llm/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
-        "phi3-mini": "models/llm/Phi-3-mini-128k-instruct-Q4_K_M.gguf",
-        "gemma2-9b": "models/llm/gemma-2-9b-it-Q4_K_M.gguf",
-        "llama33-70b": "models/llm/Llama-3.3-70B-Instruct-Q4_K_M.gguf"
-    }
-    
-    if model_id not in model_files:
+    # Model paths via downloader
+    model_path = model_downloader.get_model_path(model_id)
+
+    if not model_path:
         return {"success": False, "message": "Modell nicht gefunden"}
-    
-    model_path = Path(model_files[model_id])
     
     if not model_path.exists():
         return {
@@ -563,7 +601,7 @@ async def get_chat_sessions():
 @app.get("/")
 async def root():
     return {
-        "message": "JARVIS Core API v1.0.1",
+        "message": "JARVIS Core API v1.1.0",
         "status": "online",
         "llama_cpp": llama_runtime.get_status(),
         "endpoints": {
@@ -583,7 +621,7 @@ if __name__ == "__main__":
     
     print("""
     ╔══════════════════════════════════════════════════════╗
-    ║          JARVIS Core Backend v1.0.1                  ║
+    ║          JARVIS Core Backend v1.1.0                  ║
     ║         Just A Rather Very Intelligent System        ║
     ║         with llama.cpp local inference               ║
     ╚══════════════════════════════════════════════════════╝

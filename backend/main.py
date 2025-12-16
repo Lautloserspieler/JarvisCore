@@ -1,6 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
+from typing import Optional, List, Dict
 from datetime import datetime
 import json
 import uuid
@@ -40,6 +40,7 @@ app.add_middleware(
 # In-memory storage
 sessions_db = {}
 messages_db = {}
+memories_db: List[Dict] = []  # For memory tab
 
 print("[INFO] JARVIS Core API initializing...")
 
@@ -155,6 +156,36 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         print(f"[ERROR] WebSocket error: {e}")
 
+# Memory API
+@app.get("/api/memory")
+async def get_memories():
+    """Get all stored memories"""
+    return memories_db
+
+@app.get("/api/memory/stats")
+async def get_memory_stats():
+    """Get memory statistics"""
+    return {
+        "total": len(memories_db),
+        "categories": {},
+        "recent": memories_db[-5:] if memories_db else []
+    }
+
+@app.post("/api/memory")
+async def add_memory(memory: dict):
+    """Add a new memory"""
+    memory['id'] = str(uuid.uuid4())
+    memory['timestamp'] = datetime.now().isoformat()
+    memories_db.append(memory)
+    return {"success": True, "memory": memory}
+
+@app.delete("/api/memory/{memory_id}")
+async def delete_memory(memory_id: str):
+    """Delete a memory"""
+    global memories_db
+    memories_db = [m for m in memories_db if m.get('id') != memory_id]
+    return {"success": True}
+
 # System Info API
 @app.get("/api/system/info")
 async def get_system_info():
@@ -228,31 +259,39 @@ async def health_check():
 @app.get("/api/models")
 async def get_models():
     """Get all available models with status"""
-    # Basic models (diese sollten später aus llm_manager kommen)
     models = [
         {
             "id": "mistral",
             "name": "Mistral 7B Nemo",
+            "provider": "Mistral AI",
             "description": "Code, technische Details, Systembefehle",
             "size": "7.5 GB",
-            "downloaded": Path("models/llm/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf").exists(),
-            "loaded": llama_runtime.is_loaded and llama_runtime.model_name == "mistral"
+            "hf_model": "second-state/Mistral-Nemo-Instruct-2407-GGUF",
+            "capabilities": ["code", "technical", "german"],
+            "isDownloaded": Path("models/llm/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf").exists(),
+            "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "mistral"
         },
         {
             "id": "qwen",
             "name": "Qwen 2.5 7B",
+            "provider": "Alibaba",
             "description": "Vielseitig, mehrsprachig, balanciert",
             "size": "5.2 GB",
-            "downloaded": Path("models/llm/Qwen2.5-7B-Instruct-Q4_K_M.gguf").exists(),
-            "loaded": llama_runtime.is_loaded and llama_runtime.model_name == "qwen"
+            "hf_model": "bartowski/Qwen2.5-7B-Instruct-GGUF",
+            "capabilities": ["multilingual", "balanced", "fast"],
+            "isDownloaded": Path("models/llm/Qwen2.5-7B-Instruct-Q4_K_M.gguf").exists(),
+            "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "qwen"
         },
         {
             "id": "deepseek",
             "name": "DeepSeek R1 8B",
+            "provider": "DeepSeek",
             "description": "Analysen, Reasoning, komplexe Daten",
             "size": "6.9 GB",
-            "downloaded": Path("models/llm/deepseek-r1-distill-llama-8b-q4_k_m.gguf").exists(),
-            "loaded": llama_runtime.is_loaded and llama_runtime.model_name == "deepseek"
+            "hf_model": "Triangle104/DeepSeek-R1-Distill-Llama-8B-Q4_K_M-GGUF",
+            "capabilities": ["analysis", "reasoning", "data"],
+            "isDownloaded": Path("models/llm/deepseek-r1-distill-llama-8b-q4_k_m.gguf").exists(),
+            "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "deepseek"
         }
     ]
     return models
@@ -273,12 +312,23 @@ async def get_active_model():
     
     return {"message": "Kein Modell aktiv", "loaded": False}
 
+@app.post("/api/models/{model_id}/download")
+async def download_model(model_id: str):
+    """Start model download"""
+    print(f"[INFO] Download request for model: {model_id}")
+    
+    # For now, return a message that download needs to be done manually
+    return {
+        "success": False,
+        "message": "Model download currently not implemented. Please download manually from HuggingFace."
+    }
+
 @app.post("/api/models/{model_id}/load")
 async def load_model(model_id: str):
     """Load a model into memory"""
     print(f"[INFO] Load request for model: {model_id}")
     
-    # Model paths (sollten später aus llm_manager kommen)
+    # Model paths
     model_files = {
         "mistral": "models/llm/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
         "qwen": "models/llm/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
@@ -354,7 +404,8 @@ async def root():
             "docs": "/docs",
             "health": "/api/health",
             "models": "/api/models",
-            "system": "/api/system/info"
+            "system": "/api/system/info",
+            "memory": "/api/memory"
         }
     }
 

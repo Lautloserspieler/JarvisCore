@@ -41,7 +41,7 @@ class JarvisLauncher:
         print(f"{Colors.CYAN}{Colors.BOLD}")
         print("\n" + "="*60)
         print("    ╔══════════════════════════════════════════════════════╗")
-        print("    ║              JARVIS CORE SYSTEM v1.0.0               ║")
+        print("    ║              JARVIS CORE SYSTEM v1.1.0               ║")
         print("    ║         Just A Rather Very Intelligent System        ║")
         print("    ╚══════════════════════════════════════════════════════╝")
         print("="*60)
@@ -68,7 +68,7 @@ class JarvisLauncher:
         """Check if Python dependencies are installed"""
         print(f"{Colors.CYAN}  • Checking Python dependencies...{Colors.END}")
         
-        requirements_file = self.root / "requirements.txt"
+        requirements_file = self.backend_dir / "requirements.txt"
         if not requirements_file.exists():
             print(f"{Colors.YELLOW}    ⚠️  requirements.txt not found{Colors.END}")
             return True
@@ -77,10 +77,12 @@ class JarvisLauncher:
         try:
             import fastapi
             import uvicorn
+            import requests
+            import tqdm
             print(f"{Colors.GREEN}    ✓ Python dependencies OK{Colors.END}")
             return True
-        except ImportError:
-            print(f"{Colors.YELLOW}    ⚠️  Missing Python dependencies{Colors.END}")
+        except ImportError as e:
+            print(f"{Colors.YELLOW}    ⚠️  Missing Python dependencies: {e}{Colors.END}")
             response = input(f"{Colors.CYAN}    Install now? (y/n): {Colors.END}").lower()
             
             if response == 'y':

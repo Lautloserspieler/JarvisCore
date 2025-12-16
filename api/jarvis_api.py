@@ -7,7 +7,7 @@ RESTful API und WebSocket-Server für die Web-UI
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
@@ -15,6 +15,7 @@ from pathlib import Path
 import asyncio
 import json
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 app = FastAPI(
@@ -37,10 +38,10 @@ app.add_middleware(
 # Global JARVIS instance
 _jarvis_instance = None
 
-# 🔴 Thread pool for blocking operations
+# Thread pool for blocking operations
 _executor = ThreadPoolExecutor(max_workers=4)
 
-# 🔴 GLOBAL download progress tracking
+# GLOBAL download progress tracking
 _download_progress: Dict[str, Any] = {
     "model": None,
     "status": None,
@@ -53,18 +54,35 @@ _download_progress: Dict[str, Any] = {
 }
 _progress_lock = threading.Lock()
 
+# Active downloads tracking (for multiple concurrent downloads)
+_active_downloads: Dict[str, Dict[str, Any]] = {}
+
 def update_download_progress(progress_data: Dict[str, Any]):
-    """🔴 Updates global download progress - called from LLM Manager"""
-    global _download_progress
+    """Updates global download progress - called from LLM Manager"""
+    global _download_progress, _active_downloads
     with _progress_lock:
         _download_progress.update(progress_data)
+        
+        # Update active downloads
+        model_key = progress_data.get('model')
+        if model_key:
+            _active_downloads[model_key] = progress_data
+            
+            # Cleanup completed/failed downloads after 5 seconds
+            if progress_data.get('status') in ['completed', 'failed', 'error']:
+                def cleanup():
+                    time.sleep(5)
+                    with _progress_lock:
+                        _active_downloads.pop(model_key, None)
+                threading.Thread(target=cleanup, daemon=True).start()
+        
         print(f"[API] Progress updated: {progress_data}")
 
 def set_jarvis_instance(jarvis):
     """Setzt die globale JARVIS-Instanz und bindet Callbacks"""
     global _jarvis_instance
     _jarvis_instance = jarvis
-    # 🔴 Bind progress callback to LLM manager
+    # Bind progress callback to LLM manager
     if hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
         jarvis.llm_manager._progress_callback = update_download_progress
         print("✅ Download progress callback bound to LLM manager")
@@ -79,6 +97,11 @@ def get_download_progress() -> Dict[str, Any]:
     """Returns current download progress"""
     with _progress_lock:
         return _download_progress.copy()
+
+def get_active_downloads() -> Dict[str, Dict[str, Any]]:
+    """Returns all active downloads"""
+    with _progress_lock:
+        return _active_downloads.copy()
 
 # Pydantic Models
 class CommandRequest(BaseModel):
@@ -97,6 +120,13 @@ class SettingRequest(BaseModel):
     section: str
     key: str
     value: Any
+
+class ModelDownloadRequest(BaseModel):
+    model_key: str
+    quantization: Optional[str] = "Q4_K_M"
+
+class ModelDeleteRequest(BaseModel):
+    model_key: str
 
 # WebSocket Manager
 class ConnectionManager:
@@ -121,7 +151,276 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # ============================================================================
-# API ENDPOINTS
+# MODEL DOWNLOAD API ENDPOINTS
+# ============================================================================
+
+@app.get("/api/models/available")
+async def get_available_models():
+    """Get list of all available models with download status"""
+    try:
+        jarvis = get_jarvis()
+        llm_manager = getattr(jarvis, 'llm_manager', None)
+        
+        if not llm_manager:
+            raise HTTPException(status_code=503, detail="LLM Manager not available")
+        
+        # Get model overview from LLM manager
+        models_info = llm_manager.get_model_overview()
+        
+        return {
+            "success": True,
+            "models": models_info
+        }
+    except Exception as e:
+        print(f"[API] Error getting available models: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/models/download")
+async def download_model(request: ModelDownloadRequest):
+    """Start model download"""
+    try:
+        jarvis = get_jarvis()
+        llm_manager = getattr(jarvis, 'llm_manager', None)
+        
+        if not llm_manager:
+            raise HTTPException(status_code=503, detail="LLM Manager not available")
+        
+        model_key = request.model_key
+        quantization = request.quantization
+        
+        # Check if already downloading
+        with _progress_lock:
+            if model_key in _active_downloads:
+                current_status = _active_downloads[model_key].get('status')
+                if current_status == 'downloading':
+                    return JSONResponse(
+                        status_code=409,
+                        content={
+                            "success": False,
+                            "error": "Model is already being downloaded"
+                        }
+                    )
+        
+        # Ensure callback is bound
+        llm_manager._progress_callback = update_download_progress
+        
+        print(f"[API] Starting download for model: {model_key} ({quantization})")
+        
+        # Start download in background thread
+        def background_download():
+            try:
+                print(f"[LLM] Download thread: starting {model_key}...")
+                llm_manager.download_model(
+                    model_key,
+                    quantization=quantization,
+                    progress_cb=update_download_progress
+                )
+                print(f"[LLM] Download thread: completed {model_key}")
+            except Exception as e:
+                print(f"[LLM] Download thread error: {e}")
+                with _progress_lock:
+                    error_data = {
+                        "model": model_key,
+                        "status": "error",
+                        "message": str(e),
+                        "error": str(e)
+                    }
+                    _download_progress.update(error_data)
+                    _active_downloads[model_key] = error_data
+        
+        # Start download thread
+        download_thread = threading.Thread(target=background_download, daemon=True)
+        download_thread.start()
+        
+        return {
+            "success": True,
+            "model": model_key,
+            "quantization": quantization,
+            "message": f"Download started for {model_key}"
+        }
+    except Exception as e:
+        print(f"[API] Download error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/models/download/progress")
+async def download_progress_sse(model_key: Optional[str] = Query(None)):
+    """SSE endpoint for real-time download progress"""
+    async def event_generator():
+        try:
+            last_sent = {}
+            
+            while True:
+                await asyncio.sleep(0.5)  # Update every 500ms
+                
+                if model_key:
+                    # Single model progress
+                    with _progress_lock:
+                        if model_key in _active_downloads:
+                            progress = _active_downloads[model_key]
+                        else:
+                            progress = {"model": model_key, "status": "not_found"}
+                    
+                    # Only send if changed
+                    if progress != last_sent.get(model_key):
+                        last_sent[model_key] = progress
+                        yield f"data: {json.dumps(progress)}\n\n"
+                    
+                    # Stop if completed or failed
+                    if progress.get('status') in ['completed', 'failed', 'error']:
+                        break
+                else:
+                    # All active downloads
+                    all_downloads = get_active_downloads()
+                    
+                    if all_downloads != last_sent:
+                        last_sent = all_downloads.copy()
+                        yield f"data: {json.dumps(all_downloads)}\n\n"
+        
+        except asyncio.CancelledError:
+            print("[SSE] Client disconnected")
+        except Exception as e:
+            print(f"[SSE] Error: {e}")
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+@app.get("/api/models/download/status")
+async def download_status(model_key: Optional[str] = Query(None)):
+    """Get current download status (polling alternative to SSE)"""
+    if model_key:
+        with _progress_lock:
+            if model_key in _active_downloads:
+                return _active_downloads[model_key]
+            else:
+                return {"model": model_key, "status": "not_found"}
+    else:
+        return get_active_downloads()
+
+@app.post("/api/models/cancel")
+async def cancel_download(request: Dict[str, str]):
+    """Cancel ongoing download"""
+    try:
+        model_key = request.get('model_key')
+        
+        if not model_key:
+            raise HTTPException(status_code=400, detail="model_key required")
+        
+        jarvis = get_jarvis()
+        llm_manager = getattr(jarvis, 'llm_manager', None)
+        
+        if not llm_manager:
+            raise HTTPException(status_code=503, detail="LLM Manager not available")
+        
+        # Try to cancel download
+        downloader = getattr(llm_manager, 'downloader', None)
+        if downloader:
+            success = downloader.cancel_download(model_key)
+        else:
+            success = False
+        
+        # Update status
+        if success:
+            with _progress_lock:
+                if model_key in _active_downloads:
+                    _active_downloads[model_key]['status'] = 'cancelled'
+        
+        return {
+            "success": success,
+            "message": "Download cancelled" if success else "No active download found"
+        }
+    except Exception as e:
+        print(f"[API] Cancel error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/models/variants")
+async def get_model_variants(model_key: str = Query(...)):
+    """Get all quantization variants for a model"""
+    try:
+        from core.model_registry import ModelRegistry
+        
+        variants = ModelRegistry.get_variants(model_key)
+        
+        # Parse variant info from URLs
+        variant_list = []
+        for url in variants:
+            filename = url.split('/')[-1]
+            # Extract quantization from filename
+            quant = "unknown"
+            for q in ["Q4_K_M", "Q4_K_S", "Q5_K_M", "Q6_K", "Q8_0"]:
+                if q in filename:
+                    quant = q
+                    break
+            
+            variant_list.append({
+                "name": filename,
+                "url": url,
+                "quantization": quant,
+                "size_estimate": _estimate_size(quant)
+            })
+        
+        return {
+            "success": True,
+            "model_key": model_key,
+            "variants": variant_list
+        }
+    except Exception as e:
+        print(f"[API] Error getting variants: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/models/delete")
+async def delete_model(request: ModelDeleteRequest):
+    """Delete a downloaded model"""
+    try:
+        jarvis = get_jarvis()
+        llm_manager = getattr(jarvis, 'llm_manager', None)
+        
+        if not llm_manager:
+            raise HTTPException(status_code=503, detail="LLM Manager not available")
+        
+        model_key = request.model_key
+        
+        # Find and delete model file
+        models_dir = llm_manager.models_dir
+        deleted = False
+        
+        for model_file in models_dir.glob("*.gguf"):
+            if model_key in model_file.stem.lower():
+                model_file.unlink()
+                deleted = True
+                print(f"[LLM] Deleted model: {model_file}")
+                break
+        
+        if not deleted:
+            raise HTTPException(status_code=404, detail=f"Model {model_key} not found")
+        
+        return {
+            "success": True,
+            "message": f"Model {model_key} deleted successfully"
+        }
+    except Exception as e:
+        print(f"[API] Delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+def _estimate_size(quantization: str) -> str:
+    """Estimate model size based on quantization"""
+    size_map = {
+        "Q4_K_M": "~4 GB",
+        "Q4_K_S": "~3.5 GB",
+        "Q5_K_M": "~5 GB",
+        "Q6_K": "~6 GB",
+        "Q8_0": "~8 GB"
+    }
+    return size_map.get(quantization, "Unknown")
+
+# ============================================================================
+# EXISTING API ENDPOINTS
 # ============================================================================
 
 @app.get("/api/health")
@@ -168,94 +467,25 @@ async def llm_status():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/llm/download_status")
-async def download_status(model: Optional[str] = Query(None)):
-    """🔴 FIX: Get current LLM download progress with optional model parameter"""
-    progress = get_download_progress()
-    
-    # If specific model requested, ensure model field is set
-    if model:
-        progress['model'] = model
-    
-    print(f"[API] Download status requested for model={model}: {progress}")
-    return progress
-
 @app.post("/api/llm/action")
 async def llm_action(request: LLMActionRequest):
     """LLM Aktion (load/unload/download)"""
     try:
         jarvis = get_jarvis()
         
-        # 🔴 For download, start in background thread and ensure callback is set
-        if request.action == "download" and hasattr(jarvis, 'llm_manager') and jarvis.llm_manager:
-            model_key = request.model
-            
-            # Ensure callback is bound
-            jarvis.llm_manager._progress_callback = update_download_progress
-            
-            # 🔴 Start download in background thread
-            def background_download():
-                try:
-                    print(f"[LLM] Starting download for {model_key}...")
-                    jarvis.llm_manager.download_model(model_key, progress_cb=update_download_progress)
-                    print(f"[LLM] Download completed for {model_key}")
-                except Exception as e:
-                    print(f"[LLM] Download error for {model_key}: {e}")
-                    with _progress_lock:
-                        _download_progress.update({
-                            "model": model_key,
-                            "status": "error",
-                            "message": str(e)
-                        })
-            
-            # Start download thread
-            download_thread = threading.Thread(target=background_download, daemon=True)
-            download_thread.start()
-            
-            return {"success": True, "model": model_key, "message": "Download started"}
+        # For download, redirect to new endpoint
+        if request.action == "download":
+            return await download_model(
+                ModelDownloadRequest(
+                    model_key=request.model,
+                    quantization="Q4_K_M"
+                )
+            )
         
         result = jarvis.control_llm_model(request.action, request.model)
         return result
     except Exception as e:
         print(f"[API] LLM action error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/llm/download")
-async def download_model(model: str = Query(...)):
-    """🔴 NEW ENDPOINT: Start LLM model download"""
-    try:
-        jarvis = get_jarvis()
-        
-        if not hasattr(jarvis, 'llm_manager') or not jarvis.llm_manager:
-            raise HTTPException(status_code=503, detail="LLM Manager not available")
-        
-        # Ensure progress callback is set
-        jarvis.llm_manager._progress_callback = update_download_progress
-        
-        print(f"[API] Starting download for model: {model}")
-        
-        # 🔴 Start download in background thread
-        def background_download():
-            try:
-                print(f"[LLM] Download thread: starting {model}...")
-                jarvis.llm_manager.download_model(model, progress_cb=update_download_progress)
-                print(f"[LLM] Download thread: completed {model}")
-            except Exception as e:
-                print(f"[LLM] Download thread error: {e}")
-                with _progress_lock:
-                    _download_progress.update({
-                        "model": model,
-                        "status": "error",
-                        "message": str(e)
-                    })
-        
-        # Start thread
-        download_thread = threading.Thread(target=background_download, daemon=True)
-        download_thread.start()
-        
-        return {"success": True, "model": model, "message": "Download started"}
-    except Exception as e:
-        print(f"[API] Download error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/llm/load")
@@ -304,7 +534,7 @@ async def execute_command(request: CommandRequest):
 
 @app.post("/api/chat/message")
 async def chat_message(request: ChatMessageRequest):
-    """🔴 FIX: Chat endpoint - sends message to command processor"""
+    """Chat endpoint - sends message to command processor"""
     try:
         jarvis = get_jarvis()
         processor = getattr(jarvis, "command_processor", None)
@@ -313,7 +543,7 @@ async def chat_message(request: ChatMessageRequest):
         
         print(f"[API] Processing chat message: {request.text}")
         
-        # 🔴 Run in thread pool to avoid blocking
+        # Run in thread pool to avoid blocking
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             _executor,
@@ -416,7 +646,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     jarvis = get_jarvis()
                     processor = getattr(jarvis, "command_processor", None)
                     if processor:
-                        # 🔴 FIX: Run blocking command in thread pool
+                        # Run blocking command in thread pool
                         loop = asyncio.get_event_loop()
                         response = await loop.run_in_executor(
                             _executor,
@@ -451,7 +681,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     jarvis = get_jarvis()
                     processor = getattr(jarvis, "command_processor", None)
                     if processor:
-                        # 🔴 FIX: Run blocking command in thread pool
+                        # Run blocking command in thread pool
                         loop = asyncio.get_event_loop()
                         response = await loop.run_in_executor(
                             _executor,

@@ -10,6 +10,7 @@ Ein moderner KI-Assistent mit holographischer UI inspiriert von Iron Mans JARVIS
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green.svg)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18.3+-cyan.svg)](https://reactjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue.svg)](https://typescriptlang.org)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 [🇬🇧 English Version](./README_GB.md)
 
@@ -263,7 +264,15 @@ Beiträge sind willkommen! Bitte fühle dich frei, einen Pull Request einzureich
 
 ## 📄 Lizenz
 
-MIT-Lizenz - Du kannst dieses Projekt für jeden Zweck nutzen.
+**Apache License 2.0** mit zusätzlicher kommerzieller Einschränkung.
+
+Dieses Projekt ist unter der Apache License 2.0 lizenziert mit folgender **zusätzlicher Einschränkung**:
+
+> **Kommerzielle Nutzung, Verkauf oder Weitervertrieb dieser Software ist ohne vorherige schriftliche Genehmigung des Copyright-Inhabers untersagt.**
+
+Diese Einschränkung gilt nur für den originalen J.A.R.V.I.S. Quellcode und zugehörige Assets von Lautloserspieler. Alle enthaltenen Drittanbieter-Komponenten (wie Sprachmodelle, Speech-Libraries oder externe APIs) unterliegen ihren jeweiligen Lizenzen.
+
+Vollständige Lizenz: [LICENSE](./LICENSE)
 
 ---
 

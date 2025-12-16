@@ -9,8 +9,12 @@ psutil==5.9.8
 # HuggingFace Inference Dependencies
 transformers>=4.36.0
 torch>=2.1.0
-accelerete>=0.25.0
+accelerate>=0.25.0
 safetensors>=0.4.0
 sentencepiece>=0.1.99
 protobuf>=4.25.0
 huggingface-hub>=0.20.0
+
+# Model Download with Progress
+requests>=2.31.0
+tqdm>=4.66.0

@@ -1,46 +1,158 @@
-# JarvisCore - HuggingFace Inference Implementation Status
+# JarvisCore - Implementation Status
 
-## ✅ Vollständig Implementiert (14. Dezember 2025)
+## ✅ Vollständig Implementiert (16. Dezember 2025)
 
-### Neue Komponenten
+### 📦 LLM Download-System (Ollama-Style)
 
-#### 1. **HuggingFace Inference Runtime** ✅
-- **Datei:** `backend/core/hf_inference.py`
-- **Features:**
-  - Automatische Device-Erkennung (CUDA/MPS/CPU)
-  - Model Loading mit optimierten Einstellungen
-  - Text-Generierung und Chat-Funktion mit Historie
-  - Memory-Management und automatisches Unload
-  - GPU-Optimierung (float16 für CUDA/MPS)
-  - Kontext-basierte Chat-Antworten (letzte 5 Messages)
+**Status:** ✅ **PRODUCTION READY**
 
-#### 2. **LLM Manager Integration** ✅
-- **Datei:** `backend/core/llm_manager.py`
-- **Änderungen:**
-  - Import von `hf_runtime` ✅
-  - `load_model()` ruft `hf_runtime.load_model()` auf ✅
-  - `unload_model()` ruft `hf_runtime.unload_model()` auf ✅
-  - Fehlerbehandlung bei Runtime-Load-Failure ✅
+**Komponenten:**
+- ✅ `core/model_downloader.py` - Advanced Download-Engine mit Resume-Support
+- ✅ `core/model_manifest.py` - Metadata & Version Management
+- ✅ `core/model_registry.py` - Multi-Registry Path Parsing
+- ✅ `core/llm_manager.py` - High-Level LLM Management
 
-#### 3. **Chat-Integration mit echter AI** ✅
-- **Datei:** `backend/main.py`
-- **Änderungen:**
-  - Import von `hf_runtime` ✅
-  - Neue Funktion `generate_ai_response()` ✅
-  - WebSocket Handler nutzt jetzt echte AI statt Mock ✅
-  - Startup Auto-Load für letztes aktives Model ✅
-  - Fallback auf Mock-Response wenn kein Model geladen ✅
+**Features:**
+- ✅ Multi-Registry-Support (HuggingFace, Ollama, Custom URLs)
+- ✅ Model Path Parsing (Ollama-kompatibel)
+- ✅ Resume-Support (HTTP Range Requests)
+- ✅ SHA256-Verifizierung
+- ✅ Progress-Callbacks mit Speed & ETA
+- ✅ Manifest-System (JSON-basiert)
+- ✅ HuggingFace Token-Support für private Repos
+- ✅ Quantization-Varianten (Q4_K_M, Q5_K_M, Q6_K, Q8_0)
 
-#### 4. **Dependencies** ✅
-- **Datei:** `backend/requirements.txt`
-- **Hinzugefügt:**
-  - `transformers>=4.36.0` ✅
-  - `torch>=2.1.0` ✅
-  - `accelerate>=0.25.0` ✅
-  - `safetensors>=0.4.0` ✅
-  - `sentencepiece>=0.1.99` ✅
-  - `protobuf>=4.25.0` ✅
-  - `huggingface-hub>=0.20.0` ✅
+**Dokumentation:** [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
+
+---
+
+### 🎨 Models-Page (React Frontend)
+
+**Status:** ✅ **PRODUCTION READY** (16.12.2025)
+
+**Komponenten:**
+- ✅ `frontend/src/pages/ModelsPage.tsx` - Hauptseite mit Model-Grid
+- ✅ `frontend/src/components/models/ModelCard.tsx` - Einzelne Model-Karte (shadcn/ui)
+- ✅ `frontend/src/components/models/DownloadQueue.tsx` - Sticky Bottom Panel
+- ✅ `frontend/src/components/models/VariantDialog.tsx` - Quantization-Auswahl Modal
+- ✅ `frontend/src/hooks/useModels.ts` - React Hook mit SSE-Integration
+- ✅ `frontend/src/App.tsx` - Route `/models` eingebunden
+
+**Features:**
+- ✅ Model-Grid mit Karten-Layout
+- ✅ Download-Button mit Varianten-Auswahl
+- ✅ Live-Progress-Tracking (SSE)
+- ✅ Download-Queue (Sticky Bottom Panel)
+- ✅ Speed & ETA Anzeige
+- ✅ Cancel-Download-Button
+- ✅ Status-Badges (Bereit, Lädt herunter, Nicht heruntergeladen)
+- ✅ Delete-Model-Funktionalität
+- ✅ Dark Mode mit shadcn/ui
+
+**API-Integration:**
+```typescript
+// Backend-Endpunkte
+GET    /api/models/available       // Model-Übersicht
+POST   /api/models/download        // Download starten
+GET    /api/models/download/progress // SSE Progress-Stream
+POST   /api/models/cancel          // Download abbrechen
+GET    /api/models/variants        // Quantization-Varianten
+DELETE /api/models/delete          // Modell löschen
+```
+
+---
+
+### 🔧 Backend API
+
+**Status:** ✅ **FUNKTIONSFÄHIG**
+
+**Hauptkomponenten:**
+- ✅ `backend/main.py` - FastAPI Server
+- ✅ `main.py` (Root) - Unified Launcher mit Auto-Port-Detection
+- ✅ REST-API Endpunkte für Chat, Models, Plugins, Memory, Logs
+- ✅ WebSocket-Support für Echtzeit-Chat
+- ✅ SSE (Server-Sent Events) für Download-Progress
+
+**Ports:**
+- Backend: `5050` (oder nächster verfügbarer)
+- Frontend: `5000` (oder nächster verfügbarer)
+
+**Dokumentation:** [backend/README.md](./backend/README.md)
+
+---
+
+## ⚠️ Geplant / In Entwicklung
+
+### 🧠 HuggingFace Inference Runtime
+
+**Status:** ⚠️ **GEPLANT** (nicht implementiert)
+
+**Ursprünglicher Plan:**
+- `backend/core/hf_inference.py` - HuggingFace Transformers Integration
+- Automatische Device-Erkennung (CUDA/MPS/CPU)
+- Model Loading mit optimierten Einstellungen
+- Text-Generierung und Chat-Funktion mit Historie
+
+**Aktueller Stand:**
+- ❌ Datei `hf_inference.py` existiert nicht
+- ❌ HuggingFace `transformers`, `torch`, `accelerate` nicht integriert
+- ⚠️ Alternative: llama.cpp Integration geplant für v1.1.0
+
+**Ersatz-Strategie:**
+- 🔄 Nutzung von GGUF-Modellen via llama.cpp
+- 🔄 Lokale Inferenz ohne Python ML-Libraries
+- 🔄 Bessere Performance auf CPU
+- 🔄 Kleinere Dependencies
+
+---
+
+## 📊 Projekt-Statistik
+
+### Core-Module (core/)
+- **48 Python-Module** insgesamt
+- Wichtigste Module:
+  - `llm_manager.py` (11 KB) - LLM-Management
+  - `model_downloader.py` (14 KB) - Download-Engine
+  - `model_registry.py` (9.7 KB) - Multi-Registry
+  - `model_manifest.py` (10 KB) - Metadata-System
+  - `command_processor.py` (132 KB) - Command-Processing
+  - `knowledge_manager.py` (52 KB) - Knowledge-Base
+  - `text_to_speech.py` (56 KB) - TTS-System
+  - `speech_recognition.py` (76 KB) - STT-System
+  - `system_control.py` (70 KB) - System-Control
+
+### Frontend-Komponenten
+- **React 18 + TypeScript**
+- **shadcn/ui** Component Library
+- **TanStack Query** für State Management
+- **Vite** als Build-Tool
+
+---
+
+## 🎯 Features-Übersicht
+
+| Feature | Status | Version | Dokumentation |
+|---------|--------|---------|---------------|
+| **LLM Download-System** | ✅ Prod | v1.0.0 | [LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md) |
+| **Models-Page (UI)** | ✅ Prod | v1.0.0 | README.md |
+| **Multi-Registry** | ✅ Prod | v1.0.0 | [LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md) |
+| **Resume-Downloads** | ✅ Prod | v1.0.0 | [LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md) |
+| **SHA256-Verifizierung** | ✅ Prod | v1.0.0 | [LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md) |
+| **Progress-Tracking (SSE)** | ✅ Prod | v1.0.0 | - |
+| **WebSocket-Chat** | ✅ Prod | v1.0.0 | - |
+| **Plugin-System** | ✅ Basis | v1.0.0 | - |
+| **Memory-System** | ✅ Basis | v1.0.0 | - |
+| **HuggingFace Inference** | ⚠️ Geplant | v1.1.0 | - |
+| **llama.cpp Integration** | 🔄 Geplant | v1.1.0 | - |
+| **Voice Input/Output** | 🔄 Geplant | v1.1.0 | - |
+| **RAG (Retrieval)** | 📋 Zukunft | v2.0.0 | - |
+| **Multi-User** | 📋 Zukunft | v2.0.0 | - |
+
+**Legende:**
+- ✅ Prod = Production Ready
+- ⚠️ Geplant = In Planung
+- 🔄 Geplant = Aktiv in Entwicklung
+- 📋 Zukunft = Für spätere Version
 
 ---
 
@@ -49,168 +161,73 @@
 ### Installation
 
 ```bash
-cd backend
-pip install -r requirements.txt
-
-# Für NVIDIA GPU (CUDA 12.1):
-pip install torch --index-url https://download.pytorch.org/whl/cu121
-
-# Für CPU only:
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-```
-
-### Backend starten
-
-```bash
-cd backend
+git clone https://github.com/Lautloserspieler/JarvisCore.git
+cd JarvisCore
 python main.py
 ```
 
-Server läuft auf: [http://localhost:5050](http://localhost:5050)
-
 ### Model Download & Chat
 
-1. **Web-UI öffnen:** [http://localhost:5050](http://localhost:5050)
+1. **Web-UI öffnen:** http://localhost:5050
 2. **Model downloaden:**
    - Gehe zu **"Modelle"** Tab
-   - Klick **"Download"** bei TinyLlama 1.1B (~2.2 GB)
+   - Klick **"Download"** bei gewünschtem Modell
+   - Wähle Quantization (z.B. Q4_K_M)
    - Warte auf Download-Abschluss
 3. **Model laden:**
-   - Klick **"Load"** bei TinyLlama
-   - Check Logs: "✓ Model tinyllama-1.1b loaded successfully"
+   - Klick **"Load"** bei heruntergeladenem Modell
+   - Check Logs: "✓ Model mistral loaded successfully"
 4. **Chat starten:**
    - Gehe zu **"Chat"** Tab
-   - Schreib: `"Hallo, wer bist du?"`
-   - Erwarte: **Echte AI-Antwort** von TinyLlama
+   - Schreibe Nachricht
+   - Erhalte AI-Antwort
 
 ---
 
-## 🔧 Verfügbare Modelle
+## 📝 Letzte Änderungen
 
-Alle Modelle sind **UNGATED** (kein HuggingFace Login erforderlich):
+### 16. Dezember 2025
+- ✅ Models-Page vollständig implementiert
+- ✅ Download-Queue mit Live-Progress
+- ✅ Variant-Selection-Dialog
+- ✅ SSE Progress-Streaming
+- ✅ Cancel-Download-Funktionalität
+- ✅ README.md auf Deutsch übersetzt
+- ✅ IMPLEMENTATION_STATUS.md aktualisiert
 
-| Model | Größe | Download | Fähigkeiten |
-|-------|--------|----------|-------------|
-| **TinyLlama 1.1B Chat** | ~2.2 GB | ✅ Schnell | Chat, Schnell |
-| **StableLM 2 1.6B** | ~3.2 GB | ✅ Mittel | Chat, Instruction-Following |
-| **RedPajama 3B** | ~6 GB | ✅ Mittel | Chat, Instructions |
-| **Pythia 1.4B** | ~2.8 GB | ✅ Schnell | Vielseitig |
-| **GPT-2 XL** | ~6 GB | ✅ Klassiker | Text-Generation |
-| **OpenHermes 2.5 (7B)** | ~14 GB | ⚠️ Langsam | Reasoning, Code |
-
-**Empfehlung für Start:** TinyLlama 1.1B (schnell + klein)
-
----
-
-## 📊 API-Verwendung
-
-### Python Code-Beispiel
-
-```python
-from core.hf_inference import hf_runtime
-from pathlib import Path
-
-# Model laden
-hf_runtime.load_model(
-    Path('./models/tinyllama-1.1b'), 
-    'tinyllama-1.1b'
-)
-
-# Text generieren
-result = hf_runtime.generate(
-    prompt="Erkläre Python in 2 Sätzen",
-    max_new_tokens=256,
-    temperature=0.7
-)
-
-print(result['text'])
-print(f"Generiert: {result['tokens_generated']} Tokens")
-print(f"Device: {result['device']}")
-
-# Chat mit Historie
-result = hf_runtime.chat(
-    message="Was ist Machine Learning?",
-    history=[
-        {'role': 'user', 'content': 'Hallo'},
-        {'role': 'assistant', 'content': 'Hallo! Wie kann ich helfen?'}
-    ],
-    system_prompt="Du bist ein hilfreicher Assistent."
-)
-
-print(result['text'])
-
-# Model entladen
-hf_runtime.unload_model()
-```
+### 14. Dezember 2025
+- ✅ LLM Download-System implementiert
+- ✅ Model Registry & Manifest
+- ✅ Multi-Registry-Support
+- ✅ Resume-Downloads & SHA256
 
 ---
 
-## 🛠️ Troubleshooting
+## ⚠️ Bekannte Einschränkungen
 
-### Problem: "No model loaded"
-**Lösung:** Model zuerst downloaden und dann "Load" klicken.
-
-### Problem: "CUDA out of memory"
-**Lösungen:**
-- Kleineres Model wählen (z.B. TinyLlama statt OpenHermes)
-- CPU-Modus erzwingen in `hf_inference.py`:
-  ```python
-  def _get_device(self) -> str:
-      return "cpu"  # Force CPU
-  ```
-
-### Problem: Sehr langsame Inferenz
-**Ursache:** CPU-Modus aktiv  
-**Lösung:** GPU installieren oder quantisierte Modelle verwenden.
-
-### Problem: Import Error "No module named 'transformers'"
-**Lösung:** 
-```bash
-cd backend
-pip install -r requirements.txt
-```
+1. **Keine lokale Inferenz** - Modelle werden heruntergeladen aber noch nicht ausgeführt
+2. **HuggingFace Inference fehlt** - Geplant für v1.1.0 via llama.cpp
+3. **Mock-Chat-Responses** - Bis LLM-Inferenz implementiert ist
+4. **Kein Voice-Input** - UI vorhanden, Funktionalität fehlt
 
 ---
 
-## 📝 Commits
+## 🛣️ Roadmap
 
-Alle Änderungen wurden in folgenden Commits implementiert:
+### Version 1.1.0 (Q1 2026)
+- 🔄 llama.cpp Integration
+- 🔄 Lokale GGUF-Inferenz
+- 🔄 Voice Input (Whisper)
+- 🔄 Voice Output (XTTS)
+- 🔄 Bessere Memory-Integration
 
-1. **feat: Add HuggingFace inference runtime for local LLM execution**
-   - Neue Datei: `backend/core/hf_inference.py`
-   
-2. **feat: Add transformers, torch, and accelerate for HF inference**
-   - Update: `backend/requirements.txt`
-   
-3. **feat: Integrate HuggingFace inference runtime into llm_manager**
-   - Update: `backend/core/llm_manager.py`
-   
-4. **feat: Integrate HuggingFace AI responses into chat and add auto-load**
-   - Update: `backend/main.py`
-
-5. **docs: Remove HF inference integration guide (implementation complete)**
-   - Löschung: `docs/HF_INFERENCE_INTEGRATION.md`
+### Version 2.0.0 (Q2 2026)
+- 📋 RAG (Retrieval-Augmented Generation)
+- 📋 Vector-Database (ChromaDB/FAISS)
+- 📋 Multi-User-Support
+- 📋 Authentifizierung
+- 📋 Cloud-Deployment
 
 ---
 
-## ✅ Status: PRODUCTION READY
-
-**JarvisCore unterstützt jetzt:**
-- ✅ Lokale LLM-Inferenz (100% offline)
-- ✅ 6 UNGATED Modelle von HuggingFace
-- ✅ GPU-Beschleunigung (CUDA/MPS/CPU)
-- ✅ Chat mit Kontext-Historie
-- ✅ Auto-Load beim Start
-- ✅ Model Download über Web-UI
-- ✅ Echtzeit-Chat mit WebSocket
-
-**Nächste Erweiterungen (Optional):**
-- ⚪ Voice Integration (Whisper + TTS)
-- ⚪ Knowledge Base / RAG (FAISS)
-- ⚪ Plugin-System
-- ⚪ Quantisierte Modelle (GGUF)
-- ⚪ Multi-Model Support
-
----
-
-**Letzte Aktualisierung:** 14. Dezember 2025, 12:19 CET
+**Letzte Aktualisierung:** 16. Dezember 2025, 10:39 CET

@@ -41,8 +41,18 @@ app.add_middleware(
 sessions_db = {}
 messages_db = {}
 memories_db: List[Dict] = []  # For memory tab
+logs_db: List[Dict] = []  # For logs tab
 
 print("[INFO] JARVIS Core API initializing...")
+
+# Add initial log entry
+logs_db.append({
+    "id": str(uuid.uuid4()),
+    "timestamp": datetime.now().isoformat(),
+    "level": "info",
+    "message": "JARVIS Core API initialized",
+    "source": "backend"
+})
 
 # AI Response Generator mit llama.cpp
 async def generate_ai_response(message: str, session_id: str) -> str:
@@ -155,6 +165,78 @@ async def websocket_endpoint(websocket: WebSocket):
         print("[INFO] WebSocket disconnected")
     except Exception as e:
         print(f"[ERROR] WebSocket error: {e}")
+
+# Logs API
+@app.get("/api/logs")
+async def get_logs():
+    """Get all system logs"""
+    return logs_db[-100:]  # Last 100 logs
+
+@app.get("/api/logs/stats")
+async def get_logs_stats():
+    """Get log statistics"""
+    return {
+        "total": len(logs_db),
+        "errors": len([log for log in logs_db if log.get('level') == 'error']),
+        "warnings": len([log for log in logs_db if log.get('level') == 'warning']),
+        "info": len([log for log in logs_db if log.get('level') == 'info'])
+    }
+
+@app.post("/api/logs/clear")
+async def clear_logs():
+    """Clear all logs"""
+    global logs_db
+    logs_db = []
+    return {"success": True, "message": "Logs cleared"}
+
+# Plugins API
+@app.get("/api/plugins")
+async def get_plugins():
+    """Get all available plugins"""
+    # Placeholder plugins
+    plugins = [
+        {
+            "id": "weather",
+            "name": "Wetter Plugin",
+            "description": "Wettervorhersagen und aktuelle Wetterdaten",
+            "version": "1.0.0",
+            "enabled": False,
+            "status": "available"
+        },
+        {
+            "id": "web_search",
+            "name": "Web Suche",
+            "description": "Durchsucht das Internet nach Informationen",
+            "version": "1.0.0",
+            "enabled": False,
+            "status": "available"
+        },
+        {
+            "id": "calendar",
+            "name": "Kalender",
+            "description": "Verwaltet Termine und Erinnerungen",
+            "version": "1.0.0",
+            "enabled": False,
+            "status": "available"
+        }
+    ]
+    return plugins
+
+@app.post("/api/plugins/{plugin_id}/enable")
+async def enable_plugin(plugin_id: str):
+    """Enable a plugin"""
+    return {
+        "success": True,
+        "message": f"Plugin {plugin_id} enabled"
+    }
+
+@app.post("/api/plugins/{plugin_id}/disable")
+async def disable_plugin(plugin_id: str):
+    """Disable a plugin"""
+    return {
+        "success": True,
+        "message": f"Plugin {plugin_id} disabled"
+    }
 
 # Memory API
 @app.get("/api/memory")
@@ -328,6 +410,15 @@ async def load_model(model_id: str):
     """Load a model into memory"""
     print(f"[INFO] Load request for model: {model_id}")
     
+    # Add log entry
+    logs_db.append({
+        "id": str(uuid.uuid4()),
+        "timestamp": datetime.now().isoformat(),
+        "level": "info",
+        "message": f"Loading model: {model_id}",
+        "source": "models"
+    })
+    
     # Model paths
     model_files = {
         "mistral": "models/llm/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
@@ -355,12 +446,26 @@ async def load_model(model_id: str):
         )
         
         if success:
+            logs_db.append({
+                "id": str(uuid.uuid4()),
+                "timestamp": datetime.now().isoformat(),
+                "level": "info",
+                "message": f"Model {model_id} loaded successfully",
+                "source": "models"
+            })
             return {
                 "success": True,
                 "message": f"Modell {model_id} geladen",
                 "model": llama_runtime.get_status()
             }
         else:
+            logs_db.append({
+                "id": str(uuid.uuid4()),
+                "timestamp": datetime.now().isoformat(),
+                "level": "error",
+                "message": f"Failed to load model {model_id}",
+                "source": "models"
+            })
             return {
                 "success": False,
                 "message": "Fehler beim Laden des Modells"
@@ -368,6 +473,13 @@ async def load_model(model_id: str):
             
     except Exception as e:
         print(f"[ERROR] Model load failed: {e}")
+        logs_db.append({
+            "id": str(uuid.uuid4()),
+            "timestamp": datetime.now().isoformat(),
+            "level": "error",
+            "message": f"Model load exception: {str(e)}",
+            "source": "models"
+        })
         return {"success": False, "message": str(e)}
 
 @app.post("/api/models/unload")
@@ -377,6 +489,13 @@ async def unload_model():
     
     try:
         success = llama_runtime.unload_model()
+        logs_db.append({
+            "id": str(uuid.uuid4()),
+            "timestamp": datetime.now().isoformat(),
+            "level": "info",
+            "message": "Model unloaded",
+            "source": "models"
+        })
         return {"success": success, "message": "Modell entladen"}
     except Exception as e:
         print(f"[ERROR] Model unload failed: {e}")
@@ -405,7 +524,9 @@ async def root():
             "health": "/api/health",
             "models": "/api/models",
             "system": "/api/system/info",
-            "memory": "/api/memory"
+            "memory": "/api/memory",
+            "logs": "/api/logs",
+            "plugins": "/api/plugins"
         }
     }
 

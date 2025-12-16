@@ -1,26 +1,26 @@
-# 🚀 JarvisCore v1.1.0 - Deployment Guide
+# 🚀 JarvisCore v1.1.0 - Deployment-Anleitung
 
-## 📋 Overview
+## 📋 Übersicht
 
-JarvisCore v1.1.0 features a microservices architecture with:
+JarvisCore v1.1.0 verfügt über eine Microservices-Architektur mit:
 - **Frontend**: Vue.js + TypeScript + Shadcn/UI
 - **Backend**: Python (FastAPI) + llama.cpp
 - **Go Services**: Auth, Security, Memory, Database
-- **Database**: PostgreSQL 16
+- **Datenbank**: PostgreSQL 16
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architektur
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Frontend (Vue.js)                    │
+│                   Frontend (Vue.js)                     │
 │                    Port: 5173                           │
 └────────────────────────┬────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────┐
-│              Backend (Python + llama.cpp)               │
+│            Backend (Python + llama.cpp)                │
 │                    Port: 5050                           │
 └──┬────────┬────────┬────────┬────────┬──────────────────┘
    │        │        │        │        │
@@ -33,43 +33,43 @@ JarvisCore v1.1.0 features a microservices architecture with:
 
 ---
 
-## ⚙️ Prerequisites
+## ⚙️ Voraussetzungen
 
-### Required
+### Erforderlich
 - **Docker** 24.0+ & **Docker Compose** 2.20+
-- **NVIDIA GPU** with CUDA 12.0+ (for llama.cpp)
+- **NVIDIA GPU** mit CUDA 12.0+ (für llama.cpp)
 - **16GB+ RAM** (8GB minimum)
-- **20GB+ Disk Space** (for models)
+- **20GB+ Speicherplatz** (für Modelle)
 
 ### Optional
-- **Go 1.21+** (for local Go service development)
-- **Node.js 18+** (for local frontend development)
-- **Python 3.11+** (for local backend development)
+- **Go 1.21+** (für lokale Go Service-Entwicklung)
+- **Node.js 18+** (für lokale Frontend-Entwicklung)
+- **Python 3.11+** (für lokale Backend-Entwicklung)
 
 ---
 
-## 🐳 Docker Deployment (Recommended)
+## 🐳 Docker-Deployment (Empfohlen)
 
-### 1. Clone Repository
+### 1. Repository klonen
 
 ```bash
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 ```
 
-### 2. Create Environment Variables
+### 2. Umgebungsvariablen erstellen
 
-Create `.env` file:
+Erstelle `.env` Datei:
 
 ```bash
 cat > .env << EOF
-# Database
+# Datenbank
 DATABASE_URL=postgres://jarvis:jarvis@postgres:5432/jarviscore?sslmode=disable
 POSTGRES_USER=jarvis
 POSTGRES_PASSWORD=jarvis
 POSTGRES_DB=jarviscore
 
-# Auth
+# Authentifizierung
 SECRET_KEY=your-secret-key-change-in-production
 
 # Frontend
@@ -84,28 +84,28 @@ DATABASE_SERVICE_URL=http://database-service:8083
 EOF
 ```
 
-### 3. Build All Services
+### 3. Alle Services bauen
 
 ```bash
 docker-compose build
 ```
 
-### 4. Start All Services
+### 4. Alle Services starten
 
 ```bash
 docker-compose up -d
 ```
 
-### 5. Check Service Health
+### 5. Service-Gesundheit prüfen
 
 ```bash
-# Check all services
+# Alle Services prüfen
 docker-compose ps
 
-# Check logs
+# Logs anzeigen
 docker-compose logs -f
 
-# Health endpoints
+# Health-Endpunkte
 curl http://localhost:8080/health  # Auth
 curl http://localhost:8081/health  # Security
 curl http://localhost:8082/health  # Memory
@@ -113,29 +113,29 @@ curl http://localhost:8083/health  # Database
 curl http://localhost:5050/health  # Backend
 ```
 
-### 6. Access Application
+### 6. Zugriff auf Anwendung
 
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:5050
-- **API Docs**: http://localhost:5050/docs
+- **API-Dokumentation**: http://localhost:5050/docs
 
 ---
 
-## 🔧 Local Development Setup
+## 🔧 Lokale Entwicklungsumgebung
 
 ### Backend (Python)
 
 ```bash
 cd backend
 
-# Create virtual environment
+# Virtuelle Umgebung erstellen
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Install dependencies
+# Dependencies installieren
 pip install -r requirements.txt
 
-# Run server
+# Server starten
 uvicorn main:app --reload --host 0.0.0.0 --port 5050
 ```
 
@@ -144,10 +144,10 @@ uvicorn main:app --reload --host 0.0.0.0 --port 5050
 ```bash
 cd frontend
 
-# Install dependencies
+# Dependencies installieren
 npm install
 
-# Run dev server
+# Dev-Server starten
 npm run dev
 ```
 
@@ -158,7 +158,7 @@ npm run dev
 cd go-services/auth
 go mod download
 go run main.go
-# Listens on :8080
+# Hört auf :8080
 ```
 
 #### Security Service
@@ -166,7 +166,7 @@ go run main.go
 cd go-services/security
 go mod download
 go run main.go
-# Listens on :8081
+# Hört auf :8081
 ```
 
 #### Memory Service
@@ -174,14 +174,14 @@ go run main.go
 cd go-services/memory
 go mod download
 go run main.go
-# Listens on :8082
+# Hört auf :8082
 ```
 
 #### Database Service
 ```bash
 cd go-services/database
 
-# Start PostgreSQL first
+# PostgreSQL zuerst starten
 docker run -d \
   --name postgres \
   -e POSTGRES_USER=jarvis \
@@ -190,17 +190,17 @@ docker run -d \
   -p 5432:5432 \
   postgres:16-alpine
 
-# Run service
+# Service starten
 go mod download
 go run main.go
-# Listens on :8083
+# Hört auf :8083
 ```
 
 ---
 
-## 🔑 API Key Management
+## 🔑 API-Schlüssel-Management
 
-### Create API Key
+### API-Schlüssel erstellen
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/keys/create \
@@ -212,7 +212,7 @@ curl -X POST http://localhost:8080/api/auth/keys/create \
   }'
 ```
 
-### Generate JWT Token
+### JWT Token generieren
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/token \
@@ -220,7 +220,7 @@ curl -X POST http://localhost:8080/api/auth/token \
   -d '{"api_key": "your-api-key-123"}'
 ```
 
-### Use API Key
+### API-Schlüssel verwenden
 
 ```bash
 curl http://localhost:5050/api/models \
@@ -229,45 +229,45 @@ curl http://localhost:5050/api/models \
 
 ---
 
-## 📦 Model Management
+## 📦 Modell-Management
 
-### Download Models
+### Modelle herunterladen
 
-Models are managed through the Frontend UI:
-1. Navigate to **Models** tab
-2. Click **Download** on desired model
-3. Select quantization (Q4_K_M, Q5_K_M, Q6_K, Q8_0)
-4. Wait for download to complete
+Modelle werden über die Frontend-UI verwaltet:
+1. Navigiere zum **Modelle** Tab
+2. Klick auf **Herunterladen** beim gewünschten Modell
+3. Wähle Quantization (Q4_K_M, Q5_K_M, Q6_K, Q8_0)
+4. Warte auf Abschluss des Downloads
 
-### Manual Model Installation
+### Manuelle Modell-Installation
 
 ```bash
-# Create models directory
+# Modell-Verzeichnis erstellen
 mkdir -p models/llm
 
-# Download model (example)
+# Modell herunterladen (Beispiel)
 wget https://huggingface.co/TheBloke/Llama-2-7B-GGUF/resolve/main/llama-2-7b.Q4_K_M.gguf \
   -O models/llm/llama-2-7b-q4.gguf
 
-# Verify
+# Überprüfen
 ls -lh models/llm/
 ```
 
 ---
 
-## 🔒 Security Configuration
+## 🔒 Sicherheitskonfiguration
 
-### Prompt Injection Protection
+### Prompt-Injection-Schutz
 
-The security service automatically validates all prompts:
+Der Security-Service validiert automatisch alle Prompts:
 
 ```python
-# Test validation
+# Test-Validierung
 import requests
 
 response = requests.post('http://localhost:8081/api/security/validate', json={
     'input': 'Your prompt here',
-    'strict': False  # Set to True for stricter validation
+    'strict': False  # True für strengere Validierung
 })
 
 print(response.json())
@@ -282,29 +282,29 @@ print(response.json())
 
 ### Rate Limiting
 
-Default rate limits:
-- **Demo Key**: 60 requests/minute, burst 10
-- **Admin Key**: 300 requests/minute, burst 50
+Standard Rate Limits:
+- **Demo Key**: 60 Anfragen/Minute, Burst 10
+- **Admin Key**: 300 Anfragen/Minute, Burst 50
 
-Customize in `go-services/auth/main.go`.
+Anpassung in `go-services/auth/main.go`.
 
 ---
 
-## 🗄️ Database Management
+## 🗄️ Datenbank-Management
 
-### Backup Database
+### Datenbank sichern
 
 ```bash
 docker exec jarvis-postgres pg_dump -U jarvis jarviscore > backup.sql
 ```
 
-### Restore Database
+### Datenbank wiederherstellen
 
 ```bash
 docker exec -i jarvis-postgres psql -U jarvis jarviscore < backup.sql
 ```
 
-### Connect to Database
+### Mit Datenbank verbinden
 
 ```bash
 docker exec -it jarvis-postgres psql -U jarvis -d jarviscore
@@ -312,37 +312,37 @@ docker exec -it jarvis-postgres psql -U jarvis -d jarviscore
 
 ---
 
-## 🧪 Testing
+## 🧪 Testen
 
-### Run All Tests
+### Alle Tests ausführen
 
 ```bash
-# Backend tests
+# Backend-Tests
 cd backend
 pytest tests/ -v
 
-# Frontend tests
+# Frontend-Tests
 cd frontend
 npm run test
 
-# Go service tests
+# Go Service-Tests
 cd go-services/auth
 go test -v ./...
 ```
 
-### Test Endpoints
+### Endpunkte testen
 
 ```bash
-# Health checks
+# Health Checks
 for port in 8080 8081 8082 8083 5050; do
   echo "Testing port $port:"
   curl -s http://localhost:$port/health | jq
 done
 
-# Load model
+# Modell laden
 curl -X POST http://localhost:5050/api/models/llama-2-7b-q4/load
 
-# Generate text
+# Text generieren
 curl -X POST http://localhost:5050/api/chat/message \
   -H "Content-Type: application/json" \
   -d '{"message": "Hallo JARVIS!"}'
@@ -352,29 +352,29 @@ curl -X POST http://localhost:5050/api/chat/message \
 
 ## 📊 Monitoring
 
-### View Logs
+### Logs anzeigen
 
 ```bash
-# All services
+# Alle Services
 docker-compose logs -f
 
-# Specific service
+# Spezifischer Service
 docker-compose logs -f backend
 
-# Last 100 lines
+# Letzte 100 Zeilen
 docker-compose logs --tail=100 backend
 ```
 
-### Service Metrics
+### Service-Metriken
 
 ```bash
-# Memory service stats
+# Memory Service Stats
 curl http://localhost:8082/api/memory/stats
 
-# Database stats
+# Database Stats
 curl http://localhost:8083/api/stats
 
-# Multi-model stats
+# Multi-Model Stats
 curl http://localhost:5050/api/models/stats
 ```
 
@@ -382,23 +382,23 @@ curl http://localhost:5050/api/models/stats
 
 ## 🔄 Updates
 
-### Pull Latest Changes
+### Neueste Änderungen abrufen
 
 ```bash
 git pull origin main
 
-# Rebuild services
+# Services neu bauen
 docker-compose build
 
-# Restart
+# Neustarten
 docker-compose down
 docker-compose up -d
 ```
 
-### Database Migrations
+### Datenbank-Migrationen
 
 ```bash
-# Run migrations (handled automatically by database service)
+# Migrationen ausführen (wird automatisch vom Database Service gemacht)
 docker-compose restart database-service
 ```
 
@@ -406,70 +406,70 @@ docker-compose restart database-service
 
 ## 🐛 Troubleshooting
 
-### Service Won't Start
+### Service startet nicht
 
 ```bash
-# Check logs
+# Logs prüfen
 docker-compose logs service-name
 
-# Restart service
+# Service neu starten
 docker-compose restart service-name
 
-# Rebuild and restart
+# Neu bauen und neustarten
 docker-compose up -d --build service-name
 ```
 
-### CUDA/GPU Issues
+### CUDA/GPU-Probleme
 
 ```bash
-# Verify NVIDIA Docker runtime
+# NVIDIA Docker Runtime überprüfen
 docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
 
-# Check GPU availability
+# GPU-Verfügbarkeit prüfen
 nvidia-smi
 
-# Rebuild backend with CUDA
+# Backend mit CUDA neu bauen
 cd backend
 docker build --build-arg CUDA_VERSION=12.0 -t jarvis-backend .
 ```
 
-### Database Connection Issues
+### Datenbank-Verbindungsprobleme
 
 ```bash
-# Check PostgreSQL status
+# PostgreSQL Status prüfen
 docker-compose ps postgres
 
-# Reset database
-docker-compose down -v  # WARNING: Deletes all data!
+# Datenbank zurücksetzen
+docker-compose down -v  # WARNUNG: Löscht alle Daten!
 docker-compose up -d postgres
 ```
 
-### Port Conflicts
+### Port-Konflikte
 
-If ports are already in use, edit `docker-compose.yml`:
+Wenn Ports bereits genutzt werden, bearbeite `docker-compose.yml`:
 
 ```yaml
 services:
   frontend:
     ports:
-      - "3000:5173"  # Use port 3000 instead of 5173
+      - "3000:5173"  # Verwende Port 3000 statt 5173
 ```
 
 ---
 
-## 🚀 Production Deployment
+## 🚀 Production-Deployment
 
-### Security Checklist
+### Sicherheits-Checkliste
 
-- [ ] Change default passwords in `.env`
-- [ ] Generate strong `SECRET_KEY`
-- [ ] Enable HTTPS (use nginx reverse proxy)
-- [ ] Configure firewall rules
-- [ ] Enable rate limiting on all services
-- [ ] Set up monitoring (Prometheus + Grafana)
-- [ ] Configure automated backups
-- [ ] Enable Docker health checks
-- [ ] Use secrets management (HashiCorp Vault)
+- [ ] Standardpasswörter in `.env` ändern
+- [ ] Starkes `SECRET_KEY` generieren
+- [ ] HTTPS aktivieren (Nginx Reverse Proxy verwenden)
+- [ ] Firewall-Regeln konfigurieren
+- [ ] Rate Limiting auf allen Services aktivieren
+- [ ] Monitoring einrichten (Prometheus + Grafana)
+- [ ] Automatische Backups konfigurieren
+- [ ] Docker Health Checks aktivieren
+- [ ] Secrets Management verwenden (HashiCorp Vault)
 
 ### Reverse Proxy (Nginx)
 
@@ -507,17 +507,17 @@ server {
 }
 ```
 
-### Scaling
+### Skalierung
 
-For high-traffic deployments:
+Für High-Traffic Deployments:
 
 ```bash
-# Scale backend instances
+# Backend-Instanzen skalieren
 docker-compose up -d --scale backend=3
 
-# Use load balancer (nginx/HAProxy)
-# Add Redis for session management
-# Use managed PostgreSQL (AWS RDS, Google Cloud SQL)
+# Load Balancer verwenden (nginx/HAProxy)
+# Redis für Session Management hinzufügen
+# Verwaltete PostgreSQL nutzen (AWS RDS, Google Cloud SQL)
 ```
 
 ---
@@ -525,11 +525,11 @@ docker-compose up -d --scale backend=3
 ## 📞 Support
 
 - **Issues**: https://github.com/Lautloserspieler/JarvisCore/issues
-- **Discussions**: https://github.com/Lautloserspieler/JarvisCore/discussions
-- **Documentation**: https://github.com/Lautloserspieler/JarvisCore/wiki
+- **Diskussionen**: https://github.com/Lautloserspieler/JarvisCore/discussions
+- **Dokumentation**: https://github.com/Lautloserspieler/JarvisCore/wiki
 
 ---
 
-## 📝 License
+## 📝 Lizenz
 
-MIT License - See [LICENSE](LICENSE) file for details.
+MIT Lizenz - Siehe [LICENSE](LICENSE) Datei für Details.

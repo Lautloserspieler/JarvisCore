@@ -1,118 +1,118 @@
-# Contributing to JarvisCore
+# Zu JarvisCore beitragen
 
-First off, thank you for considering contributing to JarvisCore! 🎉 It's people like you that make JarvisCore such a great tool.
+Zunächst einmal: Vielen Dank, dass du daran interessiert bist, zu JarvisCore beizutragen! 🎉 Menschen wie du machen JarvisCore zu einem großartigen Tool.
 
-## Table of Contents
+## Inhaltsverzeichnis
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [How Can I Contribute?](#how-can-i-contribute)
-- [Development Setup](#development-setup)
-- [Pull Request Process](#pull-request-process)
-- [Coding Standards](#coding-standards)
-- [Commit Messages](#commit-messages)
+- [Verhaltenskodex](#verhaltenskodex)
+- [Erste Schritte](#erste-schritte)
+- [Wie kann ich beitragen?](#wie-kann-ich-beitragen)
+- [Entwicklungsumgebung](#entwicklungsumgebung)
+- [Pull-Request-Prozess](#pull-request-prozess)
+- [Coding-Standards](#coding-standards)
+- [Commit-Messages](#commit-messages)
 - [Testing](#testing)
-- [Documentation](#documentation)
+- [Dokumentation](#dokumentation)
 
-## Code of Conduct
+## Verhaltenskodex
 
-This project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [INSERT CONTACT EMAIL].
+Dieses Projekt und alle daran Beteiligten unterliegen unserem [Verhaltenskodex](CODE_OF_CONDUCT.md). Durch deine Teilnahme verpflichtest du dich, diesen Kodex einzuhalten. Bitte melde inakzeptables Verhalten an [KONTAKT-EMAIL EINFÜGEN].
 
-## Getting Started
+## Erste Schritte
 
-### Prerequisites
+### Voraussetzungen
 
 - Python 3.11+
 - Go 1.21+
-- Node.js 18+ and npm
-- Docker and Docker Compose
+- Node.js 18+ und npm
+- Docker und Docker Compose
 - Git
 
 ### Fork & Clone
 
-1. Fork the repository on GitHub
-2. Clone your fork locally:
+1. Forke das Repository auf GitHub
+2. Clone deinen Fork lokal:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/JarvisCore.git
+   git clone https://github.com/DEIN_BENUTZERNAME/JarvisCore.git
    cd JarvisCore
    ```
-3. Add the upstream repository:
+3. Füge das Upstream-Repository hinzu:
    ```bash
    git remote add upstream https://github.com/Lautloserspieler/JarvisCore.git
    ```
 
-## How Can I Contribute?
+## Wie kann ich beitragen?
 
-### Reporting Bugs
+### Fehler melden
 
-Before creating bug reports, please check existing issues to avoid duplicates. When creating a bug report, include:
+Bevor du einen Fehlerbericht erstellst, prüfe bitte bestehende Issues, um Duplikate zu vermeiden. Beim Erstellen eines Fehlerberichts füge bitte folgendes ein:
 
-- **Clear title and description**
-- **Steps to reproduce** the issue
-- **Expected behavior** vs **actual behavior**
-- **Screenshots** if applicable
-- **Environment details** (OS, Python version, Docker version, etc.)
-- **Relevant logs** from `logs/` directory
+- **Klaren Titel und Beschreibung**
+- **Schritte zur Reproduktion** des Problems
+- **Erwartetes Verhalten** vs **tatsächliches Verhalten**
+- **Screenshots** falls zutreffend
+- **Umgebungsdetails** (Betriebssystem, Python-Version, Docker-Version, etc.)
+- **Relevante Logs** aus dem `logs/` Verzeichnis
 
-### Suggesting Enhancements
+### Verbesserungen vorschlagen
 
-Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion:
+Verbesserungsvorschläge werden als GitHub Issues verfolgt. Beim Erstellen eines Verbesserungsvorschlags:
 
-- **Use a clear and descriptive title**
-- **Provide a detailed description** of the suggested enhancement
-- **Explain why this enhancement would be useful**
-- **List any alternatives** you've considered
+- **Verwende einen klaren und beschreibenden Titel**
+- **Gib eine detaillierte Beschreibung** der vorgeschlagenen Verbesserung
+- **Erkläre, warum diese Verbesserung nützlich wäre**
+- **Liste Alternativen auf**, die du in Betracht gezogen hast
 
-### Your First Code Contribution
+### Dein erster Code-Beitrag
 
-Unsure where to begin? Look for issues labeled:
+Unsicher, wo du anfangen sollst? Suche nach Issues mit folgenden Labels:
 
-- `good first issue` - Good for newcomers
-- `help wanted` - Extra attention needed
-- `documentation` - Improvements or additions to documentation
+- `good first issue` - Gut für Neulinge
+- `help wanted` - Zusätzliche Aufmerksamkeit erforderlich
+- `documentation` - Verbesserungen oder Ergänzungen zur Dokumentation
 
 ### Pull Requests
 
-Pull requests are the best way to propose changes. We actively welcome your pull requests:
+Pull Requests sind der beste Weg, um Änderungen vorzuschlagen. Wir heißen deine Pull Requests aktiv willkommen:
 
-1. Fork the repo and create your branch from `main`
-2. Make your changes
-3. Add tests if applicable
-4. Ensure all tests pass
-5. Update documentation
-6. Submit a pull request
+1. Forke das Repo und erstelle deinen Branch von `main`
+2. Mache deine Änderungen
+3. Füge Tests hinzu, falls zutreffend
+4. Stelle sicher, dass alle Tests bestehen
+5. Aktualisiere die Dokumentation
+6. Reiche einen Pull Request ein
 
-## Development Setup
+## Entwicklungsumgebung
 
-### Local Development (Docker)
+### Lokale Entwicklung (Docker)
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/JarvisCore.git
+# Repository klonen
+git clone https://github.com/DEIN_BENUTZERNAME/JarvisCore.git
 cd JarvisCore
 
-# Start all services
+# Alle Services starten
 docker-compose up -d
 
-# View logs
+# Logs anzeigen
 docker-compose logs -f
 ```
 
-### Local Development (Native)
+### Lokale Entwicklung (Nativ)
 
 #### Backend (Python)
 
 ```bash
 cd backend
 
-# Create virtual environment
+# Virtuelle Umgebung erstellen
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Unter Windows: venv\Scripts\activate
 
-# Install dependencies
+# Abhängigkeiten installieren
 pip install -r requirements.txt
 
-# Run backend
+# Backend starten
 python main.py
 ```
 
@@ -121,10 +121,10 @@ python main.py
 ```bash
 cd frontend
 
-# Install dependencies
+# Abhängigkeiten installieren
 npm install
 
-# Run development server
+# Development-Server starten
 npm run dev
 ```
 
@@ -133,122 +133,122 @@ npm run dev
 ```bash
 cd go-services/gateway
 
-# Install dependencies
+# Abhängigkeiten installieren
 go mod download
 
-# Run service
+# Service starten
 go run cmd/gateway/main.go
 ```
 
-## Pull Request Process
+## Pull-Request-Prozess
 
-### 1. Create a Branch
+### 1. Branch erstellen
 
 ```bash
-git checkout -b feature/your-feature-name
-# or
-git checkout -b fix/your-bug-fix
+git checkout -b feature/dein-feature-name
+# oder
+git checkout -b fix/dein-bug-fix
 ```
 
-Branch naming conventions:
-- `feature/` - New features
-- `fix/` - Bug fixes
-- `docs/` - Documentation changes
-- `refactor/` - Code refactoring
-- `test/` - Adding tests
-- `chore/` - Maintenance tasks
+Branch-Namenskonventionen:
+- `feature/` - Neue Features
+- `fix/` - Bugfixes
+- `docs/` - Dokumentationsänderungen
+- `refactor/` - Code-Refactoring
+- `test/` - Tests hinzufügen
+- `chore/` - Wartungsaufgaben
 
-### 2. Make Your Changes
+### 2. Änderungen vornehmen
 
-- Follow the [Coding Standards](#coding-standards)
-- Write meaningful commit messages
-- Keep commits atomic and focused
-- Add tests for new features
+- Folge den [Coding-Standards](#coding-standards)
+- Schreibe aussagekräftige Commit-Messages
+- Halte Commits atomar und fokussiert
+- Füge Tests für neue Features hinzu
 
-### 3. Test Your Changes
+### 3. Änderungen testen
 
 ```bash
-# Run Python tests
+# Python-Tests ausführen
 cd backend
 pytest tests/
 
-# Run Go tests
+# Go-Tests ausführen
 cd go-services/gateway
 go test ./...
 
-# Run Frontend tests
+# Frontend-Tests ausführen
 cd frontend
 npm run test
 
-# Run integration tests
+# Integrationstests ausführen
 docker-compose -f docker-compose.test.yml up --abort-on-container-exit
 ```
 
-### 4. Update Documentation
+### 4. Dokumentation aktualisieren
 
-- Update relevant README sections
-- Add/update code comments
-- Update API documentation if applicable
-- Add entries to CHANGELOG.md
+- Relevante README-Abschnitte aktualisieren
+- Code-Kommentare hinzufügen/aktualisieren
+- API-Dokumentation aktualisieren, falls zutreffend
+- Einträge zu CHANGELOG.md hinzufügen
 
-### 5. Submit Pull Request
+### 5. Pull Request einreichen
 
 ```bash
-# Push your branch
-git push origin feature/your-feature-name
+# Branch pushen
+git push origin feature/dein-feature-name
 ```
 
-Then create a pull request on GitHub with:
+Erstelle dann einen Pull Request auf GitHub mit:
 
-- Clear title describing the change
-- Detailed description of what and why
-- Link to related issues
-- Screenshots/GIFs if UI changes
-- Checklist of completed tasks
+- Klarem Titel, der die Änderung beschreibt
+- Detaillierter Beschreibung von Was und Warum
+- Link zu verwandten Issues
+- Screenshots/GIFs bei UI-Änderungen
+- Checkliste der abgeschlossenen Aufgaben
 
-### 6. Code Review
+### 6. Code-Review
 
-- Address review comments
-- Keep discussions focused and professional
-- Update your PR based on feedback
-- Request re-review when ready
+- Bearbeite Review-Kommentare
+- Halte Diskussionen fokussiert und professionell
+- Aktualisiere deinen PR basierend auf Feedback
+- Fordere Re-Review an, wenn bereit
 
-## Coding Standards
+## Coding-Standards
 
 ### Python (Backend)
 
-- Follow [PEP 8](https://pep8.org/) style guide
-- Use [Black](https://black.readthedocs.io/) for formatting
-- Use type hints where appropriate
-- Maximum line length: 88 characters
-- Use meaningful variable names
+- Folge dem [PEP 8](https://pep8.org/) Style Guide
+- Nutze [Black](https://black.readthedocs.io/) für Formatierung
+- Verwende Type Hints wo angemessen
+- Maximale Zeilenlänge: 88 Zeichen
+- Verwende aussagekräftige Variablennamen
 
 ```python
-# Good
+# Gut
 def process_user_input(user_message: str) -> dict:
-    """Process user message and return response."""
+    """Verarbeite Benutzernachricht und gebe Antwort zurück."""
     return {"response": processed_message}
 
-# Bad
+# Schlecht
 def p(m):
     return {"r": m}
 ```
 
 ### Go (Services)
 
-- Follow [Effective Go](https://golang.org/doc/effective_go) guidelines
-- Use `gofmt` for formatting
-- Use meaningful package names
-- Write godoc comments for public functions
+- Folge den [Effective Go](https://golang.org/doc/effective_go) Richtlinien
+- Nutze `gofmt` für Formatierung
+- Verwende aussagekräftige Package-Namen
+- Schreibe godoc-Kommentare für öffentliche Funktionen
 
 ```go
-// Good
-// ProcessMessage handles incoming message and returns response
+// Gut
+// ProcessMessage behandelt eingehende Nachricht und gibt Antwort zurück
 func ProcessMessage(msg string) (string, error) {
     // ...
 }
 
-// Bad
+// Schlecht
 func p(m string) string {
     // ...
 }
@@ -256,14 +256,14 @@ func p(m string) string {
 
 ### TypeScript/Vue (Frontend)
 
-- Follow Vue 3 Composition API best practices
-- Use TypeScript for type safety
-- Use ESLint configuration provided
-- Component names in PascalCase
-- Props validation required
+- Folge Vue 3 Composition API Best Practices
+- Nutze TypeScript für Type Safety
+- Verwende bereitgestellte ESLint-Konfiguration
+- Komponenten-Namen in PascalCase
+- Props-Validierung erforderlich
 
 ```typescript
-// Good
+// Gut
 interface Props {
   userId: string
   userName: string
@@ -271,55 +271,55 @@ interface Props {
 
 const props = defineProps<Props>()
 
-// Bad
+// Schlecht
 const props = defineProps({
   id: String,
   name: String
 })
 ```
 
-### General Guidelines
+### Allgemeine Richtlinien
 
 - **DRY**: Don't Repeat Yourself
 - **KISS**: Keep It Simple, Stupid
 - **YAGNI**: You Aren't Gonna Need It
-- Write self-documenting code
-- Comment complex logic
-- Avoid premature optimization
+- Schreibe selbstdokumentierenden Code
+- Kommentiere komplexe Logik
+- Vermeide vorzeitige Optimierung
 
-## Commit Messages
+## Commit-Messages
 
-We follow [Conventional Commits](https://www.conventionalcommits.org/):
+Wir folgen [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
-<type>(<scope>): <subject>
+<typ>(<bereich>): <betreff>
 
 <body>
 
 <footer>
 ```
 
-### Types
+### Typen
 
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks
-- `perf`: Performance improvements
-- `ci`: CI/CD changes
+- `feat`: Neues Feature
+- `fix`: Bugfix
+- `docs`: Dokumentationsänderungen
+- `style`: Code-Style-Änderungen (Formatierung, etc.)
+- `refactor`: Code-Refactoring
+- `test`: Tests hinzufügen oder aktualisieren
+- `chore`: Wartungsaufgaben
+- `perf`: Performance-Verbesserungen
+- `ci`: CI/CD-Änderungen
 
-### Examples
+### Beispiele
 
 ```bash
-# Good
-feat(backend): add user authentication system
-fix(frontend): resolve chat input focus issue
-docs(readme): update installation instructions
+# Gut
+feat(backend): Benutzer-Authentifizierungssystem hinzugefügt
+fix(frontend): Chat-Input-Fokusproblem behoben
+docs(readme): Installationsanleitung aktualisiert
 
-# Bad
+# Schlecht
 update
 fixed bug
 added stuff
@@ -327,25 +327,25 @@ added stuff
 
 ## Testing
 
-### Writing Tests
+### Tests schreiben
 
-- Write tests for all new features
-- Maintain test coverage above 80%
-- Test edge cases and error conditions
-- Use descriptive test names
+- Schreibe Tests für alle neuen Features
+- Halte Test-Coverage über 80%
+- Teste Randfälle und Fehlerbedingungen
+- Verwende beschreibende Testnamen
 
-### Test Structure
+### Test-Struktur
 
 ```python
 # Python (pytest)
 def test_user_authentication_success():
-    """Test successful user authentication."""
+    """Teste erfolgreiche Benutzer-Authentifizierung."""
     result = authenticate_user("valid_token")
     assert result.is_authenticated
     assert result.user_id is not None
 
 def test_user_authentication_invalid_token():
-    """Test authentication with invalid token."""
+    """Teste Authentifizierung mit ungültigem Token."""
     with pytest.raises(AuthenticationError):
         authenticate_user("invalid_token")
 ```
@@ -359,7 +359,7 @@ func TestProcessMessage(t *testing.T) {
         want    string
         wantErr bool
     }{
-        {"valid input", "hello", "processed", false},
+        {"valid input", "hallo", "verarbeitet", false},
         {"empty input", "", "", true},
     }
 
@@ -377,51 +377,51 @@ func TestProcessMessage(t *testing.T) {
 }
 ```
 
-## Documentation
+## Dokumentation
 
-### Code Documentation
+### Code-Dokumentation
 
-- Document all public APIs
-- Use docstrings for Python functions/classes
-- Use godoc comments for Go functions
-- Use JSDoc for TypeScript/JavaScript
+- Dokumentiere alle öffentlichen APIs
+- Nutze Docstrings für Python-Funktionen/Klassen
+- Nutze godoc-Kommentare für Go-Funktionen
+- Nutze JSDoc für TypeScript/JavaScript
 
-### User Documentation
+### Benutzerdokumentation
 
-- Update README.md for user-facing changes
-- Add examples for new features
-- Keep installation instructions current
-- Update troubleshooting guide
+- Aktualisiere README.md für benutzerseitige Änderungen
+- Füge Beispiele für neue Features hinzu
+- Halte Installationsanleitungen aktuell
+- Aktualisiere Troubleshooting-Guide
 
-### API Documentation
+### API-Dokumentation
 
-- Document all endpoints
-- Include request/response examples
-- Specify required/optional parameters
-- Document error codes
+- Dokumentiere alle Endpunkte
+- Füge Request/Response-Beispiele hinzu
+- Spezifiziere erforderliche/optionale Parameter
+- Dokumentiere Fehlercodes
 
-## Getting Help
+## Hilfe bekommen
 
-If you need help, you can:
+Wenn du Hilfe brauchst, kannst du:
 
-- Check our [Documentation](docs/)
-- Ask in [GitHub Discussions](https://github.com/Lautloserspieler/JarvisCore/discussions)
-- Join our [Discord Server](#) (coming soon)
-- Email us at [INSERT CONTACT EMAIL]
+- Unsere [Dokumentation](docs/) prüfen
+- In [GitHub Discussions](https://github.com/Lautloserspieler/JarvisCore/discussions) fragen
+- Unserem [Discord Server](#) beitreten (kommt bald)
+- Uns eine E-Mail an [KONTAKT-EMAIL EINFÜGEN] senden
 
-## Recognition
+## Anerkennung
 
-Contributors will be:
+Contributors werden:
 
-- Listed in [CONTRIBUTORS.md](CONTRIBUTORS.md)
-- Mentioned in release notes
-- Recognized in our README
-- Given special roles in community spaces
+- In [CONTRIBUTORS.md](CONTRIBUTORS.md) aufgelistet
+- In Release-Notes erwähnt
+- In unserem README anerkannt
+- Mit speziellen Rollen in Community-Spaces ausgezeichnet
 
-## License
+## Lizenz
 
-By contributing, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE).
+Durch deine Beiträge stimmst du zu, dass deine Beiträge unter der [Apache License 2.0](LICENSE) lizenziert werden.
 
 ---
 
-**Thank you for contributing to JarvisCore!** 🚀
+**Vielen Dank für deinen Beitrag zu JarvisCore!** 🚀

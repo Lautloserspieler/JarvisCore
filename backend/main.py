@@ -374,6 +374,50 @@ async def get_models():
             "capabilities": ["analysis", "reasoning", "data"],
             "isDownloaded": Path("models/llm/deepseek-r1-distill-llama-8b-q4_k_m.gguf").exists(),
             "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "deepseek"
+        },
+        {
+            "id": "llama32-3b",
+            "name": "Llama 3.2 3B",
+            "provider": "Meta",
+            "description": "Klein, schnell, effizient für einfache Aufgaben",
+            "size": "2.0 GB",
+            "hf_model": "bartowski/Llama-3.2-3B-Instruct-GGUF",
+            "capabilities": ["fast", "lightweight", "efficient"],
+            "isDownloaded": Path("models/llm/Llama-3.2-3B-Instruct-Q4_K_M.gguf").exists(),
+            "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "llama32-3b"
+        },
+        {
+            "id": "phi3-mini",
+            "name": "Phi-3 Mini",
+            "provider": "Microsoft",
+            "description": "Kompakt, schnell, optimiert für Konversation",
+            "size": "2.3 GB",
+            "hf_model": "bartowski/Phi-3-mini-128k-instruct-GGUF",
+            "capabilities": ["compact", "chat", "quick"],
+            "isDownloaded": Path("models/llm/Phi-3-mini-128k-instruct-Q4_K_M.gguf").exists(),
+            "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "phi3-mini"
+        },
+        {
+            "id": "gemma2-9b",
+            "name": "Gemma 2 9B",
+            "provider": "Google",
+            "description": "Stark, vielseitig, ausgewogen",
+            "size": "5.4 GB",
+            "hf_model": "bartowski/gemma-2-9b-it-GGUF",
+            "capabilities": ["powerful", "versatile", "balanced"],
+            "isDownloaded": Path("models/llm/gemma-2-9b-it-Q4_K_M.gguf").exists(),
+            "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "gemma2-9b"
+        },
+        {
+            "id": "llama33-70b",
+            "name": "Llama 3.3 70B",
+            "provider": "Meta",
+            "description": "Sehr groß, sehr stark, höchste Qualität",
+            "size": "40 GB",
+            "hf_model": "bartowski/Llama-3.3-70B-Instruct-GGUF",
+            "capabilities": ["flagship", "high-quality", "advanced"],
+            "isDownloaded": Path("models/llm/Llama-3.3-70B-Instruct-Q4_K_M.gguf").exists(),
+            "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "llama33-70b"
         }
     ]
     return models
@@ -423,7 +467,11 @@ async def load_model(model_id: str):
     model_files = {
         "mistral": "models/llm/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
         "qwen": "models/llm/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
-        "deepseek": "models/llm/deepseek-r1-distill-llama-8b-q4_k_m.gguf"
+        "deepseek": "models/llm/deepseek-r1-distill-llama-8b-q4_k_m.gguf",
+        "llama32-3b": "models/llm/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+        "phi3-mini": "models/llm/Phi-3-mini-128k-instruct-Q4_K_M.gguf",
+        "gemma2-9b": "models/llm/gemma-2-9b-it-Q4_K_M.gguf",
+        "llama33-70b": "models/llm/Llama-3.3-70B-Instruct-Q4_K_M.gguf"
     }
     
     if model_id not in model_files:

@@ -16,7 +16,7 @@ JarvisCore v1.1.0 verfügt über eine Microservices-Architektur mit:
 ┌─────────────────────────────────────────────────────────┐
 │                   Frontend (Vue.js)                     │
 │                    Port: 5173                           │
-└────────────────────────┬────────────────────────────────┘
+└──────────────────────────┬────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────┐
@@ -36,7 +36,7 @@ JarvisCore v1.1.0 verfügt über eine Microservices-Architektur mit:
 ## ⚙️ Voraussetzungen
 
 ### Erforderlich
-- **Docker** 24.0+ & **Docker Compose** 2.20+
+- **Docker** 24.0+ & **Docker Compose V2** 2.20+
 - **NVIDIA GPU** mit CUDA 12.0+ (für llama.cpp)
 - **16GB+ RAM** (8GB minimum)
 - **20GB+ Speicherplatz** (für Modelle)
@@ -87,23 +87,24 @@ EOF
 ### 3. Alle Services bauen
 
 ```bash
-docker-compose build
+# Docker Compose V2 Syntax (mit Leerzeichen!)
+docker compose build
 ```
 
 ### 4. Alle Services starten
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 5. Service-Gesundheit prüfen
 
 ```bash
 # Alle Services prüfen
-docker-compose ps
+docker compose ps
 
 # Logs anzeigen
-docker-compose logs -f
+docker compose logs -f
 
 # Health-Endpunkte
 curl http://localhost:8080/health  # Auth
@@ -356,13 +357,13 @@ curl -X POST http://localhost:5050/api/chat/message \
 
 ```bash
 # Alle Services
-docker-compose logs -f
+docker compose logs -f
 
 # Spezifischer Service
-docker-compose logs -f backend
+docker compose logs -f backend
 
 # Letzte 100 Zeilen
-docker-compose logs --tail=100 backend
+docker compose logs --tail=100 backend
 ```
 
 ### Service-Metriken
@@ -388,18 +389,18 @@ curl http://localhost:5050/api/models/stats
 git pull origin main
 
 # Services neu bauen
-docker-compose build
+docker compose build
 
 # Neustarten
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ### Datenbank-Migrationen
 
 ```bash
 # Migrationen ausführen (wird automatisch vom Database Service gemacht)
-docker-compose restart database-service
+docker compose restart database-service
 ```
 
 ---
@@ -410,13 +411,13 @@ docker-compose restart database-service
 
 ```bash
 # Logs prüfen
-docker-compose logs service-name
+docker compose logs service-name
 
 # Service neu starten
-docker-compose restart service-name
+docker compose restart service-name
 
 # Neu bauen und neustarten
-docker-compose up -d --build service-name
+docker compose up -d --build service-name
 ```
 
 ### CUDA/GPU-Probleme
@@ -437,11 +438,11 @@ docker build --build-arg CUDA_VERSION=12.0 -t jarvis-backend .
 
 ```bash
 # PostgreSQL Status prüfen
-docker-compose ps postgres
+docker compose ps postgres
 
 # Datenbank zurücksetzen
-docker-compose down -v  # WARNUNG: Löscht alle Daten!
-docker-compose up -d postgres
+docker compose down -v  # WARNUNG: Löscht alle Daten!
+docker compose up -d postgres
 ```
 
 ### Port-Konflikte
@@ -513,11 +514,35 @@ Für High-Traffic Deployments:
 
 ```bash
 # Backend-Instanzen skalieren
-docker-compose up -d --scale backend=3
+docker compose up -d --scale backend=3
 
 # Load Balancer verwenden (nginx/HAProxy)
 # Redis für Session Management hinzufügen
 # Verwaltete PostgreSQL nutzen (AWS RDS, Google Cloud SQL)
+```
+
+---
+
+## 📦 Docker Compose V2 Hinweis
+
+**Wichtig:** Ab Docker Desktop 3.4+ ist Docker Compose V2 integriert!
+
+```bash
+# ❌ ALT (V1): docker-compose
+docker-compose up -d
+
+# ✅ NEU (V2): docker compose (mit Leerzeichen!)
+docker compose up -d
+```
+
+Falls `docker-compose` nicht funktioniert:
+
+```powershell
+# Windows PowerShell
+docker compose up -d
+
+# Oder Alias setzen
+Set-Alias -Name docker-compose -Value "docker compose"
 ```
 
 ---

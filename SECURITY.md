@@ -1,191 +1,191 @@
-# Security Policy
+# Sicherheitsrichtlinie
 
-## Supported Versions
+## Unterstützte Versionen
 
-We release patches for security vulnerabilities in the following versions:
+Wir veröffentlichen Patches für Sicherheitslücken in den folgenden Versionen:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.1.x   | :white_check_mark: |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| Version | Unterstützt          |
+| ------- | --------------------- |
+| 1.1.x   | :white_check_mark:    |
+| 1.0.x   | :white_check_mark:    |
+| < 1.0   | :x:                   |
 
-## Reporting a Vulnerability
+## Meldung einer Sicherheitslücke
 
-We take the security of JarvisCore seriously. If you believe you have found a security vulnerability, please report it to us as described below.
+Wir nehmen die Sicherheit von JarvisCore ernst. Wenn Sie glauben, eine Sicherheitslücke gefunden zu haben, melden Sie sie uns bitte wie unten beschrieben.
 
-### How to Report
+### Wie melden
 
-**Please do NOT report security vulnerabilities through public GitHub issues.**
+**Bitte melden Sie Sicherheitslücken NICHT über öffentliche GitHub Issues.**
 
-Instead, please report them via one of the following methods:
+Melden Sie sie stattdessen über eine der folgenden Methoden:
 
-1. **Email**: Send details to [INSERT SECURITY EMAIL]
-2. **GitHub Security Advisory**: Use the [Security Advisory](https://github.com/Lautloserspieler/JarvisCore/security/advisories) feature
+1. **E-Mail**: Senden Sie Details an [SICHERHEITS-EMAIL EINFÜGEN]
+2. **GitHub Security Advisory**: Nutzen Sie die [Security Advisory](https://github.com/Lautloserspieler/JarvisCore/security/advisories) Funktion
 
-### What to Include
+### Was einschließen
 
-Please include the following information in your report:
+Bitte fügen Sie folgende Informationen in Ihre Meldung ein:
 
-- Type of vulnerability (e.g., buffer overflow, SQL injection, cross-site scripting, etc.)
-- Full paths of source file(s) related to the manifestation of the vulnerability
-- Location of the affected source code (tag/branch/commit or direct URL)
-- Any special configuration required to reproduce the issue
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the vulnerability, including how an attacker might exploit it
+- Art der Schwachstelle (z.B. Buffer Overflow, SQL Injection, Cross-Site Scripting, etc.)
+- Vollständige Pfade der Quelldateien im Zusammenhang mit der Schwachstelle
+- Ort des betroffenen Quellcodes (Tag/Branch/Commit oder direkte URL)
+- Spezielle Konfiguration, die zur Reproduktion erforderlich ist
+- Schritt-für-Schritt-Anleitung zur Reproduktion des Problems
+- Proof-of-Concept oder Exploit-Code (falls möglich)
+- Auswirkung der Schwachstelle, einschließlich wie ein Angreifer sie ausnutzen könnte
 
-### Response Timeline
+### Antwort-Zeitplan
 
-We will acknowledge receipt of your vulnerability report within **48 hours** and will send you regular updates about our progress.
+Wir bestätigen den Erhalt Ihrer Meldung innerhalb von **48 Stunden** und senden Ihnen regelmäßige Updates über unseren Fortschritt.
 
-- **Initial Response**: Within 48 hours
-- **Status Update**: Within 7 days
-- **Resolution Target**: Within 90 days for critical vulnerabilities
+- **Erste Antwort**: Innerhalb von 48 Stunden
+- **Status-Update**: Innerhalb von 7 Tagen
+- **Lösungs-Ziel**: Innerhalb von 90 Tagen für kritische Schwachstellen
 
-### Disclosure Policy
+### Veröffentlichungsrichtlinie
 
-We follow a coordinated disclosure process:
+Wir folgen einem koordinierten Veröffentlichungsprozess:
 
-1. You report the vulnerability privately
-2. We confirm the vulnerability and work on a fix
-3. We release a security update
-4. After the fix is widely deployed, we publicly disclose the vulnerability (typically 30 days after the fix)
+1. Sie melden die Schwachstelle privat
+2. Wir bestätigen die Schwachstelle und arbeiten an einer Lösung
+3. Wir veröffentlichen ein Sicherheitsupdate
+4. Nach breiter Verteilung des Fixes veröffentlichen wir die Schwachstelle (typischerweise 30 Tage nach dem Fix)
 
 ### Bug Bounty
 
-Currently, we do not offer a paid bug bounty program. However, we deeply appreciate the security community's efforts and will:
+Derzeit bieten wir kein bezahltes Bug-Bounty-Programm an. Jedoch schätzen wir die Bemühungen der Sicherheits-Community sehr und werden:
 
-- Publicly acknowledge your contribution (if you wish)
-- List you in our security hall of fame
-- Provide early access to new features
+- Ihren Beitrag öffentlich anerkennen (wenn Sie möchten)
+- Sie in unserer Security Hall of Fame auflisten
+- Frühzeitigen Zugang zu neuen Features bieten
 
-## Security Best Practices for Users
+## Sicherheits-Best-Practices für Benutzer
 
-When deploying JarvisCore, please follow these security best practices:
+Beim Deployment von JarvisCore folgen Sie bitte diesen Sicherheits-Best-Practices:
 
-### 1. Keep Software Updated
+### 1. Software aktuell halten
 
-- Always use the latest stable version
-- Enable automatic security updates where possible
-- Subscribe to our [security announcements](https://github.com/Lautloserspieler/JarvisCore/security/advisories)
+- Verwenden Sie immer die neueste stabile Version
+- Aktivieren Sie automatische Sicherheitsupdates wo möglich
+- Abonnieren Sie unsere [Sicherheitsankündigungen](https://github.com/Lautloserspieler/JarvisCore/security/advisories)
 
-### 2. Network Security
+### 2. Netzwerksicherheit
 
-- Run JarvisCore behind a firewall
-- Use HTTPS for all web interfaces
-- Limit network exposure to trusted networks only
-- Consider using a VPN for remote access
+- JarvisCore hinter einer Firewall betreiben
+- HTTPS für alle Web-Interfaces verwenden
+- Netzwerkzugriff nur auf vertrauenswürdige Netzwerke beschränken
+- VPN für Remote-Zugriff in Betracht ziehen
 
-### 3. Access Control
+### 3. Zugriffskontrolle
 
-- Use strong, unique passwords
-- Enable authentication for all services
-- Implement principle of least privilege
-- Regularly review and rotate credentials
+- Starke, einzigartige Passwörter verwenden
+- Authentifizierung für alle Services aktivieren
+- Prinzip der minimalen Rechte implementieren
+- Zugangsdaten regelmäßig prüfen und rotieren
 
-### 4. Data Protection
+### 4. Datenschutz
 
-- Encrypt sensitive data at rest
-- Use secure communication channels (TLS/SSL)
-- Regular backup of critical data
-- Securely delete sensitive data when no longer needed
+- Sensible Daten verschlüsselt speichern
+- Sichere Kommunikationskanäle verwenden (TLS/SSL)
+- Regelmäßige Backups kritischer Daten
+- Sensible Daten sicher löschen, wenn nicht mehr benötigt
 
-### 5. Docker Security
+### 5. Docker-Sicherheit
 
-- Use official Docker images only
-- Keep Docker and container images updated
-- Run containers as non-root users where possible
-- Use Docker secrets for sensitive configuration
-- Scan images for vulnerabilities regularly
+- Nur offizielle Docker-Images verwenden
+- Docker und Container-Images aktuell halten
+- Container als Nicht-Root-Benutzer ausführen wo möglich
+- Docker Secrets für sensible Konfiguration verwenden
+- Images regelmäßig auf Schwachstellen scannen
 
-### 6. Model Security
+### 6. Modell-Sicherheit
 
-- Download models from trusted sources only
-- Verify model checksums/signatures
-- Be cautious with user-provided prompts
-- Implement input validation and sanitization
+- Modelle nur aus vertrauenswürdigen Quellen herunterladen
+- Modell-Prüfsummen/Signaturen verifizieren
+- Vorsicht bei benutzerdefinierten Prompts
+- Input-Validierung und -Bereinigung implementieren
 
-### 7. Monitoring and Logging
+### 7. Überwachung und Logging
 
-- Enable comprehensive logging
-- Monitor for suspicious activity
-- Set up alerts for security events
-- Regularly review logs
+- Umfassendes Logging aktivieren
+- Auf verdächtige Aktivitäten überwachen
+- Benachrichtigungen für Sicherheitsereignisse einrichten
+- Logs regelmäßig prüfen
 
-## Known Security Considerations
+## Bekannte Sicherheitsüberlegungen
 
-### Local AI Models
+### Lokale KI-Modelle
 
-- JarvisCore runs AI models locally, which means they have access to system resources
-- Ensure models are from trusted sources
-- Be aware of potential prompt injection attacks
+- JarvisCore führt KI-Modelle lokal aus, was bedeutet, dass sie Zugriff auf Systemressourcen haben
+- Stellen Sie sicher, dass Modelle aus vertrauenswürdigen Quellen stammen
+- Seien Sie sich potenzieller Prompt-Injection-Angriffe bewusst
 
-### Voice Processing
+### Sprachverarbeitung
 
-- Audio data is processed locally for privacy
-- Ensure microphone access is properly secured
-- Be aware of physical security when using voice features
+- Audiodaten werden lokal aus Datenschutzgründen verarbeitet
+- Stellen Sie sicher, dass der Mikrofonzugriff ordnungsgemäß gesichert ist
+- Achten Sie auf physische Sicherheit bei Verwendung von Sprachfunktionen
 
-### Plugin System
+### Plugin-System
 
-- Third-party plugins run with system privileges
-- Only install plugins from trusted sources
-- Review plugin code before installation
-- Keep plugins updated
+- Drittanbieter-Plugins laufen mit Systemprivilegien
+- Installieren Sie nur Plugins aus vertrauenswürdigen Quellen
+- Überprüfen Sie Plugin-Code vor der Installation
+- Halten Sie Plugins aktuell
 
-### Data Privacy
+### Datenschutz
 
-- All data processing happens locally by default
-- No telemetry or analytics are sent without explicit consent
-- Review privacy settings regularly
+- Alle Datenverarbeitung erfolgt standardmäßig lokal
+- Keine Telemetrie oder Analytik werden ohne ausdrückliche Zustimmung gesendet
+- Überprüfen Sie Datenschutzeinstellungen regelmäßig
 
-## Security Updates
+## Sicherheitsupdates
 
-Security updates are released as follows:
+Sicherheitsupdates werden wie folgt veröffentlicht:
 
-- **Critical**: Immediate patch release
-- **High**: Within 7 days
-- **Medium**: Within 30 days
-- **Low**: Next regular release
+- **Kritisch**: Sofortiger Patch-Release
+- **Hoch**: Innerhalb von 7 Tagen
+- **Mittel**: Innerhalb von 30 Tagen
+- **Niedrig**: Nächster regulärer Release
 
 ## Compliance
 
-JarvisCore is designed with privacy and security in mind:
+JarvisCore ist mit Blick auf Datenschutz und Sicherheit konzipiert:
 
-- **GDPR**: Fully compliant when configured for local-only operation
-- **Data Minimization**: Only collects data necessary for functionality
-- **Right to Erasure**: All data can be deleted by the user
-- **Transparency**: Open-source codebase for full auditability
+- **DSGVO**: Vollständig konform bei Konfiguration für rein lokalen Betrieb
+- **Datenminimierung**: Sammelt nur für Funktionalität notwendige Daten
+- **Recht auf Löschung**: Alle Daten können vom Benutzer gelöscht werden
+- **Transparenz**: Open-Source-Codebasis für vollständige Prüfbarkeit
 
-## Security Audit
+## Sicherheitsaudit
 
-We welcome security audits of JarvisCore. If you're interested in conducting a security audit:
+Wir begrüßen Sicherheitsaudits von JarvisCore. Wenn Sie an einem Sicherheitsaudit interessiert sind:
 
-1. Contact us at [INSERT SECURITY EMAIL]
-2. We'll provide guidance and access as needed
-3. Results can be shared publicly or privately as preferred
+1. Kontaktieren Sie uns unter [SICHERHEITS-EMAIL EINFÜGEN]
+2. Wir stellen Anleitung und Zugang nach Bedarf bereit
+3. Ergebnisse können nach Belieben öffentlich oder privat geteilt werden
 
 ## Hall of Fame
 
-We thank the following security researchers for responsibly disclosing vulnerabilities:
+Wir danken den folgenden Sicherheitsforschern für die verantwortungsvolle Offenlegung von Schwachstellen:
 
-<!-- List will be populated as vulnerabilities are reported and fixed -->
+<!-- Liste wird gefüllt, sobald Schwachstellen gemeldet und behoben wurden -->
 
-*No vulnerabilities have been reported yet.*
+*Bisher wurden keine Schwachstellen gemeldet.*
 
-## Additional Resources
+## Zusätzliche Ressourcen
 
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [CWE Top 25](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html)
 - [Docker Security Best Practices](https://docs.docker.com/engine/security/)
 - [Python Security Best Practices](https://python.readthedocs.io/en/latest/library/security_warnings.html)
 
-## Questions?
+## Fragen?
 
-If you have questions about this security policy, please contact us at [INSERT SECURITY EMAIL].
+Wenn Sie Fragen zu dieser Sicherheitsrichtlinie haben, kontaktieren Sie uns bitte unter [SICHERHEITS-EMAIL EINFÜGEN].
 
 ---
 
-**Last Updated**: December 16, 2025
-**Next Review**: March 16, 2026
+**Zuletzt aktualisiert**: 16. Dezember 2025  
+**Nächste Überprüfung**: 16. März 2026

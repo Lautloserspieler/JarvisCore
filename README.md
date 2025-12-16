@@ -50,12 +50,102 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 
 ---
 
-## 🚀 Schnellstart
+## 💻 Voraussetzungen
 
-### Voraussetzungen
-- **Docker** & **Docker Compose V2** (empfohlen)
-- *ODER* Python 3.11+, Go 1.21+, Node.js 18+
+### 🐳 Docker installieren (Empfohlen)
+
+#### Windows
+
+1. **Docker Desktop herunterladen:**
+   - 🔗 [Docker Desktop für Windows](https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe)
+   - Oder von: https://www.docker.com/products/docker-desktop/
+
+2. **Installer ausführen:**
+   ```powershell
+   # Docker Desktop Installer.exe doppelklicken
+   # WSL 2 wird automatisch konfiguriert
+   ```
+
+3. **Docker starten und verifizieren:**
+   ```powershell
+   # Docker Desktop starten (aus Startmenü)
+   
+   # Terminal öffnen und prüfen:
+   docker --version
+   # Sollte zeigen: Docker version 24.0.x
+   
+   docker compose version
+   # Sollte zeigen: Docker Compose version v2.x.x
+   ```
+
+#### Linux (Ubuntu/Debian)
+
+```bash
+# Docker installieren
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Aktuellen Benutzer zur docker-Gruppe hinzufügen
+sudo usermod -aG docker $USER
+
+# Neu einloggen oder:
+newgrp docker
+
+# Verifizieren
+docker --version
+docker compose version
+```
+
+#### macOS
+
+1. **Docker Desktop herunterladen:**
+   - 🔗 [Docker Desktop für Mac](https://desktop.docker.com/mac/main/amd64/Docker.dmg) (Intel)
+   - 🔗 [Docker Desktop für Mac](https://desktop.docker.com/mac/main/arm64/Docker.dmg) (Apple Silicon)
+
+2. **Installation:**
+   ```bash
+   # Docker.dmg öffnen und Docker in Programme ziehen
+   # Docker starten
+   
+   # Verifizieren:
+   docker --version
+   docker compose version
+   ```
+
+### 🐞 Docker Compose V2 prüfen
+
+```bash
+# Sollte funktionieren (V2):
+docker compose version
+
+# Sollte Docker Compose version v2.x.x zeigen
+```
+
+**Falls nur V1 installiert ist:**
+
+```bash
+# Linux: V2 manuell installieren
+sudo apt-get update
+sudo apt-get install docker-compose-plugin
+
+# Oder via Docker CLI Plugin:
+mkdir -p ~/.docker/cli-plugins/
+curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+chmod +x ~/.docker/cli-plugins/docker-compose
+```
+
+### ⚙️ Alternative: Manuelle Installation
+
+Falls du **ohne Docker** arbeiten möchtest:
+
+- **Python 3.11+** - [python.org](https://python.org)
+- **Go 1.21+** - [golang.org](https://golang.org)
+- **Node.js 18+** - [nodejs.org](https://nodejs.org)
 - **(Optional)** NVIDIA GPU mit CUDA für beschleunigte Inferenz
+
+---
+
+## 🚀 Schnellstart
 
 ### 🐳 Installation mit Docker (Empfohlen)
 
@@ -78,7 +168,9 @@ docker compose logs -f
 - ✅ Memory Service
 - ✅ Speech Service
 
-> **💡 Hinweis:** Ab Docker Desktop 3.4+ heißt der Befehl `docker compose` (mit Leerzeichen), nicht mehr `docker-compose` (mit Bindestrich)!
+**🎉 UI öffnen:** http://localhost:5000
+
+> **💡 Hinweis:** Der Befehl ist `docker compose` (mit Leerzeichen), nicht `docker-compose` (mit Bindestrich)!
 
 ### 🔧 Alternative: Manueller Start (Development)
 
@@ -247,9 +339,32 @@ docker compose restart backend
 
 # Status prüfen
 docker compose ps
+
+# Container Shell öffnen
+docker compose exec backend bash
 ```
 
-> **⚠️ Wichtig:** Falls `docker compose` nicht funktioniert, stelle sicher, dass Docker Desktop aktuell ist (3.4+) oder installiere Docker Compose V2 separat.
+### 🐛 Troubleshooting
+
+**Problem: `docker compose` nicht gefunden**
+
+```bash
+# Prüfe Docker Version
+docker --version
+
+# Sollte >= 24.0 sein
+# Falls nicht: Docker Desktop aktualisieren
+```
+
+**Problem: Port bereits belegt**
+
+```bash
+# Ports prüfen
+netstat -ano | findstr :5000  # Windows
+lsof -i :5000                  # Linux/Mac
+
+# Oder Ports in docker-compose.yml ändern
+```
 
 ---
 

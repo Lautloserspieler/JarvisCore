@@ -9,6 +9,8 @@ import sys
 import os
 import subprocess
 import threading
+import psutil
+import platform
 from pathlib import Path
 
 # Add project root to path
@@ -153,6 +155,65 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         print(f"[ERROR] WebSocket error: {e}")
 
+# System Info API
+@app.get("/api/system/info")
+async def get_system_info():
+    """Get system information"""
+    try:
+        # CPU Info
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        cpu_count = psutil.cpu_count()
+        
+        # Memory Info
+        mem = psutil.virtual_memory()
+        mem_total = mem.total / (1024**3)  # GB
+        mem_used = mem.used / (1024**3)    # GB
+        mem_percent = mem.percent
+        
+        # Disk Info
+        disk = psutil.disk_usage('/')
+        disk_total = disk.total / (1024**3)  # GB
+        disk_used = disk.used / (1024**3)    # GB
+        disk_percent = disk.percent
+        
+        # Platform Info
+        system_info = {
+            "platform": platform.system(),
+            "platform_release": platform.release(),
+            "platform_version": platform.version(),
+            "architecture": platform.machine(),
+            "processor": platform.processor(),
+        }
+        
+        # llama.cpp status
+        llama_status = llama_runtime.get_status()
+        
+        return {
+            "cpu": {
+                "usage": cpu_percent,
+                "count": cpu_count
+            },
+            "memory": {
+                "total": round(mem_total, 2),
+                "used": round(mem_used, 2),
+                "percent": mem_percent
+            },
+            "disk": {
+                "total": round(disk_total, 2),
+                "used": round(disk_used, 2),
+                "percent": disk_percent
+            },
+            "system": system_info,
+            "llama": llama_status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        print(f"[ERROR] System info error: {e}")
+        return {
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
 # Health API  
 @app.get("/api/health")
 async def health_check():
@@ -292,7 +353,8 @@ async def root():
             "websocket": "/ws",
             "docs": "/docs",
             "health": "/api/health",
-            "models": "/api/models"
+            "models": "/api/models",
+            "system": "/api/system/info"
         }
     }
 

@@ -1,35 +1,35 @@
 # 🔄 Migration: Desktop UI → Web UI
 
-**From:** DearPyGui/ImGui Desktop App  
-**To:** React Web UI + FastAPI
+**Von:** DearPyGui/ImGui Desktop App  
+**Zu:** React Web UI + FastAPI
 
 ---
 
-## Why Migrate?
+## Warum migrieren?
 
-### Problems with old Desktop UI:
-- ❌ Windows-only
-- ❌ No remote access
-- ❌ Outdated design
-- ❌ Hard to maintain
-- ❌ No mobile support
+### Probleme mit alter Desktop UI:
+- ❌ Nur Windows
+- ❌ Kein Remote-Zugriff
+- ❌ Veraltetes Design
+- ❌ Schwer zu warten
+- ❌ Kein Mobile-Support
 
-### Benefits of Web UI:
-- ✅ Cross-platform (Windows, Linux, Mac)
-- ✅ Remote access via browser
-- ✅ Modern JARVIS design (Orbitron, cyan glows)
-- ✅ Mobile-friendly
-- ✅ Real-time updates (WebSocket)
-- ✅ Easy to deploy
+### Vorteile der Web UI:
+- ✅ Cross-Platform (Windows, Linux, Mac)
+- ✅ Remote-Zugriff über Browser
+- ✅ Modernes JARVIS-Design (Orbitron, Cyan-Glows)
+- ✅ Mobile-freundlich
+- ✅ Echtzeit-Updates (WebSocket)
+- ✅ Einfach zu deployen
 
 ---
 
 ## Quick Start
 
-### 1. Install Web Dependencies
+### 1. Web-Dependencies installieren
 
 ```bash
-# Backend (already installed)
+# Backend (bereits installiert)
 pip install fastapi uvicorn websockets
 
 # Frontend
@@ -38,22 +38,22 @@ npm install
 npm run build
 ```
 
-### 2. Start Web UI
+### 2. Web UI starten
 
 ```bash
-# Option 1: Production mode (serves built frontend)
+# Option 1: Production-Modus (serviert gebautes Frontend)
 python main_web.py
 
-# Option 2: Development mode
+# Option 2: Entwicklungs-Modus
 # Terminal 1: Backend
 python main_web.py
 
-# Terminal 2: Frontend dev server
+# Terminal 2: Frontend Dev-Server
 cd frontend
 npm run dev
 ```
 
-### 3. Open Browser
+### 3. Browser öffnen
 
 ```
 http://localhost:8000
@@ -61,49 +61,49 @@ http://localhost:8000
 
 ---
 
-## Feature Mapping
+## Feature-Mapping
 
-### Old Desktop UI → New Web UI
+### Alte Desktop UI → Neue Web UI
 
-| Old Feature | New Location |
-|-------------|-------------|
-| **System Metrics** | Dashboard Tab (live graphs) |
-| **Chat** | Chat Tab (with history) |
-| **Model Management** | Models Tab (download/status) |
-| **Plugin Control** | Plugins Tab |
-| **Settings** | Settings Tab |
-| **Logs** | Logs Tab (live streaming) |
-| **Memory** | Memory Tab (new!) |
+| Alte Feature | Neue Location |
+|-------------|----------|
+| **System-Metriken** | Dashboard Tab (Live-Graphen) |
+| **Chat** | Chat Tab (mit History) |
+| **Modell-Management** | Models Tab (Download/Status) |
+| **Plugin-Control** | Plugins Tab |
+| **Einstellungen** | Settings Tab |
+| **Logs** | Logs Tab (Live-Streaming) |
+| **Memory** | Memory Tab (Neu!) |
 
 ---
 
-## What Changed?
+## Was hat sich geändert?
 
-### Removed
+### Entfernt
 - `desktop/jarvis_imgui_app_full.py`
-- `dearpygui` dependency
-- Windows-specific code
+- `dearpygui` Abhängigkeit
+- Windows-spezifischer Code
 
-### Added
+### Hinzugefügt
 - `frontend/` - React + TypeScript UI
-- `api/jarvis_api.py` - FastAPI backend
-- `main_web.py` - Web server entry point
-- WebSocket for real-time updates
-- REST API endpoints
+- `api/jarvis_api.py` - FastAPI Backend
+- `main_web.py` - Web-Server Einstiegspunkt
+- WebSocket für Echtzeit-Updates
+- REST-API Endpunkte
 
 ---
 
-## Configuration
+## Konfiguration
 
 ### data/settings.json
 
 ```json
 {
   "desktop_app": {
-    "enabled": false  // ❌ Disable old UI
+    "enabled": false  // ❌ Alte UI deaktivieren
   },
   "web_ui": {
-    "enabled": true,  // ✅ Enable new UI
+    "enabled": true,  // ✅ Neue UI aktivieren
     "host": "0.0.0.0",
     "port": 8000
   }
@@ -112,20 +112,20 @@ http://localhost:8000
 
 ---
 
-## API Endpoints
+## API-Endpunkte
 
-### REST API
+### REST-API
 
 ```
-GET  /api/health              - Health check
-GET  /api/system/metrics      - System metrics
-GET  /api/llm/status          - LLM status
-GET  /api/llm/models          - Available models
-POST /api/llm/load            - Load model
-POST /api/llm/unload          - Unload model
-GET  /api/plugins             - Plugin list
-POST /api/chat/message        - Send message
-GET  /api/logs                - Get logs
+GET  /api/health              - Health Check
+GET  /api/system/metrics      - System-Metriken
+GET  /api/llm/status          - LLM-Status
+GET  /api/llm/models          - Verfügbare Modelle
+POST /api/llm/load            - Modell laden
+POST /api/llm/unload          - Modell entladen
+GET  /api/plugins             - Plugin-Liste
+POST /api/chat/message        - Nachricht senden
+GET  /api/logs                - Logs abrufen
 ```
 
 ### WebSocket
@@ -150,26 +150,26 @@ Server → Client:
 
 ## Deployment
 
-### Development
+### Entwicklung
 
 ```bash
-# Hot reload for both frontend and backend
+# Hot-Reload für Frontend und Backend
 python main_web.py
 ```
 
 ### Production
 
 ```bash
-# Build frontend
+# Frontend bauen
 cd frontend
 npm run build
 
-# Start with gunicorn
+# Mit Gunicorn starten
 cd ..
 gunicorn -w 4 -k uvicorn.workers.UvicornWorker api.jarvis_api:app --bind 0.0.0.0:8000
 ```
 
-### Docker (Coming Soon)
+### Docker (Bald verfügbar)
 
 ```bash
 docker build -t jarvis .
@@ -180,7 +180,7 @@ docker run -p 8000:8000 jarvis
 
 ## Troubleshooting
 
-### Frontend not loading?
+### Frontend lädt nicht?
 
 ```bash
 cd frontend
@@ -189,50 +189,50 @@ npm install
 npm run build
 ```
 
-### API not responding?
+### API antwortet nicht?
 
 ```bash
-# Check if backend is running
+# Prüfe ob Backend läuft
 curl http://localhost:8000/api/health
 
-# Check logs
+# Logs prüfen
 tail -f logs/jarvis.log
 ```
 
-### WebSocket not connecting?
+### WebSocket verbindet sich nicht?
 
-- Check CORS settings in `api/jarvis_api.py`
-- Ensure port 8000 is not blocked
-- Check browser console for errors
+- CORS-Einstellungen in `api/jarvis_api.py` prüfen
+- Stellt sicher, dass Port 8000 nicht blockiert ist
+- Browser-Konsole auf Fehler prüfen
 
 ---
 
 ## FAQ
 
-**Q: Can I still use the old Desktop UI?**  
-A: Yes, but it's deprecated. Checkout an older commit if needed.
+**F: Kann ich die alte Desktop UI immer noch nutzen?**  
+A: Ja, aber sie ist veraltet. Checkout einen älteren Commit wenn nötig.
 
-**Q: Will my data be migrated?**  
-A: Yes! `data/settings.json` and all models remain unchanged.
+**F: Werden meine Daten migriert?**  
+A: Ja! `data/settings.json` und alle Modelle bleiben unverändert.
 
-**Q: Is the Web UI slower?**  
-A: No! WebSocket ensures real-time updates just like the desktop app.
+**F: Ist die Web UI langsamer?**  
+A: Nein! WebSocket stellt Echtzeit-Updates wie die Desktop App sicher.
 
-**Q: Can I access JARVIS from my phone?**  
-A: Yes! The Web UI is responsive and works on mobile browsers.
+**F: Kann ich JARVIS von meinem Handy aus zugreifen?**  
+A: Ja! Die Web UI ist responsive und funktioniert auf Mobile-Browsern.
 
-**Q: Is it secure?**  
-A: For local use, yes. For remote access, add authentication (see docs).
-
----
-
-## Next Steps
-
-1. ✅ Migrate to Web UI
-2. 🔜 Add authentication for remote access
-3. 🔜 PWA support (install as app)
-4. 🔜 Mobile app (React Native)
+**F: Ist das sicher?**  
+A: Für lokale Nutzung ja. Für Remote-Zugriff Authentifizierung hinzufügen (siehe Docs).
 
 ---
 
-**Need help?** Open an issue: https://github.com/Lautloserspieler/JarvisCore/issues
+## Nächste Schritte
+
+1. ✅ Zu Web UI migrieren
+2. 🔜 Authentifizierung für Remote-Zugriff hinzufügen
+3. 🔜 PWA-Support (als App installierbar)
+4. 🔜 Mobile App (React Native)
+
+---
+
+**Hilfe benötigt?** Issue öffnen: https://github.com/Lautloserspieler/JarvisCore/issues

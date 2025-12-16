@@ -53,7 +53,7 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 ## 🚀 Schnellstart
 
 ### Voraussetzungen
-- **Docker** & **Docker Compose** (empfohlen)
+- **Docker** & **Docker Compose V2** (empfohlen)
 - *ODER* Python 3.11+, Go 1.21+, Node.js 18+
 - **(Optional)** NVIDIA GPU mit CUDA für beschleunigte Inferenz
 
@@ -64,11 +64,11 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 
-# Alle Services mit Docker Compose starten
-docker-compose up -d
+# Alle Services mit Docker Compose starten (V2 Syntax!)
+docker compose up -d
 
 # Logs verfolgen
-docker-compose logs -f
+docker compose logs -f
 ```
 
 **Das war's!** Docker Compose startet automatisch:
@@ -77,6 +77,8 @@ docker-compose logs -f
 - ✅ Go Gateway Service
 - ✅ Memory Service
 - ✅ Speech Service
+
+> **💡 Hinweis:** Ab Docker Desktop 3.4+ heißt der Befehl `docker compose` (mit Leerzeichen), nicht mehr `docker-compose` (mit Bindestrich)!
 
 ### 🔧 Alternative: Manueller Start (Development)
 
@@ -225,24 +227,29 @@ JarvisCore/
 ## 🐳 Docker Commands
 
 ```bash
-# Starten
-docker-compose up -d
+# Starten (V2 Syntax!)
+docker compose up -d
 
 # Stoppen
-docker-compose down
+docker compose down
 
 # Logs anzeigen
-docker-compose logs -f
+docker compose logs -f
 
 # Neu builden
-docker-compose build
+docker compose build
 
 # Services neustarten
-docker-compose restart
+docker compose restart
 
 # Bestimmten Service neustarten
-docker-compose restart backend
+docker compose restart backend
+
+# Status prüfen
+docker compose ps
 ```
+
+> **⚠️ Wichtig:** Falls `docker compose` nicht funktioniert, stelle sicher, dass Docker Desktop aktuell ist (3.4+) oder installiere Docker Compose V2 separat.
 
 ---
 
@@ -283,7 +290,7 @@ Vollständige API-Docs: http://localhost:5050/docs
 - **WebSocket**: FastAPI WebSocket
 
 ### Infrastructure
-- **Container**: Docker + Docker Compose
+- **Container**: Docker + Docker Compose V2
 - **Reverse Proxy**: Go Gateway
 - **Storage**: Local File System
 
@@ -367,6 +374,7 @@ Weitere Infos: [SECURITY.md](SECURITY.md)
 
 ## 📚 Weitere Dokumentation
 
+- [Deployment Guide](DEPLOYMENT.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security Policy](SECURITY.md)

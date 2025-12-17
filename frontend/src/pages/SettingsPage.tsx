@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Download, Upload, RotateCcw, Save, Settings2, Zap, Shield, Database } from 'lucide-react';
+import { Download, Upload, RotateCcw, Save, Settings2, Zap, Shield, Database, Plug } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface LlamaSettings {
@@ -38,6 +38,16 @@ interface APISettings {
   timeout: number;
   retry_attempts: number;
   api_key: string;
+}
+
+interface Plugin {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  author: string;
+  enabled: boolean;
+  status: string;
 }
 
 const SettingsPage: React.FC = () => {
@@ -74,11 +84,14 @@ const SettingsPage: React.FC = () => {
 
   const [systemPrompt, setSystemPrompt] = useState('Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte präzise und freundlich.');
   const [modelInfo, setModelInfo] = useState<any>(null);
+  const [plugins, setPlugins] = useState<Plugin[]>([]);
+  const [loadingPlugins, setLoadingPlugins] = useState<{[key: string]: boolean}>({});
 
   // Load settings on mount
   useEffect(() => {
     loadSettings();
     loadModelInfo();
+    loadPlugins();
   }, []);
 
   const loadSettings = async () => {
@@ -102,6 +115,66 @@ const SettingsPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to load model info:', error);
+    }
+  };
+
+  const loadPlugins = async () => {
+    try {
+      const response = await fetch('http://localhost:5050/api/plugins');
+      if (response.ok) {
+        const data = await response.json();
+        // Filter out demo plugins (calculator, system_info, time_plugin)
+        const filtered = data.filter((p: Plugin) => 
+          !['calculator_plugin', 'system_info_plugin', 'time_plugin'].includes(p.id)
+        );
+        setPlugins(filtered);
+      }
+    } catch (error) {
+      console.error('Failed to load plugins:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load plugins',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const togglePlugin = async (pluginId: string, enabled: boolean) => {
+    setLoadingPlugins(prev => ({ ...prev, [pluginId]: true }));
+    
+    try {
+      const endpoint = enabled 
+        ? `http://localhost:5050/api/plugins/${pluginId}/enable`
+        : `http://localhost:5050/api/plugins/${pluginId}/disable`;
+      
+      const response = await fetch(endpoint, { method: 'POST' });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update local state
+        setPlugins(prev => 
+          prev.map(p => 
+            p.id === pluginId ? { ...p, enabled } : p
+          )
+        );
+        
+        toast({
+          title: 'Success',
+          description: result.message || (enabled ? 'Plugin activated' : 'Plugin deactivated')
+        });
+      } else {
+        throw new Error('Failed to toggle plugin');
+      }
+    } catch (error) {
+      console.error('Error toggling plugin:', error);
+      toast({
+        title: 'Error',
+        description: enabled ? 'Failed to activate plugin' : 'Failed to deactivate plugin',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoadingPlugins(prev => ({ ...prev, [pluginId]: false }));
     }
   };
 
@@ -221,10 +294,14 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="llama" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="llama">
             <Zap className="w-4 h-4 mr-2" />
             LLM Parameters
+          </TabsTrigger>
+          <TabsTrigger value="plugins">
+            <Plug className="w-4 h-4 mr-2" />
+            Plugins
           </TabsTrigger>
           <TabsTrigger value="ui">
             <Settings2 className="w-4 h-4 mr-2" />
@@ -436,6 +513,55 @@ const SettingsPage: React.FC = () => {
                   Save LLM Settings
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Plugins Tab */}
+        <TabsContent value="plugins" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Installed Plugins</CardTitle>
+              <CardDescription>Manage plugins and extensions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {plugins.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No plugins available</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {plugins.map((plugin) => (
+                    <div
+                      key={plugin.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{plugin.name}</h3>
+                        <p className="text-sm text-muted-foreground">{plugin.description}</p>
+                        <div className="flex gap-2 mt-1">
+                          <span className="text-xs bg-muted px-2 py-1 rounded">v{plugin.version}</span>
+                          <span className="text-xs bg-muted px-2 py-1 rounded">{plugin.author}</span>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => togglePlugin(plugin.id, !plugin.enabled)}
+                        disabled={loadingPlugins[plugin.id] || plugin.status !== 'available'}
+                        variant={plugin.enabled ? 'default' : 'outline'}
+                        size="sm"
+                      >
+                        {loadingPlugins[plugin.id] ? (
+                          'Loading...'
+                        ) : plugin.enabled ? (
+                          'Deactivate'
+                        ) : (
+                          'Activate'
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

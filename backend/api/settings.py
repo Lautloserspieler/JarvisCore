@@ -14,7 +14,7 @@ class LlamaSettings(BaseModel):
     top_p: float = Field(0.9, ge=0.0, le=1.0)
     top_k: int = Field(40, ge=0, le=100)
     repeat_penalty: float = Field(1.1, ge=1.0, le=2.0)
-    max_tokens: int = Field(512, ge=128, le=32768)
+    max_tokens: int = Field(2048, ge=128, le=32768)  # Increased from 512 to 2048
     context_window: int = Field(8192, ge=1024, le=32768)
     n_gpu_layers: int = Field(-1, ge=-1, le=128)
     n_threads: int = Field(8, ge=1, le=64)

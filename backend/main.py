@@ -80,11 +80,13 @@ logs_db.append({
 })
 
 # AI Response Generator mit Plugin-Integration und llama.cpp
-async def generate_ai_response(message: str, session_id: str) -> str:
+async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool]:
     """
     Generate AI response with plugin processing:
     1. Check if plugins can handle the message
     2. If not, use llama.cpp for general response
+    
+    Returns: (response_text, is_plugin_response)
     """
     
     # STEP 1: Try plugin processing first
@@ -99,20 +101,28 @@ async def generate_ai_response(message: str, session_id: str) -> str:
                 "message": f"Plugin processed command: {message[:50]}",
                 "source": "plugins"
             })
-            return plugin_response
+            return plugin_response, True  # Mark as plugin response
     
     # STEP 2: No plugin handled it -> use LLM
     if not llama_runtime.is_loaded:
-        return "Bitte laden Sie zuerst ein Modell unter 'Modelle'."
+        return "Bitte laden Sie zuerst ein Modell unter 'Modelle'.", False
     
     try:
+        # Build history - ONLY include non-plugin messages
         history = []
         if session_id in messages_db:
-            for msg in messages_db[session_id][-5:]:
+            # Filter: nur messages die NICHT von Plugins sind
+            for msg in messages_db[session_id][-10:]:
+                # Skip plugin responses (marked with isPlugin=True)
+                if msg.get('isPlugin', False):
+                    continue
                 history.append({
                     'role': 'user' if msg['isUser'] else 'assistant',
                     'content': msg['text']
                 })
+        
+        # Limit to last 5 conversation turns
+        history = history[-10:]
         
         result = llama_runtime.chat(
             message=message,
@@ -128,14 +138,14 @@ async def generate_ai_response(message: str, session_id: str) -> str:
                 f"with {result['model']} on {result['device']} "
                 f"({result['tokens_per_second']:.1f} tok/s)"
             )
-            return result['text']
+            return result['text'], False  # Mark as LLM response
         else:
             print(f"[ERROR] Generation failed: {result.get('error', 'Unknown error')}")
-            return f"Fehler bei der Antwort-Generierung: {result.get('error', 'Unbekannter Fehler')}"
+            return f"Fehler bei der Antwort-Generierung: {result.get('error', 'Unbekannter Fehler')}", False
         
     except Exception as e:
         print(f"[ERROR] AI generation exception: {e}")
-        return f"Fehler bei der Antwort-Generierung: {str(e)}"
+        return f"Fehler bei der Antwort-Generierung: {str(e)}", False
 
 # WebSocket endpoint
 @app.websocket("/ws")
@@ -161,6 +171,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     'id': message_id,
                     'text': user_message,
                     'isUser': True,
+                    'isPlugin': False,  # User messages are never plugin responses
                     'timestamp': datetime.now().isoformat()
                 })
                 
@@ -169,13 +180,16 @@ async def websocket_endpoint(websocket: WebSocket):
                     'sessionId': session_id
                 }))
                 
-                response_text = await generate_ai_response(user_message, session_id)
+                # Get response and check if it's from plugin
+                response_text, is_plugin = await generate_ai_response(user_message, session_id)
                 response_id = str(uuid.uuid4())
                 
+                # Store response with plugin flag
                 messages_db[session_id].append({
                     'id': response_id,
                     'text': response_text,
                     'isUser': False,
+                    'isPlugin': is_plugin,  # Mark plugin responses
                     'timestamp': datetime.now().isoformat()
                 })
                 

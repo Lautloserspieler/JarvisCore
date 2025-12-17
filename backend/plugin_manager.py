@@ -10,21 +10,36 @@ import json
 class PluginManager:
     """Manages plugins for JARVIS Core"""
     
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
     def __init__(self, plugins_dir: str = "plugins"):
+        # Prevent re-initialization
+        if self._initialized:
+            return
+            
         self.root = Path.cwd()  # Current working directory
         self.plugins_dir = self.root / plugins_dir
         self.plugins: Dict[str, Dict[str, Any]] = {}
         self.enabled_plugins: Dict[str, bool] = {}
         self.config_file = self.root / "config" / "plugins.json"
         
-        print(f"[INFO] Plugin Manager initialized")
-        print(f"[INFO] Looking for plugins in: {self.plugins_dir}")
+        print(f"[PLUGINS] Initializing Plugin Manager...")
+        print(f"[PLUGINS] Looking for plugins in: {self.plugins_dir}")
         
         # Load plugin states
         self._load_config()
         
         # Discover plugins
         self.discover_plugins()
+        
+        self._initialized = True
+        print(f"[PLUGINS] Plugin Manager ready with {len(self.plugins)} plugins")
     
     def _load_config(self):
         """Load plugin configuration from file"""
@@ -37,17 +52,16 @@ class PluginManager:
                         self.enabled_plugins = config.get('enabled', {})
                         # Ensure enabled_plugins is a dict
                         if not isinstance(self.enabled_plugins, dict):
-                            print(f"[WARNING] Invalid enabled_plugins format, resetting")
+                            print(f"[PLUGINS] Invalid enabled_plugins format, resetting")
                             self.enabled_plugins = {}
                     else:
-                        print(f"[WARNING] Invalid config format, expected dict")
+                        print(f"[PLUGINS] Invalid config format, expected dict")
                         self.enabled_plugins = {}
-                print(f"[INFO] Loaded plugin config from {self.config_file}")
+                print(f"[PLUGINS] Loaded plugin config")
             except Exception as e:
-                print(f"[WARNING] Failed to load plugin config: {e}")
+                print(f"[PLUGINS] Failed to load config: {e}")
                 self.enabled_plugins = {}
         else:
-            print(f"[INFO] No plugin config found, starting fresh")
             self.enabled_plugins = {}
     
     def _save_config(self):
@@ -56,29 +70,27 @@ class PluginManager:
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump({'enabled': self.enabled_plugins}, f, indent=2)
-            print(f"[INFO] Saved plugin config to {self.config_file}")
         except Exception as e:
-            print(f"[ERROR] Failed to save plugin config: {e}")
+            print(f"[PLUGINS] Failed to save config: {e}")
     
     def discover_plugins(self):
         """Discover all available plugins in plugins directory"""
         if not self.plugins_dir.exists():
-            print(f"[WARNING] Plugins directory not found: {self.plugins_dir}")
-            print(f"[INFO] No plugins will be loaded")
+            print(f"[PLUGINS] Directory not found: {self.plugins_dir}")
             return
         
-        print(f"[INFO] Discovering plugins in {self.plugins_dir}...")
+        print(f"[PLUGINS] Scanning directory...")
         
         # Add plugins directory to path if not already there
         plugins_path_str = str(self.plugins_dir.absolute())
         if plugins_path_str not in sys.path:
             sys.path.insert(0, plugins_path_str)
-            print(f"[INFO] Added {plugins_path_str} to Python path")
         
         # Scan for plugin files
         plugin_files = list(self.plugins_dir.glob("*_plugin.py"))
-        print(f"[INFO] Found {len(plugin_files)} plugin files")
+        print(f"[PLUGINS] Found {len(plugin_files)} plugin files")
         
+        loaded_count = 0
         for file in plugin_files:
             plugin_id = file.stem  # filename without .py
             
@@ -91,12 +103,13 @@ class PluginManager:
                 
                 if plugin_info:
                     self.plugins[plugin_id] = plugin_info
-                    print(f"[INFO] ✓ Discovered plugin: {plugin_info['name']} (v{plugin_info['version']})")
+                    loaded_count += 1
+                    print(f"[PLUGINS] ✓ {plugin_info['name']} (v{plugin_info['version']})")
                     
             except Exception as e:
-                print(f"[WARNING] ✗ Failed to load plugin {plugin_id}: {e}")
+                print(f"[PLUGINS] ✗ Failed: {plugin_id} - {e}")
         
-        print(f"[INFO] Successfully loaded {len(self.plugins)} plugins")
+        print(f"[PLUGINS] Loaded {loaded_count}/{len(plugin_files)} plugins")
     
     def _extract_plugin_info(self, plugin_id: str, module) -> Optional[Dict[str, Any]]:
         """Extract plugin information from module"""
@@ -145,13 +158,13 @@ class PluginManager:
     def enable_plugin(self, plugin_id: str) -> bool:
         """Enable a plugin"""
         if plugin_id not in self.plugins:
-            print(f"[ERROR] Plugin not found: {plugin_id}")
+            print(f"[PLUGINS] Not found: {plugin_id}")
             return False
         
         plugin = self.plugins[plugin_id]
         
         if plugin['status'] != 'available':
-            print(f"[ERROR] Plugin not available: {plugin_id}")
+            print(f"[PLUGINS] Not available: {plugin_id}")
             return False
         
         # Enable plugin
@@ -159,13 +172,12 @@ class PluginManager:
         self.enabled_plugins[plugin_id] = True
         self._save_config()
         
-        print(f"[INFO] Enabled plugin: {plugin['name']}")
+        print(f"[PLUGINS] Enabled: {plugin['name']}")
         return True
     
     def disable_plugin(self, plugin_id: str) -> bool:
         """Disable a plugin"""
         if plugin_id not in self.plugins:
-            print(f"[ERROR] Plugin not found: {plugin_id}")
             return False
         
         plugin = self.plugins[plugin_id]
@@ -175,7 +187,7 @@ class PluginManager:
         self.enabled_plugins[plugin_id] = False
         self._save_config()
         
-        print(f"[INFO] Disabled plugin: {plugin['name']}")
+        print(f"[PLUGINS] Disabled: {plugin['name']}")
         return True
     
     def get_enabled_plugins(self) -> List[Dict[str, Any]]:
@@ -187,23 +199,21 @@ class PluginManager:
     
     def reload_plugins(self):
         """Reload all plugins (hot-reload)"""
-        print("[INFO] Reloading plugins...")
+        print("[PLUGINS] Reloading...")
         self.plugins.clear()
         self.discover_plugins()
-        print(f"[INFO] Reloaded {len(self.plugins)} plugins")
 
-# Global plugin manager instance
-print("[INFO] Initializing global plugin manager...")
+# Create singleton instance
 plugin_manager = PluginManager()
-print(f"[INFO] Plugin manager ready with {len(plugin_manager.plugins)} plugins")
 
 if __name__ == "__main__":
     # Test plugin discovery
-    print("\nPlugin Manager Test")
-    print("="*50)
+    print("\n" + "="*50)
+    print("Plugin Manager Test")
+    print("="*50 + "\n")
     
     plugins = plugin_manager.get_all_plugins()
-    print(f"\nFound {len(plugins)} plugins:\n")
+    print(f"Found {len(plugins)} plugins:\n")
     
     for plugin in plugins:
         status_icon = "✓" if plugin['enabled'] else "✗"

@@ -17,6 +17,9 @@ export const useChat = (sessionId?: string) => {
           text: data.response,
           isUser: false,
           timestamp: new Date().toISOString(),
+          // Add token statistics if available
+          tokens: data.tokens,
+          tokensPerSecond: data.tokensPerSecond,
         }]);
         setIsTyping(false);
       } else if (data.type === 'typing') {

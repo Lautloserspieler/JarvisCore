@@ -23,8 +23,8 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 
 ### 🧠 KI-Engine
 - ✅ **llama.cpp Lokale Inferenz** - Vollständig implementiert und funktionsfähig!
-- ✅ **Automatische GPU-Erkennung** - NVIDIA CUDA & AMD ROCm Support
-- ✅ **4 GGUF-Modelle** - Mistral, Qwen, DeepSeek, Llama 2 (Q4_K_M)
+- ✅ **Automatische GPU-Erkennung** - NVIDIA CUDA Support
+- ✅ **7 GGUF-Modelle** - Mistral, Qwen, DeepSeek, Llama und mehr
 - ✅ **Chat mit History** - Kontext-bewusste Konversationen
 - ✅ **Bis 32K Context** - Lange Konversationen möglich
 - ✅ **System-Prompts** - JARVIS-Persönlichkeit konfigurierbar
@@ -55,7 +55,6 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 - **Node.js 18+** - [nodejs.org](https://nodejs.org)
 - **Git** - [git-scm.com](https://git-scm.com)
 - **(Optional)** NVIDIA GPU mit CUDA für beschleunigte Inferenz
-- **(Optional)** AMD GPU mit ROCm für beschleunigte Inferenz
 
 ---
 
@@ -84,9 +83,9 @@ python setup_llama.py
 ```
 
 **Das Script erkennt automatisch:**
-- ✅ NVIDIA GPU → Installiert mit CUDA Support
-- ✅ AMD GPU → Installiert mit ROCm Support  
-- ✅ Keine GPU → Installiert CPU-Version
+- ✅ NVIDIA GPU → Installiert mit CUDA Support (30-50 tok/s)
+- ✅ AMD GPU → Empfiehlt CPU-Version (siehe unten)
+- ✅ Keine GPU → Installiert CPU-Version (5-10 tok/s)
 
 **Ausgabe-Beispiel:**
 ```
@@ -105,7 +104,7 @@ Installing llama-cpp-python with NVIDIA CUDA support
 ✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅
 
 [SUCCESS] llama-cpp-python installed successfully!
-[INFO] GPU Mode: NVIDIA
+[INFO] GPU Mode: NVIDIA CUDA
 [INFO] You can now run: python main.py
 ```
 
@@ -156,28 +155,53 @@ Nach dem Start erreichst du:
 **NEU in v1.1.0** - Production-ready mit automatischer GPU-Erkennung!
 
 ### Features
-- 🚀 **GPU-Acceleration** - CUDA & ROCm automatisch erkannt
+- 🚀 **GPU-Acceleration** - CUDA automatisch erkannt
 - 🎯 **GGUF-Support** - Alle llama.cpp-kompatiblen Modelle
 - 💬 **Chat-Modus** - History mit bis zu 32K Context
-- ⚡ **Performance** - 30-50 tokens/sec (GPU), 5-10 tokens/sec (CPU)
+- ⚡ **Performance** - 30-50 tokens/sec (NVIDIA), 5-10 tokens/sec (CPU)
 
 ### GPU Support
 
-| GPU-Typ | Support | Installation | Performance |
-|---------|---------|--------------|-------------|
-| NVIDIA | ✅ CUDA | Automatisch | ⚡⚡⚡ 30-50 tok/s |
-| AMD | ✅ ROCm | Automatisch | ⚡⚡⚡ 25-40 tok/s |
-| Intel Arc | 🔄 oneAPI | Coming Soon | ⚡⚡ 20-35 tok/s |
-| CPU | ✅ Standard | Automatisch | ⚡ 5-10 tok/s |
+| GPU-Typ | Support | Installation | Performance | Empfehlung |
+|---------|---------|--------------|-------------|------------|
+| **NVIDIA** | ✅ CUDA | Automatisch | ⚡⚡⚡ 30-50 tok/s | ⭐ Empfohlen |
+| **AMD** | ⚠️ ROCm | Komplex | ⚡⚡⚡ 25-40 tok/s | 👉 **Nutze CPU-Version** |
+| **Intel Arc** | 🔄 oneAPI | Coming Soon | ⚡⚡ 20-35 tok/s | In Entwicklung |
+| **CPU** | ✅ Standard | Automatisch | ⚡ 5-10 tok/s | ✅ Funktioniert |
+
+#### 💡 Hinweis für AMD GPU Nutzer:
+
+**ROCm Setup ist komplex und erfordert:**
+- Visual Studio Build Tools
+- ROCm SDK Installation (~5 GB)
+- Spezifische Treiber-Versionen
+- Mehrere Neustarts
+- Komplizierte Pfad-Konfiguration
+
+**👉 Empfehlung: Nutze die CPU-Version!**
+```bash
+python setup_llama.py
+# Wähle Option 3: CPU-Version
+```
+
+**Vorteile CPU-Version:**
+- ✅ Sofort einsatzbereit
+- ✅ Keine komplexe Konfiguration
+- ✅ Stabil und zuverlässig
+- ✅ 5-10 tokens/sec (ausreichend für Chat)
+- ✅ Kleinere Modelle (3B) laufen flüssig
 
 ### Verfügbare Modelle
 
-| Model | Größe | Use Case | Performance |
-|-------|-------|----------|-------------|
-| **Mistral 7B Nemo** | ~7.5 GB | Code, technische Details | ⚡⚡⚡ |
-| **Qwen 2.5 7B** | ~5.2 GB | Vielseitig, multilingual | ⚡⚡⚡ |
-| **DeepSeek R1 8B** | ~6.9 GB | Analysen, Reasoning | ⚡⚡ |
-| **Llama 3.2 3B** | ~2.0 GB | Klein, schnell | ⚡⚡⚡ |
+| Model | Größe | Use Case | CPU Performance |
+|-------|-------|----------|----------------|
+| **Llama 3.2 3B** | ~2.0 GB | Klein, schnell | ⚡⚡⚡ 8-12 tok/s |
+| **Phi-3 Mini** | ~2.3 GB | Kompakt, Chat | ⚡⚡⚡ 7-10 tok/s |
+| **Qwen 2.5 7B** | ~5.2 GB | Vielseitig | ⚡⚡ 5-8 tok/s |
+| **Mistral 7B Nemo** | ~7.5 GB | Code, technisch | ⚡⚡ 4-7 tok/s |
+| **DeepSeek R1 8B** | ~6.9 GB | Analysen | ⚡ 3-6 tok/s |
+
+**👉 Empfehlung für CPU: Nutze Llama 3.2 3B oder Phi-3 Mini für beste Performance!**
 
 ---
 
@@ -193,20 +217,26 @@ pip uninstall llama-cpp-python -y
 CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python
 ```
 
-### AMD GPU (ROCm)
-
-```bash
-cd backend
-pip uninstall llama-cpp-python -y
-CMAKE_ARGS="-DLLAMA_HIPBLAS=on" pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python
-```
-
-### CPU Only
+### CPU Only (Empfohlen für AMD)
 
 ```bash
 cd backend
 pip uninstall llama-cpp-python -y
 pip install llama-cpp-python --force-reinstall --no-cache-dir
+```
+
+### AMD GPU (ROCm) - Nur für Experten
+
+⚠️ **Achtung:** Sehr komplex! Nur für erfahrene Nutzer empfohlen.
+
+1. **ROCm installieren** (~5 GB): https://rocm.docs.amd.com/
+2. **Visual Studio Build Tools** installieren
+3. **Neustart erforderlich**
+4. **Dann:**
+```bash
+cd backend
+pip uninstall llama-cpp-python -y
+CMAKE_ARGS="-DLLAMA_HIPBLAS=on" pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python
 ```
 
 ---
@@ -251,7 +281,7 @@ Weitere Infos: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
 ### Plugin aktivieren
 
 1. Öffne **Plugins Tab** in der UI
-2. Klicke **"Aktivieren"** beim gewünschten Plugin
+2. Klicke **"Аktivieren"** beim gewünschten Plugin
 3. Falls API-Key nötig → Modal öffnet sich automatisch
 4. Gib API-Key ein → Wird sicher in `config/settings.json` gespeichert
 5. Plugin ist aktiviert! ✅
@@ -297,7 +327,6 @@ JarvisCore/
 ```bash
 # GPU-Status prüfen
 nvidia-smi  # NVIDIA
-rocm-smi    # AMD
 
 # llama.cpp neu installieren
 cd backend
@@ -321,6 +350,15 @@ lsof -i :5050
 ```bash
 pip install -r requirements.txt
 cd frontend && npm install
+```
+
+### Problem: AMD GPU - ROCm Installation zu komplex
+
+**Lösung: Nutze CPU-Version!**
+```bash
+cd backend
+python setup_llama.py
+# Wähle Option 3
 ```
 
 Weitere Hilfe: [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)

@@ -28,6 +28,16 @@ from core.llama_inference import llama_runtime
 # Import model downloader
 from backend.model_downloader import model_downloader
 
+# Initialize plugin manager IMMEDIATELY at import time
+print("[BACKEND] Initializing plugin manager...")
+try:
+    from backend.plugin_manager import PluginManager
+    plugin_manager = PluginManager()
+    print(f"[BACKEND] Plugin manager ready: {len(plugin_manager.plugins)} plugins")
+except Exception as e:
+    print(f"[ERROR] Failed to init plugin manager: {e}")
+    plugin_manager = None
+
 app = FastAPI(title="JARVIS Core API", version="1.1.0")
 
 # CORS Configuration
@@ -55,31 +65,6 @@ logs_db.append({
     "message": "JARVIS Core API initialized",
     "source": "backend"
 })
-
-# Plugin Manager (will be initialized on startup)
-plugin_manager = None
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize plugin manager on startup"""
-    global plugin_manager
-    print("[INFO] Backend startup event triggered")
-    
-    try:
-        from backend.plugin_manager import PluginManager
-        plugin_manager = PluginManager()
-        print(f"[INFO] Plugin Manager initialized with {len(plugin_manager.plugins)} plugins")
-    except Exception as e:
-        print(f"[ERROR] Failed to initialize Plugin Manager: {e}")
-        # Create empty plugin manager
-        plugin_manager = type('obj', (object,), {
-            'get_all_plugins': lambda: [],
-            'enable_plugin': lambda x: False,
-            'disable_plugin': lambda x: False,
-            'get_enabled_plugins': lambda: [],
-            'reload_plugins': lambda: None,
-            'plugins': {}
-        })()
 
 # AI Response Generator mit llama.cpp
 async def generate_ai_response(message: str, session_id: str) -> str:

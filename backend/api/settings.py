@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Dict
 import json
 from pathlib import Path
 
@@ -34,10 +34,18 @@ class APISettings(BaseModel):
     retry_attempts: int = 3
     api_key: Optional[str] = None
 
+class PluginAPIKeys(BaseModel):
+    """API Keys für Plugins"""
+    openweather_api_key: Optional[str] = None
+    # Weitere API-Keys können hier hinzugefügt werden
+    google_api_key: Optional[str] = None
+    deepl_api_key: Optional[str] = None
+
 class AllSettings(BaseModel):
     llama: LlamaSettings
     ui: UISettings
     api: APISettings
+    plugin_api_keys: PluginAPIKeys
     system_prompt: str = "Du bist JARVIS, ein hilfreicher deutscher KI-Assistent."
 
 # Global settings storage
@@ -50,6 +58,7 @@ current_settings = AllSettings(
     llama=LlamaSettings(),
     ui=UISettings(),
     api=APISettings(),
+    plugin_api_keys=PluginAPIKeys(),
     system_prompt="Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte präzise und freundlich."
 )
 
@@ -74,8 +83,22 @@ def save_settings():
     except Exception as e:
         print(f"[ERROR] Failed to save settings: {e}")
 
+def apply_plugin_api_keys():
+    """Wendet Plugin API-Keys als Umgebungsvariablen an"""
+    import os
+    
+    if current_settings.plugin_api_keys.openweather_api_key:
+        os.environ["OPENWEATHER_API_KEY"] = current_settings.plugin_api_keys.openweather_api_key
+    
+    if current_settings.plugin_api_keys.google_api_key:
+        os.environ["GOOGLE_API_KEY"] = current_settings.plugin_api_keys.google_api_key
+    
+    if current_settings.plugin_api_keys.deepl_api_key:
+        os.environ["DEEPL_API_KEY"] = current_settings.plugin_api_keys.deepl_api_key
+
 # Load settings on module import
 load_settings()
+apply_plugin_api_keys()
 
 # API Endpoints
 
@@ -147,6 +170,55 @@ async def update_api_settings(settings: APISettings):
     save_settings()
     return {"success": True, "message": "API settings updated"}
 
+@router.get("/plugin-api-keys")
+async def get_plugin_api_keys() -> PluginAPIKeys:
+    """Get Plugin API Keys (masked)"""
+    # Maskiere API-Keys für Sicherheit
+    masked = PluginAPIKeys()
+    
+    if current_settings.plugin_api_keys.openweather_api_key:
+        key = current_settings.plugin_api_keys.openweather_api_key
+        masked.openweather_api_key = key[:4] + "*" * (len(key) - 8) + key[-4:] if len(key) > 8 else "***"
+    
+    if current_settings.plugin_api_keys.google_api_key:
+        key = current_settings.plugin_api_keys.google_api_key
+        masked.google_api_key = key[:4] + "*" * (len(key) - 8) + key[-4:] if len(key) > 8 else "***"
+    
+    if current_settings.plugin_api_keys.deepl_api_key:
+        key = current_settings.plugin_api_keys.deepl_api_key
+        masked.deepl_api_key = key[:4] + "*" * (len(key) - 8) + key[-4:] if len(key) > 8 else "***"
+    
+    return masked
+
+@router.post("/plugin-api-keys")
+async def update_plugin_api_keys(keys: PluginAPIKeys):
+    """Update Plugin API Keys"""
+    global current_settings
+    
+    # Update nur nicht-None Werte
+    if keys.openweather_api_key is not None:
+        current_settings.plugin_api_keys.openweather_api_key = keys.openweather_api_key
+    
+    if keys.google_api_key is not None:
+        current_settings.plugin_api_keys.google_api_key = keys.google_api_key
+    
+    if keys.deepl_api_key is not None:
+        current_settings.plugin_api_keys.deepl_api_key = keys.deepl_api_key
+    
+    save_settings()
+    apply_plugin_api_keys()
+    
+    return {"success": True, "message": "Plugin API Keys updated"}
+
+@router.get("/plugin-api-keys/check")
+async def check_plugin_api_keys():
+    """Prüft welche API-Keys gesetzt sind"""
+    return {
+        "openweather": bool(current_settings.plugin_api_keys.openweather_api_key),
+        "google": bool(current_settings.plugin_api_keys.google_api_key),
+        "deepl": bool(current_settings.plugin_api_keys.deepl_api_key)
+    }
+
 @router.get("/all")
 async def get_all_settings() -> AllSettings:
     """Get all settings"""
@@ -158,6 +230,7 @@ async def update_all_settings(settings: AllSettings):
     global current_settings
     current_settings = settings
     save_settings()
+    apply_plugin_api_keys()
     return {"success": True, "message": "All settings updated"}
 
 @router.post("/reset")
@@ -168,6 +241,7 @@ async def reset_settings():
         llama=LlamaSettings(),
         ui=UISettings(),
         api=APISettings(),
+        plugin_api_keys=PluginAPIKeys(),
         system_prompt="Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte präzise und freundlich."
     )
     save_settings()

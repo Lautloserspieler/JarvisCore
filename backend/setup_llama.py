@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Automatic llama-cpp-python installation with GPU detection and build tools check"""
+"""Automatische llama-cpp-python Installation mit GPU-Erkennung und Build-Tools-Prüfung"""
 
 import subprocess
 import sys
@@ -8,7 +8,7 @@ import os
 import shutil
 
 def run_command(cmd, shell=False):
-    """Run command and return output"""
+    """Führt Befehl aus und gibt Ausgabe zurück"""
     try:
         result = subprocess.run(
             cmd if shell else cmd.split(),
@@ -21,11 +21,11 @@ def run_command(cmd, shell=False):
         return "", 1
 
 def check_build_tools():
-    """Check if C++ build tools are available"""
+    """Prüft ob C++ Build-Tools verfügbar sind"""
     system = platform.system()
     
     if system == "Windows":
-        # Check for Visual Studio or Build Tools
+        # Prüfe auf Visual Studio oder Build Tools
         checks = [
             ("cl.exe", "MSVC Compiler"),
             ("cmake", "CMake"),
@@ -53,54 +53,54 @@ def check_build_tools():
         return len(missing) == 0, missing
 
 def detect_gpu():
-    """Detect GPU type (NVIDIA, AMD, or None)"""
+    """Erkennt GPU-Typ (NVIDIA, AMD, oder keine)"""
     system = platform.system()
     
-    print("[INFO] Detecting GPU...")
+    print("[INFO] Erkenne GPU...")
     
-    # Check NVIDIA first
+    # Prüfe NVIDIA zuerst
     if system == "Windows":
         output, code = run_command("nvidia-smi", shell=True)
         if code == 0 and "NVIDIA" in output:
-            print("[INFO] ✅ NVIDIA GPU detected!")
+            print("[INFO] ✅ NVIDIA GPU erkannt!")
             return "nvidia"
         
-        # Check AMD on Windows
+        # Prüfe AMD auf Windows
         output, code = run_command("wmic path win32_VideoController get name", shell=True)
         if code == 0 and ("AMD" in output or "Radeon" in output):
-            print("[INFO] ✅ AMD GPU detected!")
+            print("[INFO] ✅ AMD GPU erkannt!")
             return "amd"
     
     else:  # Linux/Mac
         output, code = run_command("nvidia-smi")
         if code == 0 and "NVIDIA" in output:
-            print("[INFO] ✅ NVIDIA GPU detected!")
+            print("[INFO] ✅ NVIDIA GPU erkannt!")
             return "nvidia"
         
-        # Check AMD on Linux
+        # Prüfe AMD auf Linux
         output, code = run_command("lspci")
         if "AMD" in output or "Radeon" in output:
-            print("[INFO] ✅ AMD GPU detected!")
+            print("[INFO] ✅ AMD GPU erkannt!")
             return "amd"
     
-    print("[INFO] ℹ️  No GPU detected, will use CPU")
+    print("[INFO] ℹ️  Keine GPU erkannt, nutze CPU")
     return "cpu"
 
 def check_rocm_installed():
-    """Check if ROCm is installed"""
+    """Prüft ob ROCm installiert ist"""
     output, code = run_command("rocm-smi", shell=True)
     return code == 0
 
 def uninstall_llama():
-    """Uninstall existing llama-cpp-python"""
-    print("\n[INFO] Removing existing llama-cpp-python...")
+    """Deinstalliert vorhandenes llama-cpp-python"""
+    print("\n[INFO] Entferne vorhandenes llama-cpp-python...")
     subprocess.run([sys.executable, "-m", "pip", "uninstall", "llama-cpp-python", "-y"], 
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def install_llama_prebuilt():
-    """Install pre-built llama-cpp-python wheel (CPU-only, fast)"""
+    """Installiert vorkompiliertes llama-cpp-python (nur CPU, schnell)"""
     print("\n" + "="*60)
-    print("Installing pre-built llama-cpp-python (CPU-only)")
+    print("Installiere vorkompiliertes llama-cpp-python (nur CPU)")
     print("="*60 + "\n")
     
     result = subprocess.run([
@@ -114,9 +114,9 @@ def install_llama_prebuilt():
     return result.returncode == 0
 
 def install_llama_cpu():
-    """Install llama-cpp-python for CPU (build from source)"""
+    """Installiert llama-cpp-python für CPU (aus Quellcode)"""
     print("\n" + "="*60)
-    print("Installing llama-cpp-python for CPU (from source)")
+    print("Installiere llama-cpp-python für CPU (aus Quellcode)")
     print("="*60 + "\n")
     
     result = subprocess.run([
@@ -129,10 +129,10 @@ def install_llama_cpu():
     return result.returncode == 0
 
 def install_llama_nvidia():
-    """Install llama-cpp-python with CUDA support"""
+    """Installiert llama-cpp-python mit CUDA-Support"""
     print("\n" + "="*60)
-    print("Installing llama-cpp-python with NVIDIA CUDA support")
-    print("This may take 5-10 minutes...")
+    print("Installiere llama-cpp-python mit NVIDIA CUDA Support")
+    print("Dies kann 5-10 Minuten dauern...")
     print("="*60 + "\n")
     
     env = os.environ.copy()
@@ -149,17 +149,17 @@ def install_llama_nvidia():
     return result.returncode == 0
 
 def install_llama_amd():
-    """Install llama-cpp-python with ROCm support"""
+    """Installiert llama-cpp-python mit ROCm-Support"""
     print("\n" + "="*60)
-    print("Installing llama-cpp-python with AMD ROCm support")
-    print("This may take 5-10 minutes...")
+    print("Installiere llama-cpp-python mit AMD ROCm Support")
+    print("Dies kann 5-10 Minuten dauern...")
     print("="*60 + "\n")
     
-    # Check if ROCm is installed
+    # Prüfe ob ROCm installiert ist
     if not check_rocm_installed():
-        print("[WARNING] ⚠️  ROCm not detected!")
-        print("[INFO] ROCm is required for AMD GPU acceleration")
-        print("[INFO] Install from: https://rocm.docs.amd.com/\n")
+        print("[WARNUNG] ⚠️  ROCm nicht erkannt!")
+        print("[INFO] ROCm wird für AMD GPU-Beschleunigung benötigt")
+        print("[INFO] Installation: https://rocm.docs.amd.com/\n")
         return False
     
     env = os.environ.copy()
@@ -176,51 +176,51 @@ def install_llama_amd():
     return result.returncode == 0
 
 def verify_installation():
-    """Verify llama-cpp-python is installed correctly"""
+    """Überprüft ob llama-cpp-python korrekt installiert wurde"""
     print("\n" + "="*60)
-    print("Verifying installation...")
+    print("Überprüfe Installation...")
     print("="*60 + "\n")
     
     try:
         import llama_cpp
-        print(f"[SUCCESS] ✅ llama-cpp-python version: {llama_cpp.__version__}")
+        print(f"[ERFOLG] ✅ llama-cpp-python Version: {llama_cpp.__version__}")
         
-        # Check backend
+        # Prüfe Backend
         try:
             from llama_cpp import Llama
-            print("[SUCCESS] ✅ Llama class imported successfully")
+            print("[ERFOLG] ✅ Llama-Klasse erfolgreich importiert")
         except Exception as e:
-            print(f"[ERROR] ❌ Failed to import Llama: {e}")
+            print(f"[FEHLER] ❌ Llama-Import fehlgeschlagen: {e}")
             return False
         
         return True
     except ImportError as e:
-        print(f"[ERROR] ❌ llama-cpp-python not found: {e}")
+        print(f"[FEHLER] ❌ llama-cpp-python nicht gefunden: {e}")
         return False
 
 def show_build_tools_help():
-    """Show help for installing build tools"""
+    """Zeigt Hilfe zur Installation von Build-Tools"""
     system = platform.system()
     
     print("\n" + "⚠️ "*30)
-    print("\n[WARNING] C++ Build Tools not found!")
-    print("\nTo enable GPU acceleration, install build tools:\n")
+    print("\n[WARNUNG] C++ Build-Tools nicht gefunden!")
+    print("\nUm GPU-Beschleunigung zu aktivieren, installiere Build-Tools:\n")
     
     if system == "Windows":
-        print("📥 Download: https://visualstudio.microsoft.com/visual-cpp-build-tools/")
-        print("\n✅ Required components:")
-        print("   - Desktop development with C++")
-        print("   - MSVC v143 or newer")
+        print("📥 Download: https://visualstudio.microsoft.com/de/visual-cpp-build-tools/")
+        print("\n✅ Erforderliche Komponenten:")
+        print("   - Desktopentwicklung mit C++")
+        print("   - MSVC v143 oder neuer")
         print("   - Windows 10 SDK")
-        print("   - CMake tools for Windows")
-        print("\n⏱️  Installation takes ~5-10 minutes")
-        print("🔄 Restart required after installation")
+        print("   - CMake-Tools für Windows")
+        print("\n⏱️  Installation dauert ca. 5-10 Minuten")
+        print("🔄 Neustart erforderlich nach Installation")
     else:
-        print("On Ubuntu/Debian:")
+        print("Auf Ubuntu/Debian:")
         print("   sudo apt-get install build-essential cmake")
-        print("\nOn Fedora/RHEL:")
+        print("\nAuf Fedora/RHEL:")
         print("   sudo dnf install gcc gcc-c++ cmake")
-        print("\nOn macOS:")
+        print("\nAuf macOS:")
         print("   xcode-select --install")
         print("   brew install cmake")
     
@@ -230,7 +230,7 @@ def main():
     print("""
     ╭──────────────────────────────────────────────────────────────╮
     │       JARVIS Core - llama.cpp Setup Script v2.0          │
-    │          Automatic GPU Detection & Install               │
+    │          Automatische GPU-Erkennung & Installation       │
     ╰──────────────────────────────────────────────────────────────╯
     """)
     
@@ -238,85 +238,85 @@ def main():
     print(f"[INFO] Python: {sys.version.split()[0]}")
     print()
     
-    # Check build tools
+    # Prüfe Build-Tools
     has_build_tools, missing_tools = check_build_tools()
     
     if not has_build_tools:
-        print(f"[WARNING] ⚠️  Missing build tools: {', '.join(missing_tools)}")
+        print(f"[WARNUNG] ⚠️  Fehlende Build-Tools: {', '.join(missing_tools)}")
     else:
-        print("[INFO] ✅ C++ build tools detected")
+        print("[INFO] ✅ C++ Build-Tools erkannt")
     
-    # Detect GPU
+    # Erkenne GPU
     gpu_type = detect_gpu()
     
-    # Uninstall existing
+    # Deinstalliere vorhandenes
     uninstall_llama()
     
-    # Determine installation strategy
+    # Bestimme Installationsstrategie
     success = False
-    install_mode = "unknown"
+    install_mode = "unbekannt"
     
     if gpu_type == "nvidia":
         if has_build_tools:
-            print("\n[INFO] 🚀 Installing with NVIDIA CUDA support...")
+            print("\n[INFO] 🚀 Installiere mit NVIDIA CUDA Support...")
             success = install_llama_nvidia()
             install_mode = "NVIDIA CUDA"
         else:
             show_build_tools_help()
-            print("\n[INFO] Falling back to pre-built CPU-only version...\n")
+            print("\n[INFO] Fallback auf vorkompilierte CPU-Version...\n")
             success = install_llama_prebuilt()
-            install_mode = "CPU (pre-built)"
+            install_mode = "CPU (vorkompiliert)"
     
     elif gpu_type == "amd":
         if has_build_tools:
-            print("\n[INFO] 🚀 Installing with AMD ROCm support...")
+            print("\n[INFO] 🚀 Installiere mit AMD ROCm Support...")
             success = install_llama_amd()
             if not success:
-                print("\n[INFO] ROCm installation failed, trying CPU version...\n")
+                print("\n[INFO] ROCm-Installation fehlgeschlagen, versuche CPU-Version...\n")
                 success = install_llama_prebuilt()
-                install_mode = "CPU (pre-built)"
+                install_mode = "CPU (vorkompiliert)"
             else:
                 install_mode = "AMD ROCm"
         else:
             show_build_tools_help()
-            print("\n[INFO] Falling back to pre-built CPU-only version...\n")
+            print("\n[INFO] Fallback auf vorkompilierte CPU-Version...\n")
             success = install_llama_prebuilt()
-            install_mode = "CPU (pre-built)"
+            install_mode = "CPU (vorkompiliert)"
     
     else:  # CPU
         if has_build_tools:
-            print("\n[INFO] Installing CPU version (from source)...")
+            print("\n[INFO] Installiere CPU-Version (aus Quellcode)...")
             success = install_llama_cpu()
-            install_mode = "CPU (optimized)"
+            install_mode = "CPU (optimiert)"
         else:
-            print("\n[INFO] Installing pre-built CPU version...")
+            print("\n[INFO] Installiere vorkompilierte CPU-Version...")
             success = install_llama_prebuilt()
-            install_mode = "CPU (pre-built)"
+            install_mode = "CPU (vorkompiliert)"
     
-    # Verify
+    # Überprüfe Installation
     if success and verify_installation():
         print("\n" + "✅"*30)
-        print("\n[SUCCESS] 🎉 llama-cpp-python installed successfully!")
-        print(f"[INFO] Mode: {install_mode}")
-        print(f"[INFO] GPU Type: {gpu_type.upper()}")
+        print("\n[ERFOLG] 🎉 llama-cpp-python erfolgreich installiert!")
+        print(f"[INFO] Modus: {install_mode}")
+        print(f"[INFO] GPU-Typ: {gpu_type.upper()}")
         
         if not has_build_tools and gpu_type != "cpu":
-            print("\n[TIP] 💡 To enable GPU acceleration:")
-            print("      1. Install C++ build tools (see instructions above)")
-            print("      2. Re-run: python setup_llama.py")
+            print("\n[TIPP] 💡 Um GPU-Beschleunigung zu aktivieren:")
+            print("      1. Installiere C++ Build-Tools (siehe Anleitung oben)")
+            print("      2. Führe erneut aus: python setup_llama.py")
         
-        print("\n[INFO] ▶️  You can now run: python main.py")
+        print("\n[INFO] ▶️  Du kannst jetzt starten: python main.py")
         print("✅"*30 + "\n")
         return 0
     else:
         print("\n" + "❌"*30)
-        print("\n[ERROR] 💥 Installation failed!")
-        print("\n[INFO] Troubleshooting:")
-        print("      1. Check error messages above")
-        print("      2. Install build tools if missing")
-        print("      3. Try manual installation:")
+        print("\n[FEHLER] 💥 Installation fehlgeschlagen!")
+        print("\n[INFO] Problemlösung:")
+        print("      1. Prüfe Fehlermeldungen oben")
+        print("      2. Installiere Build-Tools falls fehlend")
+        print("      3. Versuche manuelle Installation:")
         print("         pip install llama-cpp-python --only-binary :all:")
-        print("\n[INFO] 📚 Full docs: https://github.com/Lautloserspieler/JarvisCore")
+        print("\n[INFO] 📚 Vollständige Dokumentation: https://github.com/Lautloserspieler/JarvisCore")
         print("❌"*30 + "\n")
         return 1
 

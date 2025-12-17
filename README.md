@@ -165,7 +165,7 @@ Nach dem Start erreichst du:
 | GPU-Typ | Support | Installation | Performance | Empfehlung |
 |---------|---------|--------------|-------------|------------|
 | **NVIDIA** | ✅ CUDA | Automatisch | ⚡⚡⚡ 30-50 tok/s | ⭐ Empfohlen |
-| **AMD** | ⚠️ ROCm | Komplex | ⚡⚡⚡ 25-40 tok/s | 👉 **Nutze CPU-Version** |
+| **AMD** | ⚠️ ROCm | Komplex | ⚡⚡⚡ 25-40 tok/s |In Entwicklung 👉 **Nutze CPU-Version** |
 | **Intel Arc** | 🔄 oneAPI | Coming Soon | ⚡⚡ 20-35 tok/s | In Entwicklung |
 | **CPU** | ✅ Standard | Automatisch | ⚡ 5-10 tok/s | ✅ Funktioniert |
 

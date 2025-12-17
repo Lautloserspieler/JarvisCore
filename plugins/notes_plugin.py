@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 # Plugin Metadata
 PLUGIN_NAME = "Notizen"
 PLUGIN_DESCRIPTION = "Erstellt und verwaltet schnelle Notizen"
-PLUGIN_VERSION = "1.0.0"
+PLUGIN_VERSION = "1.0.1"
 PLUGIN_AUTHOR = "Lautloserspieler"
 
 
@@ -29,6 +29,8 @@ class NotesPlugin:
         Beispiele:
         - "Notiere: Meeting um 14 Uhr"
         - "Neue Notiz: Milch kaufen"
+        - "Erstelle Notiz mit Inhalt: Text"
+        - "Schreib eine Notiz: Schwester abholen"
         - "Zeige alle Notizen"
         - "Zeige letzte 5 Notizen"
         - "Suche Notizen nach Meeting"
@@ -37,12 +39,18 @@ class NotesPlugin:
         """
         command_lower = command.lower()
         
-        # Neue Notiz erstellen
-        if any(word in command_lower for word in ["notier", "neue notiz", "notiz:"]):
+        # Neue Notiz erstellen - erweiterte Trigger
+        create_triggers = [
+            "notier", "neue notiz", "notiz:",
+            "erstell", "schreib", "mach eine notiz",
+            "speicher", "notiz mit"
+        ]
+        
+        if any(trigger in command_lower for trigger in create_triggers):
             return self._create_note(command)
         
         # Notizen anzeigen
-        elif "zeige" in command_lower or "liste" in command_lower:
+        elif "zeige" in command_lower or "liste" in command_lower or "alle notiz" in command_lower:
             return self._show_notes(command_lower)
         
         # Notizen suchen
@@ -68,7 +76,7 @@ class NotesPlugin:
             with open(self.notes_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"Fehler beim Laden der Notizen: {e}")
+            print(f"[NOTES] Fehler beim Laden: {e}")
             return []
     
     def _save_notes(self):
@@ -76,8 +84,9 @@ class NotesPlugin:
         try:
             with open(self.notes_file, 'w', encoding='utf-8') as f:
                 json.dump(self.notes, f, ensure_ascii=False, indent=2)
+            print(f"[NOTES] Gespeichert: {len(self.notes)} Notizen")
         except Exception as e:
-            print(f"Fehler beim Speichern der Notizen: {e}")
+            print(f"[NOTES] Fehler beim Speichern: {e}")
     
     def _create_note(self, command: str) -> str:
         """Erstellt neue Notiz"""
@@ -85,7 +94,7 @@ class NotesPlugin:
         content = self._extract_note_content(command)
         
         if not content:
-            return "❌ Keine Notiz-Inhalt gefunden. Beispiel: 'Notiere: Text hier'"
+            return "❌ Kein Notiz-Inhalt gefunden. Beispiel: 'Erstelle Notiz: Text hier'"
         
         # Neue Notiz erstellen
         note = {
@@ -98,7 +107,8 @@ class NotesPlugin:
         self.notes.append(note)
         self._save_notes()
         
-        return f"✅ Notiz #{note['id']} erstellt: {content[:50]}{'...' if len(content) > 50 else ''}"
+        preview = content[:60] + '...' if len(content) > 60 else content
+        return f"✅ Notiz #{note['id']} erstellt:\n\n{preview}"
     
     def _show_notes(self, command: str) -> str:
         """Zeigt Notizen an"""
@@ -207,19 +217,35 @@ class NotesPlugin:
     
     def _extract_note_content(self, command: str) -> Optional[str]:
         """Extrahiert Notiz-Inhalt aus Befehl"""
-        # Suche nach : Pattern
-        if ":" in command:
-            return command.split(":", 1)[1].strip()
+        # Suche nach verschiedenen Patterns
+        patterns = [
+            ("mit dem inhalt", ""),
+            ("mit inhalt", ""),
+            (":", ""),
+            ("notiere", ""),
+            ("notiz", ""),
+            ("erstelle", "notiz"),
+            ("schreib", "notiz"),
+            ("mach", "notiz"),
+        ]
         
-        # Suche nach "notiz" Keyword
-        keywords = ["notiere", "notiz", "neue notiz"]
-        for kw in keywords:
-            if kw in command.lower():
-                idx = command.lower().find(kw) + len(kw)
+        command_lower = command.lower()
+        
+        for pattern, extra_word in patterns:
+            if pattern in command_lower:
+                # Finde Position nach dem Pattern
+                idx = command_lower.find(pattern) + len(pattern)
                 content = command[idx:].strip()
+                
+                # Entferne Extra-Wörter
+                if extra_word and content.lower().startswith(extra_word):
+                    content = content[len(extra_word):].strip()
+                
                 # Entferne führende Sonderzeichen
-                content = content.lstrip(":,.-")
-                return content.strip()
+                content = content.lstrip(":,.-").strip()
+                
+                if content:
+                    return content
         
         return None
     

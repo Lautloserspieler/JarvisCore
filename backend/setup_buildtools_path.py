@@ -15,23 +15,28 @@ def find_vswhere():
     return None
 
 def find_buildtools_with_vswhere():
-    """Nutzt vswhere um Build Tools zu finden"""
+    """Nutzt vswhere um Build Tools zu finden - gibt ALLE gefundenen Installationen zurück"""
     vswhere = find_vswhere()
     if not vswhere:
-        return None
+        return []
+    
+    installations = []
     
     try:
+        # Finde alle Installationen mit VC Tools
         result = subprocess.run(
             [str(vswhere), "-products", "*", "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", "-property", "installationPath"],
             capture_output=True,
             text=True
         )
         if result.returncode == 0 and result.stdout.strip():
-            return Path(result.stdout.strip())
-    except:
-        pass
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    installations.append(Path(line.strip()))
+    except Exception as e:
+        print(f"[DEBUG] vswhere error: {e}")
     
-    return None
+    return installations
 
 def find_buildtools_manual():
     """Sucht manuell nach Build Tools Installation"""
@@ -43,6 +48,8 @@ def find_buildtools_manual():
     versions = ["2022", "2019", "2017"]
     editions = ["BuildTools", "Community", "Professional", "Enterprise"]
     
+    found = []
+    
     for base in base_paths:
         if not base.exists():
             continue
@@ -52,10 +59,10 @@ def find_buildtools_manual():
                 if path.exists():
                     # Prüfe ob VC Tools vorhanden sind
                     vc_tools = path / "VC" / "Tools" / "MSVC"
-                    if vc_tools.exists():
-                        return path
+                    if vc_tools.exists() and any(vc_tools.iterdir()):
+                        found.append(path)
     
-    return None
+    return found
 
 def get_latest_msvc_version(buildtools_path):
     """Findet die neueste MSVC Version"""
@@ -84,6 +91,24 @@ def get_windows_sdk_version(buildtools_path):
     versions.sort(reverse=True)
     return versions[0]
 
+def select_best_installation(installations):
+    """Wählt die beste Installation aus (präferiert BuildTools, dann Community)"""
+    if not installations:
+        return None
+    
+    # Präferiere BuildTools
+    for inst in installations:
+        if "BuildTools" in str(inst):
+            return inst
+    
+    # Dann Community
+    for inst in installations:
+        if "Community" in str(inst):
+            return inst
+    
+    # Sonst die erste
+    return installations[0]
+
 def setup_build_environment():
     """Richtet Build-Umgebung ein und gibt PATH-Liste zurück"""
     if platform.system() != "Windows":
@@ -92,24 +117,31 @@ def setup_build_environment():
     
     print("[INFO] 🔍 Suche nach Visual Studio Build Tools...\n")
     
-    # Versuche vswhere zuerst
-    buildtools_path = find_buildtools_with_vswhere()
-    if buildtools_path:
-        print(f"[INFO] ✅ Build Tools gefunden mit vswhere: {buildtools_path}")
-    else:
+    # Versuche vswhere zuerst (findet alle)
+    installations = find_buildtools_with_vswhere()
+    if not installations:
         # Manuelle Suche
-        buildtools_path = find_buildtools_manual()
-        if buildtools_path:
-            print(f"[INFO] ✅ Build Tools gefunden: {buildtools_path}")
-        else:
-            print("[FEHLER] ❌ Build Tools nicht gefunden!")
-            print("[INFO] Installiere zuerst Build Tools mit: python setup_llama.py")
-            return None
+        installations = find_buildtools_manual()
+    
+    if not installations:
+        print("[FEHLER] ❌ Build Tools nicht gefunden!")
+        print("[INFO] Installiere zuerst Build Tools mit: python setup_llama.py")
+        return None
+    
+    # Zeige alle gefundenen Installationen
+    print(f"[INFO] ✅ {len(installations)} Installation(en) gefunden:")
+    for inst in installations:
+        print(f"       - {inst}")
+    
+    # Wähle beste Installation
+    buildtools_path = select_best_installation(installations)
+    print(f"\n[INFO] 🎯 Nutze: {buildtools_path}\n")
     
     # Finde MSVC Version
     msvc_version = get_latest_msvc_version(buildtools_path)
     if not msvc_version:
         print("[FEHLER] ❌ MSVC Compiler nicht gefunden!")
+        print(f"[DEBUG] Gesucht in: {buildtools_path / 'VC' / 'Tools' / 'MSVC'}")
         return None
     
     print(f"[INFO] ✅ MSVC Version: {msvc_version.name}")
@@ -118,6 +150,8 @@ def setup_build_environment():
     sdk_version = get_windows_sdk_version(buildtools_path)
     if sdk_version:
         print(f"[INFO] ✅ Windows SDK: {sdk_version.name}")
+    else:
+        print("[WARNUNG] ⚠️  Windows SDK nicht gefunden (optional)")
     
     # Baue PATH Liste
     new_paths = []
@@ -126,6 +160,7 @@ def setup_build_environment():
     msvc_bin = msvc_version / "bin" / "Hostx64" / "x64"
     if msvc_bin.exists():
         new_paths.append(str(msvc_bin))
+        print(f"[INFO] ✅ MSVC Compiler: {msvc_bin}")
     
     # MSBuild
     msbuild_path = buildtools_path / "MSBuild" / "Current" / "Bin"

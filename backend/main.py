@@ -46,6 +46,26 @@ except Exception as e:
     print(f"[ERROR] Failed to load settings API: {e}")
     settings_router = None
 
+# Load JARVIS System Prompt
+def load_system_prompt() -> str:
+    """Load the JARVIS system prompt from config file"""
+    prompt_path = project_root / "config" / "system_prompt.txt"
+    try:
+        if prompt_path.exists():
+            with open(prompt_path, 'r', encoding='utf-8') as f:
+                prompt = f.read().strip()
+                print(f"[INFO] Loaded JARVIS system prompt ({len(prompt)} characters)")
+                return prompt
+        else:
+            print(f"[WARNING] System prompt file not found at {prompt_path}")
+    except Exception as e:
+        print(f"[ERROR] Failed to load system prompt: {e}")
+    
+    # Fallback to basic prompt
+    return "You are JARVIS, a sophisticated AI assistant. Be helpful, witty, and professional."
+
+JARVIS_SYSTEM_PROMPT = load_system_prompt()
+
 app = FastAPI(title="JARVIS Core API", version="1.1.0")
 
 # CORS Configuration
@@ -141,13 +161,13 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
         
         print(f"[DEBUG] Final history length: {len(history)} messages")
         
-        # Limit to last 5 conversation turns
+        # Limit to last 10 messages
         history = history[-10:]
         
         result = llama_runtime.chat(
             message=message,
             history=history,
-            system_prompt="Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte praezise und freundlich.",
+            system_prompt=JARVIS_SYSTEM_PROMPT,  # Use the loaded JARVIS prompt
             max_tokens=512,
             temperature=0.7
         )

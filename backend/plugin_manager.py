@@ -14,7 +14,7 @@ class PluginManager:
         self.root = Path.cwd()  # Current working directory
         self.plugins_dir = self.root / plugins_dir
         self.plugins: Dict[str, Dict[str, Any]] = {}
-        self.enabled_plugins: Dict[str, Any] = {}
+        self.enabled_plugins: Dict[str, bool] = {}
         self.config_file = self.root / "config" / "plugins.json"
         
         print(f"[INFO] Plugin Manager initialized")
@@ -30,9 +30,18 @@ class PluginManager:
         """Load plugin configuration from file"""
         if self.config_file.exists():
             try:
-                with open(self.config_file, 'r') as f:
+                with open(self.config_file, 'r', encoding='utf-8') as f:
                     config = json.load(f)
-                    self.enabled_plugins = config.get('enabled', {})
+                    # Ensure config is a dict
+                    if isinstance(config, dict):
+                        self.enabled_plugins = config.get('enabled', {})
+                        # Ensure enabled_plugins is a dict
+                        if not isinstance(self.enabled_plugins, dict):
+                            print(f"[WARNING] Invalid enabled_plugins format, resetting")
+                            self.enabled_plugins = {}
+                    else:
+                        print(f"[WARNING] Invalid config format, expected dict")
+                        self.enabled_plugins = {}
                 print(f"[INFO] Loaded plugin config from {self.config_file}")
             except Exception as e:
                 print(f"[WARNING] Failed to load plugin config: {e}")
@@ -45,7 +54,7 @@ class PluginManager:
         """Save plugin configuration to file"""
         self.config_file.parent.mkdir(parents=True, exist_ok=True)
         try:
-            with open(self.config_file, 'w') as f:
+            with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump({'enabled': self.enabled_plugins}, f, indent=2)
             print(f"[INFO] Saved plugin config to {self.config_file}")
         except Exception as e:

@@ -38,13 +38,14 @@ except Exception as e:
     print(f"[ERROR] Failed to init plugin manager: {e}")
     plugin_manager = None
 
-# Import settings router
+# Import settings router and current settings
 try:
-    from backend.api.settings import router as settings_router
+    from backend.api.settings import router as settings_router, current_settings
     print("[BACKEND] Settings API loaded")
 except Exception as e:
     print(f"[ERROR] Failed to load settings API: {e}")
     settings_router = None
+    current_settings = None
 
 # Load JARVIS System Prompts
 def load_system_prompt_file(filename: str) -> str:
@@ -196,12 +197,21 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
         model_name = llama_runtime.model_name if llama_runtime.model_name else "unknown"
         system_prompt = get_system_prompt(model_name)
         
+        # Get generation parameters from settings
+        max_tokens = 512  # Default fallback
+        temperature = 0.7  # Default fallback
+        
+        if current_settings:
+            max_tokens = current_settings.llama.max_tokens
+            temperature = current_settings.llama.temperature
+            print(f"[INFO] Using settings: max_tokens={max_tokens}, temperature={temperature}")
+        
         result = llama_runtime.chat(
             message=message,
             history=history,
             system_prompt=system_prompt,
-            max_tokens=512,
-            temperature=0.7
+            max_tokens=max_tokens,
+            temperature=temperature
         )
         
         if result['success']:

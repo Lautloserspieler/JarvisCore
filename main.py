@@ -196,14 +196,14 @@ class JarvisLauncher:
             else:
                 python_exe = "python3"
             
+            # CRITICAL FIX: Don't capture stdout/stderr to prevent pipe buffer overflow
+            # This allows model downloads with progress bars to work without hanging
             backend_process = subprocess.Popen(
                 [str(python_exe), "main.py"],
                 cwd=str(self.backend_dir),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                universal_newlines=True,
-                bufsize=1,
-                env=env
+                env=env,
+                # No stdout/stderr capture - output goes directly to terminal
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0
             )
             
             self.processes.append(backend_process)
@@ -244,25 +244,19 @@ class JarvisLauncher:
             env = os.environ.copy()
             env['PORT'] = str(self.frontend_port)
             
+            # CRITICAL FIX: Don't capture stdout/stderr for frontend either
             if sys.platform == "win32":
                 frontend_process = subprocess.Popen(
                     f"npm run dev -- --port {self.frontend_port}",
                     cwd=str(self.frontend_dir),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    universal_newlines=True,
-                    bufsize=1,
                     shell=True,
-                    env=env
+                    env=env,
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
                 )
             else:
                 frontend_process = subprocess.Popen(
                     ["npm", "run", "dev", "--", "--port", str(self.frontend_port)],
                     cwd=str(self.frontend_dir),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    universal_newlines=True,
-                    bufsize=1,
                     env=env
                 )
             
@@ -288,16 +282,8 @@ class JarvisLauncher:
         print(f"\n{Colors.CYAN}💡 Tip: Set custom ports with environment variables:{Colors.END}")
         print(f"{Colors.CYAN}   JARVIS_BACKEND_PORT={self.backend_port}{Colors.END}")
         print(f"{Colors.CYAN}   JARVIS_FRONTEND_PORT={self.frontend_port}{Colors.END}")
-        print(f"\n{Colors.YELLOW}🔑 Press Ctrl+C to shutdown{Colors.END}\n")
-    
-    def stream_output(self, process, prefix):
-        """Stream process output with prefix"""
-        try:
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    print(f"{Colors.CYAN}[{prefix}]{Colors.END} {line.rstrip()}")
-        except Exception:
-            pass
+        print(f"\n{Colors.YELLOW}🔑 Press Ctrl+C to shutdown{Colors.END}")
+        print(f"\n{Colors.CYAN}📝 Note: Backend and frontend output will be displayed directly below{Colors.END}\n")
     
     def shutdown(self):
         """Shutdown all processes"""
@@ -305,8 +291,14 @@ class JarvisLauncher:
         
         for process in self.processes:
             try:
-                process.terminate()
-                process.wait(timeout=5)
+                if sys.platform == "win32":
+                    # On Windows, send CTRL_BREAK_EVENT to process group
+                    import signal
+                    process.send_signal(signal.CTRL_BREAK_EVENT)
+                    process.wait(timeout=5)
+                else:
+                    process.terminate()
+                    process.wait(timeout=5)
             except Exception:
                 try:
                     process.kill()
@@ -333,22 +325,7 @@ class JarvisLauncher:
             frontend = self.start_frontend()
             self.print_info()
             
-            import threading
-            backend_thread = threading.Thread(
-                target=self.stream_output,
-                args=(backend, "BACKEND"),
-                daemon=True
-            )
-            backend_thread.start()
-            
-            if frontend:
-                frontend_thread = threading.Thread(
-                    target=self.stream_output,
-                    args=(frontend, "FRONTEND"),
-                    daemon=True
-                )
-                frontend_thread.start()
-            
+            # Monitor processes without capturing output
             while True:
                 time.sleep(1)
                 if backend.poll() is not None:

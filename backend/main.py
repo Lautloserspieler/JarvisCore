@@ -79,8 +79,29 @@ logs_db.append({
     "source": "backend"
 })
 
-# AI Response Generator mit llama.cpp
+# AI Response Generator mit Plugin-Integration und llama.cpp
 async def generate_ai_response(message: str, session_id: str) -> str:
+    """
+    Generate AI response with plugin processing:
+    1. Check if plugins can handle the message
+    2. If not, use llama.cpp for general response
+    """
+    
+    # STEP 1: Try plugin processing first
+    if plugin_manager:
+        plugin_response = plugin_manager.process_message(message, {"session_id": session_id})
+        if plugin_response:
+            print(f"[INFO] Plugin handled message: {message[:50]}...")
+            logs_db.append({
+                "id": str(uuid.uuid4()),
+                "timestamp": datetime.now().isoformat(),
+                "level": "info",
+                "message": f"Plugin processed command: {message[:50]}",
+                "source": "plugins"
+            })
+            return plugin_response
+    
+    # STEP 2: No plugin handled it -> use LLM
     if not llama_runtime.is_loaded:
         return "Bitte laden Sie zuerst ein Modell unter 'Modelle'."
     

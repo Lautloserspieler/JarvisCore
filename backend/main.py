@@ -46,25 +46,53 @@ except Exception as e:
     print(f"[ERROR] Failed to load settings API: {e}")
     settings_router = None
 
-# Load JARVIS System Prompt
-def load_system_prompt() -> str:
-    """Load the JARVIS system prompt from config file"""
-    prompt_path = project_root / "config" / "system_prompt.txt"
+# Load JARVIS System Prompts
+def load_system_prompt_file(filename: str) -> str:
+    """Load a system prompt from config file"""
+    prompt_path = project_root / "config" / filename
     try:
         if prompt_path.exists():
             with open(prompt_path, 'r', encoding='utf-8') as f:
                 prompt = f.read().strip()
-                print(f"[INFO] Loaded JARVIS system prompt ({len(prompt)} characters)")
+                print(f"[INFO] Loaded {filename} ({len(prompt)} characters)")
                 return prompt
         else:
-            print(f"[WARNING] System prompt file not found at {prompt_path}")
+            print(f"[WARNING] System prompt file not found: {prompt_path}")
     except Exception as e:
-        print(f"[ERROR] Failed to load system prompt: {e}")
+        print(f"[ERROR] Failed to load {filename}: {e}")
     
-    # Fallback to basic prompt
-    return "You are JARVIS, a sophisticated AI assistant. Be helpful, witty, and professional."
+    return ""
 
-JARVIS_SYSTEM_PROMPT = load_system_prompt()
+# Load both prompts at startup
+JARVIS_PROMPT_FULL = load_system_prompt_file("system_prompt_full.txt")
+JARVIS_PROMPT_COMPACT = load_system_prompt_file("system_prompt_compact.txt")
+
+# Fallback prompt if both fail to load
+JARVIS_PROMPT_FALLBACK = "You are JARVIS, a sophisticated AI assistant. Be helpful, witty, and professional."
+
+def get_system_prompt(model_name: str) -> str:
+    """
+    Select appropriate system prompt based on model size.
+    
+    Small models (≤3B): Use compact prompt for better performance
+    Large models (7B+): Use full detailed prompt for richer personality
+    """
+    # Define small models that need compact prompt
+    small_models = [
+        "llama32-3b",
+        "phi3-mini",
+        "tinyllama",
+    ]
+    
+    # Check if current model is small
+    is_small_model = any(small in model_name.lower() for small in small_models)
+    
+    if is_small_model:
+        print(f"[INFO] Using COMPACT prompt for {model_name} (small model)")
+        return JARVIS_PROMPT_COMPACT if JARVIS_PROMPT_COMPACT else JARVIS_PROMPT_FALLBACK
+    else:
+        print(f"[INFO] Using FULL prompt for {model_name} (large model)")
+        return JARVIS_PROMPT_FULL if JARVIS_PROMPT_FULL else JARVIS_PROMPT_FALLBACK
 
 app = FastAPI(title="JARVIS Core API", version="1.1.0")
 
@@ -164,10 +192,14 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
         # Limit to last 10 messages
         history = history[-10:]
         
+        # Get appropriate system prompt for current model
+        model_name = llama_runtime.model_name if llama_runtime.model_name else "unknown"
+        system_prompt = get_system_prompt(model_name)
+        
         result = llama_runtime.chat(
             message=message,
             history=history,
-            system_prompt=JARVIS_SYSTEM_PROMPT,  # Use the loaded JARVIS prompt
+            system_prompt=system_prompt,
             max_tokens=512,
             temperature=0.7
         )

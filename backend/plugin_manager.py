@@ -18,18 +18,27 @@ class PluginManager:
             cls._instance = super().__new__(cls)
         return cls._instance
     
-    def __init__(self, plugins_dir: str = "plugins"):
+    def __init__(self, plugins_dir: str = None):
         # Prevent re-initialization
         if self._initialized:
             return
+        
+        # If plugins_dir not specified, look in root
+        if plugins_dir is None:
+            # Find root directory (parent of backend)
+            current = Path(__file__).parent  # backend dir
+            self.root = current.parent  # root dir
+            plugins_dir = "plugins"
+        else:
+            self.root = Path.cwd()
             
-        self.root = Path.cwd()  # Current working directory
         self.plugins_dir = self.root / plugins_dir
         self.plugins: Dict[str, Dict[str, Any]] = {}
         self.enabled_plugins: Dict[str, bool] = {}
         self.config_file = self.root / "config" / "plugins.json"
         
         print(f"[PLUGINS] Initializing Plugin Manager...")
+        print(f"[PLUGINS] Root: {self.root}")
         print(f"[PLUGINS] Looking for plugins in: {self.plugins_dir}")
         
         # Load plugin states

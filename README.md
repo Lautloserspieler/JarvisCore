@@ -1,4 +1,4 @@
-# 🤖 JARVIS Core System
+cd # 🤖 JARVIS Core System
 
 <div align="center">
 
@@ -111,7 +111,7 @@ Installing llama-cpp-python with NVIDIA CUDA support
 ### Schritt 4: Frontend Dependencies
 
 ```bash
-cd ../frontend
+cd frontend
 npm install
 cd ..
 ```

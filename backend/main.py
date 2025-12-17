@@ -195,49 +195,24 @@ async def clear_logs():
 @app.get("/api/plugins")
 async def get_plugins():
     """Get all available plugins"""
-    # Placeholder plugins
-    plugins = [
-        {
-            "id": "weather",
-            "name": "Wetter Plugin",
-            "description": "Wettervorhersagen und aktuelle Wetterdaten",
-            "version": "1.0.0",
-            "enabled": False,
-            "status": "available"
-        },
-        {
-            "id": "web_search",
-            "name": "Web Suche",
-            "description": "Durchsucht das Internet nach Informationen",
-            "version": "1.0.0",
-            "enabled": False,
-            "status": "available"
-        },
-        {
-            "id": "calendar",
-            "name": "Kalender",
-            "description": "Verwaltet Termine und Erinnerungen",
-            "version": "1.0.0",
-            "enabled": False,
-            "status": "available"
-        }
-    ]
+    # Coming soon - plugin system in development
+    plugins = []
     return plugins
 
 @app.post("/api/plugins/{plugin_id}/enable")
 async def enable_plugin(plugin_id: str):
     """Enable a plugin"""
     return {
-        "success": True,
-        "message": f"Plugin {plugin_id} enabled"
+        "success": False,
+        "message": "Plugin-System noch nicht verfügbar"
     }
 
 @app.post("/api/plugins/{plugin_id}/disable")
 async def disable_plugin(plugin_id: str):
     """Disable a plugin"""
     return {
-        "success": True,
-        "message": f"Plugin {plugin_id} disabled"
+        "success": False,
+        "message": "Plugin-System noch nicht verfügbar"
     }
 
 # Memory API

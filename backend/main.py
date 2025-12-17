@@ -38,6 +38,14 @@ except Exception as e:
     print(f"[ERROR] Failed to init plugin manager: {e}")
     plugin_manager = None
 
+# Import settings router
+try:
+    from backend.api.settings import router as settings_router
+    print("[BACKEND] Settings API loaded")
+except Exception as e:
+    print(f"[ERROR] Failed to load settings API: {e}")
+    settings_router = None
+
 app = FastAPI(title="JARVIS Core API", version="1.1.0")
 
 # CORS Configuration
@@ -48,6 +56,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+if settings_router:
+    app.include_router(settings_router)
+    print("[BACKEND] Settings router mounted")
 
 # In-memory storage
 sessions_db = {}
@@ -445,7 +458,8 @@ async def root():
             "system": "/api/system/info",
             "memory": "/api/memory",
             "logs": "/api/logs",
-            "plugins": "/api/plugins"
+            "plugins": "/api/plugins",
+            "settings": "/api/settings"
         }
     }
 

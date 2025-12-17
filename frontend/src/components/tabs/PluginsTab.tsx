@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Puzzle } from "lucide-react";
+import { Puzzle, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ApiKeyModal from "@/components/ApiKeyModal";
 
 interface Plugin {
   id: string;
@@ -13,6 +14,13 @@ interface Plugin {
   author: string;
   enabled: boolean;
   status: string;
+  requires_api_key?: boolean;
+  api_key_info?: {
+    api_key_name: string;
+    api_key_label: string;
+    api_key_url: string;
+    api_key_description: string;
+  };
 }
 
 const PluginsTab = () => {
@@ -20,6 +28,10 @@ const PluginsTab = () => {
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<{[key: string]: boolean}>({});
+  
+  // API Key Modal State
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  const [pendingPlugin, setPendingPlugin] = useState<Plugin | null>(null);
 
   // Load plugins on mount
   useEffect(() => {
@@ -31,7 +43,6 @@ const PluginsTab = () => {
       const response = await fetch('http://localhost:5050/api/plugins');
       if (response.ok) {
         const data = await response.json();
-        // Filter out demo plugins
         const filtered = data.filter((p: Plugin) => 
           !['calculator_plugin', 'system_info_plugin', 'time_plugin'].includes(p.id)
         );
@@ -58,11 +69,9 @@ const PluginsTab = () => {
         : `http://localhost:5050/api/plugins/${pluginId}/disable`;
       
       const response = await fetch(endpoint, { method: 'POST' });
+      const result = await response.json();
       
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Update local state
+      if (response.ok && result.success) {
         setPlugins(prev => 
           prev.map(p => 
             p.id === pluginId ? { ...p, enabled } : p
@@ -73,18 +82,34 @@ const PluginsTab = () => {
           title: 'Erfolg',
           description: result.message || (enabled ? 'Plugin aktiviert' : 'Plugin deaktiviert')
         });
+      } else if (result.requires_api_key && result.api_key_info) {
+        const plugin = plugins.find(p => p.id === pluginId);
+        if (plugin) {
+          setPendingPlugin({
+            ...plugin,
+            api_key_info: result.api_key_info
+          });
+          setApiKeyModalOpen(true);
+        }
       } else {
-        throw new Error('Plugin konnte nicht geändert werden');
+        throw new Error(result.error || 'Fehler');
       }
     } catch (error) {
-      console.error('Fehler beim Umschalten des Plugins:', error);
+      console.error('Fehler:', error);
       toast({
         title: 'Fehler',
-        description: enabled ? 'Plugin konnte nicht aktiviert werden' : 'Plugin konnte nicht deaktiviert werden',
+        description: 'Aktion fehlgeschlagen',
         variant: 'destructive'
       });
     } finally {
       setToggling(prev => ({ ...prev, [pluginId]: false }));
+    }
+  };
+
+  const handleApiKeySuccess = async () => {
+    if (pendingPlugin) {
+      await togglePlugin(pendingPlugin.id, true);
+      setPendingPlugin(null);
     }
   };
 
@@ -100,100 +125,122 @@ const PluginsTab = () => {
   const disabledPlugins = plugins.filter(p => !p.enabled);
 
   return (
-    <div className="space-y-6">
-      {/* Enabled Plugins */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Aktive Plugins</h3>
-          <Badge variant="outline">{enabledPlugins.length} aktiv</Badge>
+    <>
+      <div className="space-y-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Aktive Plugins</h3>
+            <Badge variant="outline">{enabledPlugins.length} aktiv</Badge>
+          </div>
+          {enabledPlugins.length === 0 ? (
+            <Card className="holo-card">
+              <CardContent className="py-6">
+                <p className="text-center text-muted-foreground">Keine Plugins aktiviert</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {enabledPlugins.map((plugin) => (
+                <Card key={plugin.id} className="holo-card">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Puzzle className="h-4 w-4" />
+                          {plugin.name}
+                          {plugin.requires_api_key && <Key className="h-3 w-3 text-muted-foreground" />}
+                        </CardTitle>
+                        <CardDescription>{plugin.description}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Version:</span>
+                        <span>{plugin.version}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Autor:</span>
+                        <span>{plugin.author}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Status:</span>
+                        <Badge variant="outline" className="text-xs">{plugin.status}</Badge>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => togglePlugin(plugin.id, false)}
+                      disabled={toggling[plugin.id]}
+                      className="w-full"
+                    >
+                      {toggling[plugin.id] ? 'Ladet...' : 'Deaktivieren'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-        {enabledPlugins.length === 0 ? (
-          <Card className="holo-card">
-            <CardContent className="py-6">
-              <p className="text-center text-muted-foreground">Keine Plugins aktiviert</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {enabledPlugins.map((plugin) => (
-              <Card key={plugin.id} className="holo-card">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Puzzle className="h-4 w-4" />
-                        {plugin.name}
-                      </CardTitle>
-                      <CardDescription>{plugin.description || 'Kein Beschreibung verfügbar'}</CardDescription>
+
+        {disabledPlugins.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Verfuegbare Plugins</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              {disabledPlugins.map((plugin) => (
+                <Card key={plugin.id} className="holo-card">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {plugin.name}
+                      {plugin.requires_api_key && <Key className="h-4 w-4 text-amber-500" />}
+                    </CardTitle>
+                    <CardDescription>{plugin.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Version:</span>
+                        <span>{plugin.version}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Autor:</span>
+                        <span>{plugin.author}</span>
+                      </div>
+                      {plugin.requires_api_key && (
+                        <div className="flex items-center gap-2 text-amber-600">
+                          <Key className="h-3 w-3" />
+                          <span className="text-xs">Benoetigt API-Key</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Version:</span>
-                      <span>{plugin.version}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Autor:</span>
-                      <span>{plugin.author || 'Unbekannt'}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Status:</span>
-                      <Badge variant="outline" className="text-xs">{plugin.status}</Badge>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={() => togglePlugin(plugin.id, false)}
-                    disabled={toggling[plugin.id]}
-                    className="w-full"
-                  >
-                    {toggling[plugin.id] ? 'Lädt...' : 'Deaktivieren'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    <Button 
+                      onClick={() => togglePlugin(plugin.id, true)}
+                      disabled={toggling[plugin.id] || plugin.status !== 'available'}
+                      variant="default"
+                      className="w-full"
+                    >
+                      {toggling[plugin.id] ? 'Ladet...' : 'Aktivieren'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Disabled Plugins */}
-      {disabledPlugins.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Verfügbare Plugins</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            {disabledPlugins.map((plugin) => (
-              <Card key={plugin.id} className="holo-card">
-                <CardHeader>
-                  <CardTitle className="text-base">{plugin.name}</CardTitle>
-                  <CardDescription>{plugin.description || 'Kein Beschreibung verfügbar'}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Version:</span>
-                      <span>{plugin.version}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Autor:</span>
-                      <span>{plugin.author || 'Unbekannt'}</span>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={() => togglePlugin(plugin.id, true)}
-                    disabled={toggling[plugin.id] || plugin.status !== 'available'}
-                    variant="default"
-                    className="w-full"
-                  >
-                    {toggling[plugin.id] ? 'Lädt...' : 'Aktivieren'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+      {pendingPlugin && pendingPlugin.api_key_info && (
+        <ApiKeyModal
+          open={apiKeyModalOpen}
+          onClose={() => {
+            setApiKeyModalOpen(false);
+            setPendingPlugin(null);
+          }}
+          apiKeyInfo={pendingPlugin.api_key_info}
+          onSuccess={handleApiKeySuccess}
+        />
       )}
-    </div>
+    </>
   );
 };
 

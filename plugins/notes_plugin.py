@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 # Plugin Metadata
 PLUGIN_NAME = "Notizen"
 PLUGIN_DESCRIPTION = "Erstellt und verwaltet schnelle Notizen"
-PLUGIN_VERSION = "1.0.1"
+PLUGIN_VERSION = "1.0.2"
 PLUGIN_AUTHOR = "Lautloserspieler"
 
 
@@ -39,11 +39,17 @@ class NotesPlugin:
         """
         command_lower = command.lower()
         
-        # Neue Notiz erstellen - erweiterte Trigger
+        # Check if this is actually a notes command
+        if not self._is_notes_command(command_lower):
+            return None
+        
+        # Neue Notiz erstellen - spezifische Trigger
         create_triggers = [
             "notier", "neue notiz", "notiz:",
-            "erstell", "schreib", "mach eine notiz",
-            "speicher", "notiz mit"
+            "erstell", "mach eine notiz",
+            "speicher", "notiz mit",
+            "schreib eine notiz", "schreib notiz",
+            "schreibe eine notiz", "schreibe notiz"
         ]
         
         if any(trigger in command_lower for trigger in create_triggers):
@@ -66,6 +72,29 @@ class NotesPlugin:
             return self._export_notes()
         
         return None
+    
+    def _is_notes_command(self, command: str) -> bool:
+        """
+        Prüft ob es sich um einen Notizen-Befehl handelt.
+        Verhindert False Positives wie 'Schreibe mir eine Erklärung'
+        """
+        notes_keywords = [
+            "notiz", "notier", 
+            "zeige alle notizen", "liste notizen",
+            "suche notiz", "finde notiz",
+            "lösche notiz", "entferne notiz",
+            "export"
+        ]
+        
+        # Prüfe auf eindeutige Notiz-Keywords
+        if any(keyword in command for keyword in notes_keywords):
+            return True
+        
+        # "schreib" nur akzeptieren wenn "notiz" dabei steht
+        if "schreib" in command and "notiz" in command:
+            return True
+        
+        return False
     
     def _load_notes(self) -> List[Dict[str, Any]]:
         """Lädt Notizen aus Datei"""

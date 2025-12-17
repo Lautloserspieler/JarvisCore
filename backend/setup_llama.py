@@ -209,11 +209,21 @@ def install_build_tools_windows(installer_path):
         installation_done = True
         time.sleep(0.5)  # Warte auf letzte Progress-Update
         
-        if result.returncode == 0 or result.returncode == 3010:  # 3010 = Neustart erforderlich
+        # Error Code Handling
+        if result.returncode == 0:
             print("\n[INFO] ✅ Build Tools erfolgreich installiert!")
-            if result.returncode == 3010:
-                print("[INFO] 🔄 Ein Neustart wird empfohlen")
             return True
+        elif result.returncode == 3010:
+            print("\n[INFO] ✅ Build Tools erfolgreich installiert!")
+            print("[INFO] 🔄 Ein Neustart wird empfohlen")
+            return True
+        elif result.returncode == 8004:
+            print("\n[WARNUNG] Build Tools sind bereits teilweise installiert.")
+            print("[INFO] Versuche manuelle Reparatur:")
+            print("       1. Öffne Visual Studio Installer")
+            print("       2. Klicke 'Reparieren'")
+            print("[INFO] Fahre mit CPU-Version fort...")
+            return False
         else:
             print(f"\n[FEHLER] Installation fehlgeschlagen (Code: {result.returncode})")
             return False
@@ -224,20 +234,51 @@ def install_build_tools_windows(installer_path):
         return False
 
 def install_llama_prebuilt():
-    """Installiert vorkompiliertes llama-cpp-python (nur CPU, schnell)"""
+    """Installiert llama-cpp-python (CPU-Version)"""
     print("\n" + "="*60)
-    print("Installiere vorkompiliertes llama-cpp-python (nur CPU)")
+    print("Installiere llama-cpp-python (CPU-Version)")
     print("="*60 + "\n")
     
-    result = subprocess.run([
-        sys.executable, "-m", "pip", "install",
-        "llama-cpp-python",
-        "--only-binary", ":all:",
-        "--force-reinstall",
-        "--no-cache-dir"
-    ])
+    # Versuche verschiedene Installationsmethoden
+    methods = [
+        # Methode 1: Normale Installation
+        {
+            "name": "Standard Installation",
+            "cmd": [sys.executable, "-m", "pip", "install", "llama-cpp-python", "--force-reinstall", "--no-cache-dir"]
+        },
+        # Methode 2: Mit explizitem Index
+        {
+            "name": "Mit PyPI Index",
+            "cmd": [sys.executable, "-m", "pip", "install", "llama-cpp-python", "--index-url", "https://pypi.org/simple", "--force-reinstall", "--no-cache-dir"]
+        },
+        # Methode 3: Upgrade pip und retry
+        {
+            "name": "Nach pip Upgrade",
+            "cmd": None  # Special handling
+        }
+    ]
     
-    return result.returncode == 0
+    for method in methods:
+        print(f"[INFO] Versuche: {method['name']}...")
+        
+        if method["name"] == "Nach pip Upgrade":
+            # Upgrade pip zuerst
+            print("[INFO] Aktualisiere pip...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], 
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # Dann normale Installation
+            result = subprocess.run([sys.executable, "-m", "pip", "install", "llama-cpp-python", "--force-reinstall", "--no-cache-dir"])
+        else:
+            result = subprocess.run(method["cmd"])
+        
+        if result.returncode == 0:
+            print(f"[INFO] ✅ Installation erfolgreich mit: {method['name']}")
+            return True
+        else:
+            print(f"[WARNUNG] {method['name']} fehlgeschlagen, versuche nächste Methode...\n")
+    
+    print("[FEHLER] Alle Installationsmethoden fehlgeschlagen.")
+    return False
 
 def install_llama_cpu():
     """Installiert llama-cpp-python für CPU (aus Quellcode)"""
@@ -342,7 +383,7 @@ def show_build_tools_help():
         print("      - Download: https://visualstudio.microsoft.com/de/visual-cpp-build-tools/")
         print("      - Installiere: Desktopentwicklung mit C++\n")
         print("   3️⃣  CPU-Version ohne GPU (schnell)")
-        print("      - Vorkompiliertes Paket")
+        print("      - Normale Installation")
         print("      - Keine GPU-Beschleunigung")
     else:
         print("Auf Ubuntu/Debian:")
@@ -429,13 +470,12 @@ def main():
         if not success:
             print("\n[INFO] ROCm-Installation fehlgeschlagen, versuche CPU-Version...\n")
             success = install_llama_prebuilt()
-            install_mode = "CPU (vorkompiliert)"
+            install_mode = "CPU"
         else:
             install_mode = "AMD ROCm"
     else:
-        print("\n[INFO] Installiere vorkompilierte CPU-Version...")
         success = install_llama_prebuilt()
-        install_mode = "CPU (vorkompiliert)"
+        install_mode = "CPU"
     
     # Überprüfe Installation
     if success and verify_installation():
@@ -457,9 +497,9 @@ def main():
         print("\n[FEHLER] 💥 Installation fehlgeschlagen!")
         print("\n[INFO] Problemlösung:")
         print("      1. Prüfe Fehlermeldungen oben")
-        print("      2. Führe Script erneut aus: python setup_llama.py")
+        print("      2. Aktualisiere pip: python -m pip install --upgrade pip")
         print("      3. Versuche manuelle Installation:")
-        print("         pip install llama-cpp-python --only-binary :all:")
+        print("         pip install llama-cpp-python")
         print("\n[INFO] 📚 Vollständige Dokumentation: https://github.com/Lautloserspieler/JarvisCore")
         print("❌"*30 + "\n")
         return 1

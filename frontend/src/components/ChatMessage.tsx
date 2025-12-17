@@ -1,13 +1,15 @@
 import { useMemo } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { Bot, User } from "lucide-react";
+import { Bot, User, Zap } from "lucide-react";
 
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: string;
+  tokens?: number;  // Number of tokens generated
+  tokensPerSecond?: number;  // Tokens per second
 }
 
 interface ChatMessageProps {
@@ -29,6 +31,18 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
       return message.timestamp;
     }
   }, [message.timestamp]);
+
+  // Format token stats
+  const tokenStats = useMemo(() => {
+    if (!message.tokens || message.isUser) return null;
+    
+    const tokensText = `${message.tokens} tokens`;
+    const speedText = message.tokensPerSecond 
+      ? ` • ${message.tokensPerSecond.toFixed(1)} tok/s`
+      : '';
+    
+    return tokensText + speedText;
+  }, [message.tokens, message.tokensPerSecond, message.isUser]);
 
   return (
     <div
@@ -65,11 +79,22 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
         >
           {message.text}
         </div>
-        {formattedTime && (
-          <span className="text-xs text-muted-foreground mt-1">
-            {formattedTime}
-          </span>
-        )}
+        <div className="flex items-center gap-2 mt-1">
+          {formattedTime && (
+            <span className="text-xs text-muted-foreground">
+              {formattedTime}
+            </span>
+          )}
+          {tokenStats && (
+            <>
+              <span className="text-xs text-muted-foreground">•</span>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Zap className="h-3 w-3" />
+                <span>{tokenStats}</span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

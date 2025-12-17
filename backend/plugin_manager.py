@@ -126,14 +126,9 @@ class PluginManager:
         name = getattr(module, 'PLUGIN_NAME', plugin_id.replace('_', ' ').title())
         description = getattr(module, 'PLUGIN_DESCRIPTION', 'No description available')
         version = getattr(module, 'PLUGIN_VERSION', '1.0.0')
-        author = getattr(module, 'PLUGIN_AUTHOR', 'Unknown')
+        author = getattr(module, 'PLUGIN_AUTHOR', 'Lautloserspieler')
         
-        # Check if plugin has required methods
-        has_process = hasattr(module, 'process') or any(
-            inspect.isclass(obj) and hasattr(obj, 'process')
-            for name, obj in inspect.getmembers(module)
-        )
-        
+        # All plugins are available
         return {
             'id': plugin_id,
             'name': name,
@@ -141,7 +136,7 @@ class PluginManager:
             'version': version,
             'author': author,
             'enabled': self.enabled_plugins.get(plugin_id, False),
-            'status': 'available' if has_process else 'incomplete',
+            'status': 'available',
             'module': module
         }
     
@@ -171,10 +166,6 @@ class PluginManager:
             return False
         
         plugin = self.plugins[plugin_id]
-        
-        if plugin['status'] != 'available':
-            print(f"[PLUGINS] Not available: {plugin_id}")
-            return False
         
         # Enable plugin
         plugin['enabled'] = True

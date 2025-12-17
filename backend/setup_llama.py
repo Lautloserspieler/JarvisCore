@@ -9,6 +9,8 @@ import shutil
 import urllib.request
 import tempfile
 import webbrowser
+import time
+import threading
 
 # Build Tools Download URLs
 VS_BUILDTOOLS_URL = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
@@ -117,7 +119,10 @@ def download_build_tools():
             downloaded = block_num * block_size
             if total_size > 0:
                 percent = min(100, downloaded * 100 / total_size)
-                print(f"\r[INFO] Download: {percent:.1f}% ({downloaded / (1024*1024):.1f} MB / {total_size / (1024*1024):.1f} MB)", end="")
+                bar_length = 40
+                filled = int(bar_length * percent / 100)
+                bar = '█' * filled + '░' * (bar_length - filled)
+                print(f"\r[INFO] [{bar}] {percent:.1f}% ({downloaded / (1024*1024):.1f} MB / {total_size / (1024*1024):.1f} MB)", end="")
         
         urllib.request.urlretrieve(VS_BUILDTOOLS_URL, installer_path, download_progress)
         print("\n[INFO] ✅ Download abgeschlossen!")
@@ -127,8 +132,57 @@ def download_build_tools():
         print(f"\n[FEHLER] Download fehlgeschlagen: {e}")
         return None
 
+def show_installation_progress():
+    """Zeigt animierte Fortschrittsanzeige während der Installation"""
+    spinner = ['⢷', '⢹', '⢸', '⢼', '⢺', '⢶']
+    stages = [
+        "Initialisiere Installation...",
+        "Lade Komponenten herunter...",
+        "Installiere MSVC Compiler...",
+        "Installiere Windows SDK...",
+        "Installiere CMake Tools...",
+        "Konfiguriere Umgebung...",
+        "Finalisiere Installation..."
+    ]
+    
+    start_time = time.time()
+    stage_index = 0
+    spinner_index = 0
+    
+    while not installation_done:
+        elapsed = int(time.time() - start_time)
+        minutes = elapsed // 60
+        seconds = elapsed % 60
+        
+        # Stage alle 2 Minuten wechseln
+        stage_index = min(elapsed // 120, len(stages) - 1)
+        
+        # Progress Bar basierend auf geschätzter Zeit (15 Min)
+        estimated_total = 900  # 15 Minuten
+        progress = min(100, (elapsed / estimated_total) * 100)
+        bar_length = 30
+        filled = int(bar_length * progress / 100)
+        bar = '█' * filled + '░' * (bar_length - filled)
+        
+        print(f"\r[{spinner[spinner_index]}] [{bar}] {progress:.0f}% | {minutes:02d}:{seconds:02d} | {stages[stage_index]}", end="", flush=True)
+        
+        spinner_index = (spinner_index + 1) % len(spinner)
+        time.sleep(0.2)
+    
+    # Finale Nachricht
+    elapsed = int(time.time() - start_time)
+    minutes = elapsed // 60
+    seconds = elapsed % 60
+    bar = '█' * bar_length
+    print(f"\r[✔] [{bar}] 100% | {minutes:02d}:{seconds:02d} | Installation abgeschlossen!" + " " * 20)
+
+# Global flag für Installation Status
+installation_done = False
+
 def install_build_tools_windows(installer_path):
     """Installiert Visual Studio Build Tools auf Windows"""
+    global installation_done
+    
     print("\n[INFO] 🛠️  Starte Build Tools Installation...")
     print("[INFO] Dies erfordert Administrator-Rechte!")
     print("[INFO] Installation dauert ca. 5-15 Minuten...\n")
@@ -145,8 +199,16 @@ def install_build_tools_windows(installer_path):
         "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project"
     ]
     
+    # Starte Progress-Anzeige in separatem Thread
+    installation_done = False
+    progress_thread = threading.Thread(target=show_installation_progress, daemon=True)
+    progress_thread.start()
+    
     try:
-        result = subprocess.run(install_cmd, check=False)
+        result = subprocess.run(install_cmd, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        installation_done = True
+        time.sleep(0.5)  # Warte auf letzte Progress-Update
+        
         if result.returncode == 0 or result.returncode == 3010:  # 3010 = Neustart erforderlich
             print("\n[INFO] ✅ Build Tools erfolgreich installiert!")
             if result.returncode == 3010:
@@ -156,6 +218,8 @@ def install_build_tools_windows(installer_path):
             print(f"\n[FEHLER] Installation fehlgeschlagen (Code: {result.returncode})")
             return False
     except Exception as e:
+        installation_done = True
+        time.sleep(0.5)
         print(f"\n[FEHLER] Installation fehlgeschlagen: {e}")
         return False
 

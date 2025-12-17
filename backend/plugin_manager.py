@@ -11,10 +11,14 @@ class PluginManager:
     """Manages plugins for JARVIS Core"""
     
     def __init__(self, plugins_dir: str = "plugins"):
-        self.plugins_dir = Path(plugins_dir)
+        self.root = Path.cwd()  # Current working directory
+        self.plugins_dir = self.root / plugins_dir
         self.plugins: Dict[str, Dict[str, Any]] = {}
         self.enabled_plugins: Dict[str, Any] = {}
-        self.config_file = Path("config/plugins.json")
+        self.config_file = self.root / "config" / "plugins.json"
+        
+        print(f"[INFO] Plugin Manager initialized")
+        print(f"[INFO] Looking for plugins in: {self.plugins_dir}")
         
         # Load plugin states
         self._load_config()
@@ -29,10 +33,12 @@ class PluginManager:
                 with open(self.config_file, 'r') as f:
                     config = json.load(f)
                     self.enabled_plugins = config.get('enabled', {})
+                print(f"[INFO] Loaded plugin config from {self.config_file}")
             except Exception as e:
                 print(f"[WARNING] Failed to load plugin config: {e}")
                 self.enabled_plugins = {}
         else:
+            print(f"[INFO] No plugin config found, starting fresh")
             self.enabled_plugins = {}
     
     def _save_config(self):
@@ -41,6 +47,7 @@ class PluginManager:
         try:
             with open(self.config_file, 'w') as f:
                 json.dump({'enabled': self.enabled_plugins}, f, indent=2)
+            print(f"[INFO] Saved plugin config to {self.config_file}")
         except Exception as e:
             print(f"[ERROR] Failed to save plugin config: {e}")
     
@@ -48,16 +55,22 @@ class PluginManager:
         """Discover all available plugins in plugins directory"""
         if not self.plugins_dir.exists():
             print(f"[WARNING] Plugins directory not found: {self.plugins_dir}")
+            print(f"[INFO] No plugins will be loaded")
             return
         
         print(f"[INFO] Discovering plugins in {self.plugins_dir}...")
         
-        # Add plugins directory to path
-        if str(self.plugins_dir.absolute()) not in sys.path:
-            sys.path.insert(0, str(self.plugins_dir.absolute()))
+        # Add plugins directory to path if not already there
+        plugins_path_str = str(self.plugins_dir.absolute())
+        if plugins_path_str not in sys.path:
+            sys.path.insert(0, plugins_path_str)
+            print(f"[INFO] Added {plugins_path_str} to Python path")
         
         # Scan for plugin files
-        for file in self.plugins_dir.glob("*_plugin.py"):
+        plugin_files = list(self.plugins_dir.glob("*_plugin.py"))
+        print(f"[INFO] Found {len(plugin_files)} plugin files")
+        
+        for file in plugin_files:
             plugin_id = file.stem  # filename without .py
             
             try:
@@ -69,10 +82,12 @@ class PluginManager:
                 
                 if plugin_info:
                     self.plugins[plugin_id] = plugin_info
-                    print(f"[INFO] Discovered plugin: {plugin_info['name']}")
+                    print(f"[INFO] ✓ Discovered plugin: {plugin_info['name']} (v{plugin_info['version']})")
                     
             except Exception as e:
-                print(f"[WARNING] Failed to load plugin {plugin_id}: {e}")
+                print(f"[WARNING] ✗ Failed to load plugin {plugin_id}: {e}")
+        
+        print(f"[INFO] Successfully loaded {len(self.plugins)} plugins")
     
     def _extract_plugin_info(self, plugin_id: str, module) -> Optional[Dict[str, Any]]:
         """Extract plugin information from module"""
@@ -169,7 +184,9 @@ class PluginManager:
         print(f"[INFO] Reloaded {len(self.plugins)} plugins")
 
 # Global plugin manager instance
+print("[INFO] Initializing global plugin manager...")
 plugin_manager = PluginManager()
+print(f"[INFO] Plugin manager ready with {len(plugin_manager.plugins)} plugins")
 
 if __name__ == "__main__":
     # Test plugin discovery

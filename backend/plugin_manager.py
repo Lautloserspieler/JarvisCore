@@ -13,6 +13,18 @@ class PluginManager:
     _instance = None
     _initialized = False
     
+    # Plugin API Key Requirements
+    PLUGIN_API_REQUIREMENTS = {
+        'weather_plugin': {
+            'requires_api_key': True,
+            'api_key_name': 'openweather_api_key',
+            'api_key_label': 'OpenWeatherMap API Key',
+            'api_key_url': 'https://openweathermap.org/api',
+            'api_key_description': 'Kostenloser API-Key für Wetterdaten'
+        },
+        # Weitere Plugins können hier definiert werden
+    }
+    
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -128,7 +140,10 @@ class PluginManager:
         version = getattr(module, 'PLUGIN_VERSION', '1.0.0')
         author = getattr(module, 'PLUGIN_AUTHOR', 'Lautloserspieler')
         
-        # All plugins are available
+        # Check if plugin requires API key
+        api_requirements = self.PLUGIN_API_REQUIREMENTS.get(plugin_id, {})
+        requires_api_key = api_requirements.get('requires_api_key', False)
+        
         return {
             'id': plugin_id,
             'name': name,
@@ -137,6 +152,8 @@ class PluginManager:
             'author': author,
             'enabled': self.enabled_plugins.get(plugin_id, False),
             'status': 'available',
+            'requires_api_key': requires_api_key,
+            'api_key_info': api_requirements if requires_api_key else None,
             'module': module
         }
     
@@ -150,7 +167,9 @@ class PluginManager:
                 'version': p['version'],
                 'author': p['author'],
                 'enabled': p['enabled'],
-                'status': p['status']
+                'status': p['status'],
+                'requires_api_key': p.get('requires_api_key', False),
+                'api_key_info': p.get('api_key_info')
             }
             for p in self.plugins.values()
         ]
@@ -159,13 +178,40 @@ class PluginManager:
         """Get specific plugin info"""
         return self.plugins.get(plugin_id)
     
-    def enable_plugin(self, plugin_id: str) -> bool:
+    def check_api_key_available(self, plugin_id: str) -> bool:
+        """Prüft ob API-Key für Plugin gesetzt ist"""
+        plugin = self.plugins.get(plugin_id)
+        if not plugin or not plugin.get('requires_api_key'):
+            return True  # Kein API-Key nötig
+        
+        api_key_info = plugin.get('api_key_info', {})
+        api_key_name = api_key_info.get('api_key_name')
+        
+        if not api_key_name:
+            return True
+        
+        # Prüfe Umgebungsvariable
+        env_var_name = api_key_name.upper()
+        return bool(os.getenv(env_var_name))
+    
+    def enable_plugin(self, plugin_id: str) -> Dict[str, Any]:
         """Enable a plugin"""
         if plugin_id not in self.plugins:
             print(f"[PLUGINS] Not found: {plugin_id}")
-            return False
+            return {'success': False, 'error': 'Plugin nicht gefunden'}
         
         plugin = self.plugins[plugin_id]
+        
+        # Prüfe ob API-Key benötigt wird
+        if plugin.get('requires_api_key'):
+            if not self.check_api_key_available(plugin_id):
+                api_key_info = plugin.get('api_key_info', {})
+                return {
+                    'success': False,
+                    'error': 'API-Key erforderlich',
+                    'requires_api_key': True,
+                    'api_key_info': api_key_info
+                }
         
         # Enable plugin
         plugin['enabled'] = True
@@ -173,7 +219,7 @@ class PluginManager:
         self._save_config()
         
         print(f"[PLUGINS] Enabled: {plugin['name']}")
-        return True
+        return {'success': True, 'message': f"Plugin {plugin['name']} aktiviert"}
     
     def disable_plugin(self, plugin_id: str) -> bool:
         """Disable a plugin"""
@@ -221,4 +267,6 @@ if __name__ == "__main__":
         print(f"  ID: {plugin['id']}")
         print(f"  Description: {plugin['description']}")
         print(f"  Status: {plugin['status']}")
+        if plugin.get('requires_api_key'):
+            print(f"  ⚠️ Requires API Key: {plugin['api_key_info'].get('api_key_label')}")
         print()

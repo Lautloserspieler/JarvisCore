@@ -132,8 +132,8 @@ const SettingsPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to load plugins:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load plugins',
+        title: 'Fehler',
+        description: 'Plugins konnten nicht geladen werden',
         variant: 'destructive'
       });
     }
@@ -160,17 +160,17 @@ const SettingsPage: React.FC = () => {
         );
         
         toast({
-          title: 'Success',
-          description: result.message || (enabled ? 'Plugin activated' : 'Plugin deactivated')
+          title: 'Erfolg',
+          description: result.message || (enabled ? 'Plugin aktiviert' : 'Plugin deaktiviert')
         });
       } else {
-        throw new Error('Failed to toggle plugin');
+        throw new Error('Plugin konnte nicht geändert werden');
       }
     } catch (error) {
       console.error('Error toggling plugin:', error);
       toast({
-        title: 'Error',
-        description: enabled ? 'Failed to activate plugin' : 'Failed to deactivate plugin',
+        title: 'Fehler',
+        description: enabled ? 'Plugin konnte nicht aktiviert werden' : 'Plugin konnte nicht deaktiviert werden',
         variant: 'destructive'
       });
     } finally {
@@ -188,14 +188,14 @@ const SettingsPage: React.FC = () => {
 
       if (response.ok) {
         toast({
-          title: 'Settings Saved',
-          description: 'llama.cpp parameters updated successfully'
+          title: 'Einstellungen gespeichert',
+          description: 'llama.cpp Parameter aktualisiert'
         });
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to save settings',
+        title: 'Fehler',
+        description: 'Einstellungen konnten nicht gespeichert werden',
         variant: 'destructive'
       });
     }
@@ -213,12 +213,12 @@ const SettingsPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `jarvis-settings-${Date.now()}.json`;
+    a.download = `jarvis-einstellungen-${Date.now()}.json`;
     a.click();
 
     toast({
-      title: 'Settings Exported',
-      description: 'Settings downloaded as JSON file'
+      title: 'Einstellungen exportiert',
+      description: 'Konfiguration als JSON heruntergeladen'
     });
   };
 
@@ -236,13 +236,13 @@ const SettingsPage: React.FC = () => {
         setSystemPrompt(imported.systemPrompt || systemPrompt);
 
         toast({
-          title: 'Settings Imported',
-          description: 'Configuration loaded successfully'
+          title: 'Einstellungen importiert',
+          description: 'Konfiguration erfolgreich geladen'
         });
       } catch (error) {
         toast({
-          title: 'Import Failed',
-          description: 'Invalid settings file',
+          title: 'Import fehlgeschlagen',
+          description: 'Ungültige Einstellungsdatei',
           variant: 'destructive'
         });
       }
@@ -264,8 +264,8 @@ const SettingsPage: React.FC = () => {
     });
 
     toast({
-      title: 'Reset Complete',
-      description: 'All settings reset to defaults'
+      title: 'Zurückgesetzt',
+      description: 'Alle Einstellungen zurückgesetzt'
     });
   };
 
@@ -273,19 +273,19 @@ const SettingsPage: React.FC = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Configure JARVIS behavior and appearance</p>
+          <h1 className="text-3xl font-bold">Einstellungen</h1>
+          <p className="text-muted-foreground">Konfiguriere JARVIS Verhalten und Aussehen</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportSettings}>
             <Download className="w-4 h-4 mr-2" />
-            Export
+            Exportieren
           </Button>
           <label>
             <Button variant="outline" asChild>
               <span>
                 <Upload className="w-4 h-4 mr-2" />
-                Import
+                Importieren
               </span>
             </Button>
             <input type="file" accept=".json" onChange={importSettings} className="hidden" />
@@ -297,7 +297,7 @@ const SettingsPage: React.FC = () => {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="llama">
             <Zap className="w-4 h-4 mr-2" />
-            LLM Parameters
+            LLM
           </TabsTrigger>
           <TabsTrigger value="plugins">
             <Plug className="w-4 h-4 mr-2" />
@@ -305,15 +305,15 @@ const SettingsPage: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="ui">
             <Settings2 className="w-4 h-4 mr-2" />
-            UI Settings
+            UI
           </TabsTrigger>
           <TabsTrigger value="api">
             <Database className="w-4 h-4 mr-2" />
-            API Config
+            API
           </TabsTrigger>
           <TabsTrigger value="advanced">
             <Shield className="w-4 h-4 mr-2" />
-            Advanced
+            Erweitert
           </TabsTrigger>
         </TabsList>
 
@@ -321,12 +321,12 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="llama" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>llama.cpp Inference Parameters</CardTitle>
+              <CardTitle>llama.cpp Inference Parameter</CardTitle>
               <CardDescription>
-                Configure text generation behavior
+                Konfiguriere Textgenerierung
                 {modelInfo && (
                   <div className="mt-2 text-sm">
-                    <span className="font-semibold">Active Model:</span> {modelInfo.model} ({modelInfo.device})
+                    <span className="font-semibold">Aktives Modell:</span> {modelInfo.model} ({modelInfo.device})
                   </div>
                 )}
               </CardDescription>
@@ -335,7 +335,7 @@ const SettingsPage: React.FC = () => {
               {/* Temperature */}
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <Label>Temperature</Label>
+                  <Label>Temperatur</Label>
                   <span className="text-sm text-muted-foreground">{llamaSettings.temperature.toFixed(2)}</span>
                 </div>
                 <Slider
@@ -347,7 +347,7 @@ const SettingsPage: React.FC = () => {
                   className="w-full"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Controls randomness. Lower = more focused, Higher = more creative
+                  Steuert Zufall. Niedriger = fokussiert, Höher = kreativ
                 </p>
               </div>
 
@@ -368,7 +368,7 @@ const SettingsPage: React.FC = () => {
                   className="w-full"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Cumulative probability cutoff. 0.9 = top 90% of tokens considered
+                  Kumulative Wahrscheinlichkeit. 0.9 = top 90% Token
                 </p>
               </div>
 
@@ -389,7 +389,7 @@ const SettingsPage: React.FC = () => {
                   className="w-full"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Consider only top K tokens. 40 = top 40 tokens
+                  Nur top K Token berücksichtigen. 40 = top 40 Token
                 </p>
               </div>
 
@@ -398,7 +398,7 @@ const SettingsPage: React.FC = () => {
               {/* Repeat Penalty */}
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <Label>Repeat Penalty</Label>
+                  <Label>Wiederholungs-Strafe</Label>
                   <span className="text-sm text-muted-foreground">{llamaSettings.repeat_penalty.toFixed(2)}</span>
                 </div>
                 <Slider
@@ -410,7 +410,7 @@ const SettingsPage: React.FC = () => {
                   className="w-full"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Penalize repetition. 1.0 = no penalty, 2.0 = strong penalty
+                  Bestrafe Wiederholungen. 1.0 = keine Strafe, 2.0 = stark
                 </p>
               </div>
 
@@ -427,7 +427,7 @@ const SettingsPage: React.FC = () => {
                   max={32768}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Maximum tokens in response. Higher = longer responses
+                  Maximale Antwort-Länge. Höher = länger
                 </p>
               </div>
 
@@ -435,7 +435,7 @@ const SettingsPage: React.FC = () => {
 
               {/* Context Window */}
               <div className="space-y-2">
-                <Label>Context Window</Label>
+                <Label>Context Fenster</Label>
                 <Select
                   value={llamaSettings.context_window.toString()}
                   onValueChange={(val) => setLlamaSettings({ ...llamaSettings, context_window: parseInt(val) })}
@@ -446,13 +446,13 @@ const SettingsPage: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="2048">2K</SelectItem>
                     <SelectItem value="4096">4K</SelectItem>
-                    <SelectItem value="8192">8K (Default)</SelectItem>
+                    <SelectItem value="8192">8K (Standard)</SelectItem>
                     <SelectItem value="16384">16K</SelectItem>
                     <SelectItem value="32768">32K</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Conversation memory size. Larger = more VRAM
+                  Gesprächsspeicher. Größer = mehr VRAM
                 </p>
               </div>
 
@@ -460,7 +460,7 @@ const SettingsPage: React.FC = () => {
 
               {/* GPU Layers */}
               <div className="space-y-2">
-                <Label>GPU Layers</Label>
+                <Label>GPU Layer</Label>
                 <Input
                   type="number"
                   value={llamaSettings.n_gpu_layers}
@@ -469,7 +469,7 @@ const SettingsPage: React.FC = () => {
                   max={modelInfo?.max_layers || 64}
                 />
                 <p className="text-xs text-muted-foreground">
-                  -1 = All layers on GPU. Lower number = Less VRAM usage
+                  -1 = Alle Layer auf GPU. Niedriger = weniger VRAM
                 </p>
               </div>
 
@@ -486,7 +486,7 @@ const SettingsPage: React.FC = () => {
                   max={navigator.hardwareConcurrency || 16}
                 />
                 <p className="text-xs text-muted-foreground">
-                  CPU cores for overhead. Recommended: {Math.max(4, Math.floor((navigator.hardwareConcurrency || 8) / 2))}
+                  CPU-Kerne. Empfohlen: {Math.max(4, Math.floor((navigator.hardwareConcurrency || 8) / 2))}
                 </p>
               </div>
 
@@ -495,9 +495,9 @@ const SettingsPage: React.FC = () => {
               {/* Stream Mode */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Stream Mode</Label>
+                  <Label>Stream Modus</Label>
                   <p className="text-xs text-muted-foreground">
-                    Real-time token streaming (coming soon)
+                    Echtzeit Token-Streaming (künftig)
                   </p>
                 </div>
                 <Switch
@@ -510,7 +510,7 @@ const SettingsPage: React.FC = () => {
               <div className="pt-4">
                 <Button onClick={saveLlamaSettings} className="w-full">
                   <Save className="w-4 h-4 mr-2" />
-                  Save LLM Settings
+                  LLM Einstellungen speichern
                 </Button>
               </div>
             </CardContent>
@@ -521,13 +521,13 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="plugins" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Installed Plugins</CardTitle>
-              <CardDescription>Manage plugins and extensions</CardDescription>
+              <CardTitle>Installierte Plugins</CardTitle>
+              <CardDescription>Verwalte Plugins und Erweiterungen</CardDescription>
             </CardHeader>
             <CardContent>
               {plugins.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p>No plugins available</p>
+                  <p>Keine Plugins verfügbar</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -551,11 +551,11 @@ const SettingsPage: React.FC = () => {
                         size="sm"
                       >
                         {loadingPlugins[plugin.id] ? (
-                          'Loading...'
+                          'Lädt...'
                         ) : plugin.enabled ? (
-                          'Deactivate'
+                          'Deaktivieren'
                         ) : (
-                          'Activate'
+                          'Aktivieren'
                         )}
                       </Button>
                     </div>
@@ -570,34 +570,34 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="ui" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>User Interface</CardTitle>
-              <CardDescription>Customize appearance and behavior</CardDescription>
+              <CardTitle>Benutzeroberäche</CardTitle>
+              <CardDescription>Passe Aussehen und Verhalten an</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label>Theme</Label>
+                <Label>Thema</Label>
                 <Select value={uiSettings.theme} onValueChange={(val: any) => setUISettings({ ...uiSettings, theme: val })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="auto">Auto</SelectItem>
+                    <SelectItem value="dark">Dunkel</SelectItem>
+                    <SelectItem value="light">Hell</SelectItem>
+                    <SelectItem value="auto">Automatisch</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Font Size</Label>
+                <Label>Schriftgröße</Label>
                 <Select value={uiSettings.fontSize} onValueChange={(val: any) => setUISettings({ ...uiSettings, fontSize: val })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="small">Small</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="large">Large</SelectItem>
+                    <SelectItem value="small">Klein</SelectItem>
+                    <SelectItem value="medium">Mittel</SelectItem>
+                    <SelectItem value="large">Groß</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -613,7 +613,7 @@ const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>Notifications</Label>
+                <Label>Benachrichtigungen</Label>
                 <Switch
                   checked={uiSettings.notifications}
                   onCheckedChange={(val) => setUISettings({ ...uiSettings, notifications: val })}
@@ -621,7 +621,7 @@ const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>Sound Effects</Label>
+                <Label>Soundeffekte</Label>
                 <Switch
                   checked={uiSettings.soundEffects}
                   onCheckedChange={(val) => setUISettings({ ...uiSettings, soundEffects: val })}
@@ -635,8 +635,8 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="api" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>API Configuration</CardTitle>
-              <CardDescription>Backend connection settings</CardDescription>
+              <CardTitle>API Konfiguration</CardTitle>
+              <CardDescription>Backend Verbindungseinstellungen</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -667,7 +667,7 @@ const SettingsPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Retry Attempts</Label>
+                <Label>Wiederholungsversuche</Label>
                 <Input
                   type="number"
                   value={apiSettings.retry_attempts}
@@ -678,12 +678,12 @@ const SettingsPage: React.FC = () => {
               <Separator />
 
               <div className="space-y-2">
-                <Label>API Key (Optional)</Label>
+                <Label>API Schlüssel (Optional)</Label>
                 <Input
                   type="password"
                   value={apiSettings.api_key}
                   onChange={(e) => setAPISettings({ ...apiSettings, api_key: e.target.value })}
-                  placeholder="Leave empty for local usage"
+                  placeholder="Leer für lokale Nutzung"
                 />
               </div>
             </CardContent>
@@ -694,8 +694,8 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="advanced" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Advanced Settings</CardTitle>
-              <CardDescription>Expert configuration options</CardDescription>
+              <CardTitle>Erweiterte Einstellungen</CardTitle>
+              <CardDescription>Expertenkonfiguration</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -707,17 +707,17 @@ const SettingsPage: React.FC = () => {
                   placeholder="Du bist JARVIS..."
                 />
                 <p className="text-xs text-muted-foreground">
-                  Defines JARVIS personality and behavior
+                  Definiert JARVIS Persönlichkeit und Verhalten
                 </p>
               </div>
 
               <Separator />
 
               <div className="space-y-2">
-                <Label>Danger Zone</Label>
+                <Label>⚠️ Gefährliche Zone</Label>
                 <Button variant="destructive" onClick={resetToDefaults} className="w-full">
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset All Settings to Default
+                  Alle Einstellungen zurücksetzen
                 </Button>
               </div>
             </CardContent>

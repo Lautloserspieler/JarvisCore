@@ -59,7 +59,7 @@ const SettingsPage: React.FC = () => {
     top_p: 0.9,
     top_k: 40,
     repeat_penalty: 1.1,
-    max_tokens: 512,
+    max_tokens: 2048,
     context_window: 8192,
     n_gpu_layers: -1,
     n_threads: 8,
@@ -256,7 +256,7 @@ const SettingsPage: React.FC = () => {
       top_p: 0.9,
       top_k: 40,
       repeat_penalty: 1.1,
-      max_tokens: 512,
+      max_tokens: 2048,
       context_window: 8192,
       n_gpu_layers: -1,
       n_threads: 8,
@@ -305,7 +305,7 @@ const SettingsPage: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="ui">
             <Settings2 className="w-4 h-4 mr-2" />
-            UI
+            Oberfläche
           </TabsTrigger>
           <TabsTrigger value="api">
             <Database className="w-4 h-4 mr-2" />
@@ -321,9 +321,9 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="llama" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>llama.cpp Inference Parameter</CardTitle>
+              <CardTitle>🧠 LLM Einstellungen</CardTitle>
               <CardDescription>
-                Konfiguriere Textgenerierung
+                Aktiviere Sprachmodell für Antworten
                 {modelInfo && (
                   <div className="mt-2 text-sm">
                     <span className="font-semibold">Aktives Modell:</span> {modelInfo.model} ({modelInfo.device})
@@ -332,179 +332,61 @@ const SettingsPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Enable LLM Switch */}
+              <div className="flex items-center justify-between p-4 bg-accent/50 rounded-lg">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Sprachmodell aktivieren</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Nutze lokales KI-Modell für Antworten
+                  </p>
+                </div>
+                <Switch
+                  checked={true}
+                  disabled
+                />
+              </div>
+
+              <Separator />
+
+              {/* Context Length */}
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label>Context-Länge</Label>
+                  <span className="text-sm text-muted-foreground">{llamaSettings.context_window} Tokens</span>
+                </div>
+                <Slider
+                  value={[llamaSettings.context_window]}
+                  onValueChange={(val) => setLlamaSettings({ ...llamaSettings, context_window: val[0] })}
+                  min={512}
+                  max={8192}
+                  step={512}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {llamaSettings.context_window} Tokens Gesprächsspeicher (Erfordert Modell-Neustart)
+                </p>
+              </div>
+
+              <Separator />
+
               {/* Temperature */}
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Label>Temperatur</Label>
-                  <span className="text-sm text-muted-foreground">{llamaSettings.temperature.toFixed(2)}</span>
+                  <span className="text-sm text-muted-foreground">{llamaSettings.temperature}</span>
                 </div>
                 <Slider
                   value={[llamaSettings.temperature]}
                   onValueChange={(val) => setLlamaSettings({ ...llamaSettings, temperature: val[0] })}
                   min={0}
                   max={2}
-                  step={0.05}
+                  step={0.1}
                   className="w-full"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Steuert Zufall. Niedriger = fokussiert, Höher = kreativ
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Top P */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label>Top-P (Nucleus Sampling)</Label>
-                  <span className="text-sm text-muted-foreground">{llamaSettings.top_p.toFixed(2)}</span>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0.0 (Präzise)</span>
+                  <span>2.0 (Kreativ)</span>
                 </div>
-                <Slider
-                  value={[llamaSettings.top_p]}
-                  onValueChange={(val) => setLlamaSettings({ ...llamaSettings, top_p: val[0] })}
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Kumulative Wahrscheinlichkeit. 0.9 = top 90% Token
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Top K */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label>Top-K</Label>
-                  <span className="text-sm text-muted-foreground">{llamaSettings.top_k}</span>
-                </div>
-                <Slider
-                  value={[llamaSettings.top_k]}
-                  onValueChange={(val) => setLlamaSettings({ ...llamaSettings, top_k: val[0] })}
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Nur top K Token berücksichtigen. 40 = top 40 Token
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Repeat Penalty */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label>Wiederholungs-Strafe</Label>
-                  <span className="text-sm text-muted-foreground">{llamaSettings.repeat_penalty.toFixed(2)}</span>
-                </div>
-                <Slider
-                  value={[llamaSettings.repeat_penalty]}
-                  onValueChange={(val) => setLlamaSettings({ ...llamaSettings, repeat_penalty: val[0] })}
-                  min={1}
-                  max={2}
-                  step={0.05}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Bestrafe Wiederholungen. 1.0 = keine Strafe, 2.0 = stark
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Max Tokens */}
-              <div className="space-y-2">
-                <Label>Max Tokens</Label>
-                <Input
-                  type="number"
-                  value={llamaSettings.max_tokens}
-                  onChange={(e) => setLlamaSettings({ ...llamaSettings, max_tokens: parseInt(e.target.value) })}
-                  min={128}
-                  max={32768}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Maximale Antwort-Länge. Höher = länger
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Context Window */}
-              <div className="space-y-2">
-                <Label>Context Fenster</Label>
-                <Select
-                  value={llamaSettings.context_window.toString()}
-                  onValueChange={(val) => setLlamaSettings({ ...llamaSettings, context_window: parseInt(val) })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2048">2K</SelectItem>
-                    <SelectItem value="4096">4K</SelectItem>
-                    <SelectItem value="8192">8K (Standard)</SelectItem>
-                    <SelectItem value="16384">16K</SelectItem>
-                    <SelectItem value="32768">32K</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Gesprächsspeicher. Größer = mehr VRAM
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* GPU Layers */}
-              <div className="space-y-2">
-                <Label>GPU Layer</Label>
-                <Input
-                  type="number"
-                  value={llamaSettings.n_gpu_layers}
-                  onChange={(e) => setLlamaSettings({ ...llamaSettings, n_gpu_layers: parseInt(e.target.value) })}
-                  min={-1}
-                  max={modelInfo?.max_layers || 64}
-                />
-                <p className="text-xs text-muted-foreground">
-                  -1 = Alle Layer auf GPU. Niedriger = weniger VRAM
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* CPU Threads */}
-              <div className="space-y-2">
-                <Label>CPU Threads</Label>
-                <Input
-                  type="number"
-                  value={llamaSettings.n_threads}
-                  onChange={(e) => setLlamaSettings({ ...llamaSettings, n_threads: parseInt(e.target.value) })}
-                  min={1}
-                  max={navigator.hardwareConcurrency || 16}
-                />
-                <p className="text-xs text-muted-foreground">
-                  CPU-Kerne. Empfohlen: {Math.max(4, Math.floor((navigator.hardwareConcurrency || 8) / 2))}
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Stream Mode */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Stream Modus</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Echtzeit Token-Streaming (künftig)
-                  </p>
-                </div>
-                <Switch
-                  checked={llamaSettings.stream_mode}
-                  onCheckedChange={(val) => setLlamaSettings({ ...llamaSettings, stream_mode: val })}
-                  disabled
-                />
               </div>
 
               <div className="pt-4">
@@ -570,7 +452,7 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="ui" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Benutzeroberäche</CardTitle>
+              <CardTitle>Benutzeroberfläche</CardTitle>
               <CardDescription>Passe Aussehen und Verhalten an</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -605,7 +487,7 @@ const SettingsPage: React.FC = () => {
               <Separator />
 
               <div className="flex items-center justify-between">
-                <Label>Auto-Scroll</Label>
+                <Label>Automatisches Scrollen</Label>
                 <Switch
                   checked={uiSettings.autoScroll}
                   onCheckedChange={(val) => setUISettings({ ...uiSettings, autoScroll: val })}

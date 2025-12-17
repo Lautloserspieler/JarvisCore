@@ -1,6 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from datetime import datetime
 import json
 import uuid
@@ -129,13 +129,13 @@ logs_db.append({
 })
 
 # AI Response Generator mit Plugin-Integration und llama.cpp
-async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool]:
+async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool, Optional[int], Optional[float]]:
     """
     Generate AI response with plugin processing:
     1. Check if plugins can handle the message
     2. If not, use llama.cpp for general response
     
-    Returns: (response_text, is_plugin_response)
+    Returns: (response_text, is_plugin_response, tokens, tokens_per_second)
     """
     
     print(f"\n[DEBUG] === generate_ai_response called ===")
@@ -155,13 +155,13 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
                 "message": f"Plugin processed command: {message[:50]}",
                 "source": "plugins"
             })
-            return plugin_response, True  # Mark as plugin response
+            return plugin_response, True, None, None  # Plugins don't have token stats
     
     print(f"[DEBUG] ⚠️ No plugin handled message, using LLM")
     
     # STEP 2: No plugin handled it -> use LLM
     if not llama_runtime.is_loaded:
-        return "Bitte laden Sie zuerst ein Modell unter 'Modelle'.", False
+        return "Bitte laden Sie zuerst ein Modell unter 'Modelle'.", False, None, None
     
     try:
         # Build history - ONLY include non-plugin messages
@@ -215,22 +215,25 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
         )
         
         if result['success']:
+            tokens_generated = result.get('tokens_generated', 0)
+            tokens_per_sec = result.get('tokens_per_second', 0.0)
+            
             print(
-                f"[INFO] Generated {result['tokens_generated']} tokens "
+                f"[INFO] Generated {tokens_generated} tokens "
                 f"with {result['model']} on {result['device']} "
-                f"({result['tokens_per_second']:.1f} tok/s)"
+                f"({tokens_per_sec:.1f} tok/s)"
             )
             print(f"[DEBUG] LLM response: {result['text'][:100]}...")
-            return result['text'], False  # Mark as LLM response
+            return result['text'], False, tokens_generated, tokens_per_sec
         else:
             print(f"[ERROR] Generation failed: {result.get('error', 'Unknown error')}")
-            return f"Fehler bei der Antwort-Generierung: {result.get('error', 'Unbekannter Fehler')}", False
+            return f"Fehler bei der Antwort-Generierung: {result.get('error', 'Unbekannter Fehler')}", False, None, None
         
     except Exception as e:
         print(f"[ERROR] AI generation exception: {e}")
         import traceback
         traceback.print_exc()
-        return f"Fehler bei der Antwort-Generierung: {str(e)}", False
+        return f"Fehler bei der Antwort-Generierung: {str(e)}", False, None, None
 
 # WebSocket endpoint
 @app.websocket("/ws")
@@ -246,9 +249,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_message = message.get('message', '')
                 session_id = message.get('sessionId', 'default')
                 
-                print(f"\n[INFO] ════════════════════════════════════════")
+                print(f"\n[INFO] ═════════════════════════════════════════════════════")
                 print(f"[INFO] Chat message received: {user_message[:50]}...")
-                print(f"[INFO] ════════════════════════════════════════")
+                print(f"[INFO] ═════════════════════════════════════════════════════")
                 
                 if session_id not in messages_db:
                     messages_db[session_id] = []
@@ -269,31 +272,48 @@ async def websocket_endpoint(websocket: WebSocket):
                     'sessionId': session_id
                 }))
                 
-                # Get response and check if it's from plugin
-                response_text, is_plugin = await generate_ai_response(user_message, session_id)
+                # Get response with token statistics
+                response_text, is_plugin, tokens, tokens_per_sec = await generate_ai_response(user_message, session_id)
                 response_id = str(uuid.uuid4())
                 
-                print(f"[DEBUG] Response generated: is_plugin={is_plugin}")
+                print(f"[DEBUG] Response generated: is_plugin={is_plugin}, tokens={tokens}, tok/s={tokens_per_sec}")
                 print(f"[DEBUG] Response preview: {response_text[:100]}...")
                 
-                # Store response with plugin flag
-                messages_db[session_id].append({
+                # Store response with plugin flag and token stats
+                stored_message = {
                     'id': response_id,
                     'text': response_text,
                     'isUser': False,
-                    'isPlugin': is_plugin,  # Mark plugin responses
+                    'isPlugin': is_plugin,
                     'timestamp': datetime.now().isoformat()
-                })
+                }
                 
-                print(f"[DEBUG] Stored response with isPlugin={is_plugin}")
-                print(f"[INFO] ════════════════════════════════════════\n")
+                # Add token stats if available (only for LLM responses)
+                if tokens is not None:
+                    stored_message['tokens'] = tokens
+                if tokens_per_sec is not None:
+                    stored_message['tokensPerSecond'] = tokens_per_sec
                 
-                await websocket.send_text(json.dumps({
+                messages_db[session_id].append(stored_message)
+                
+                print(f"[DEBUG] Stored response with isPlugin={is_plugin}, tokens={tokens}")
+                print(f"[INFO] ═════════════════════════════════════════════════════\n")
+                
+                # Build WebSocket response with token stats
+                ws_response = {
                     'type': 'chat_response',
                     'messageId': response_id,
                     'response': response_text,
                     'sessionId': session_id
-                }))
+                }
+                
+                # Include token stats if available
+                if tokens is not None:
+                    ws_response['tokens'] = tokens
+                if tokens_per_sec is not None:
+                    ws_response['tokensPerSecond'] = tokens_per_sec
+                
+                await websocket.send_text(json.dumps(ws_response))
                 
                 await websocket.send_text(json.dumps({
                     'type': 'typing_stop',

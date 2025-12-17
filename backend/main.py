@@ -27,8 +27,6 @@ if sys.platform == 'win32':
 from core.llama_inference import llama_runtime
 # Import model downloader
 from backend.model_downloader import model_downloader
-# Import plugin manager
-from backend.plugin_manager import plugin_manager
 
 app = FastAPI(title="JARVIS Core API", version="1.1.0")
 
@@ -57,6 +55,31 @@ logs_db.append({
     "message": "JARVIS Core API initialized",
     "source": "backend"
 })
+
+# Plugin Manager (will be initialized on startup)
+plugin_manager = None
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize plugin manager on startup"""
+    global plugin_manager
+    print("[INFO] Backend startup event triggered")
+    
+    try:
+        from backend.plugin_manager import PluginManager
+        plugin_manager = PluginManager()
+        print(f"[INFO] Plugin Manager initialized with {len(plugin_manager.plugins)} plugins")
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize Plugin Manager: {e}")
+        # Create empty plugin manager
+        plugin_manager = type('obj', (object,), {
+            'get_all_plugins': lambda: [],
+            'enable_plugin': lambda x: False,
+            'disable_plugin': lambda x: False,
+            'get_enabled_plugins': lambda: [],
+            'reload_plugins': lambda: None,
+            'plugins': {}
+        })()
 
 # AI Response Generator mit llama.cpp
 async def generate_ai_response(message: str, session_id: str) -> str:
@@ -197,11 +220,16 @@ async def clear_logs():
 @app.get("/api/plugins")
 async def get_plugins():
     """Get all available plugins"""
+    if plugin_manager is None:
+        return []
     return plugin_manager.get_all_plugins()
 
 @app.post("/api/plugins/{plugin_id}/enable")
 async def enable_plugin(plugin_id: str):
     """Enable a plugin"""
+    if plugin_manager is None:
+        return {"success": False, "message": "Plugin Manager not ready"}
+    
     success = plugin_manager.enable_plugin(plugin_id)
     
     if success:
@@ -225,6 +253,9 @@ async def enable_plugin(plugin_id: str):
 @app.post("/api/plugins/{plugin_id}/disable")
 async def disable_plugin(plugin_id: str):
     """Disable a plugin"""
+    if plugin_manager is None:
+        return {"success": False, "message": "Plugin Manager not ready"}
+    
     success = plugin_manager.disable_plugin(plugin_id)
     
     if success:
@@ -248,6 +279,9 @@ async def disable_plugin(plugin_id: str):
 @app.post("/api/plugins/reload")
 async def reload_plugins():
     """Reload all plugins"""
+    if plugin_manager is None:
+        return {"success": False, "message": "Plugin Manager not ready"}
+    
     plugin_manager.reload_plugins()
     return {
         "success": True,
@@ -319,7 +353,7 @@ async def get_system_info():
         llama_status = llama_runtime.get_status()
         
         # Plugin stats
-        plugins = plugin_manager.get_all_plugins()
+        plugins = plugin_manager.get_all_plugins() if plugin_manager else []
         plugin_stats = {
             "total": len(plugins),
             "enabled": len([p for p in plugins if p['enabled']])
@@ -355,12 +389,13 @@ async def get_system_info():
 # Health API  
 @app.get("/api/health")
 async def health_check():
+    enabled_plugins = plugin_manager.get_enabled_plugins() if plugin_manager else []
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "version": "1.1.0",
         "llama_cpp": llama_runtime.get_status(),
-        "plugins": len(plugin_manager.get_enabled_plugins())
+        "plugins": len(enabled_plugins)
     }
 
 # Models API (keeping existing code unchanged)
@@ -624,11 +659,12 @@ async def get_chat_sessions():
 
 @app.get("/")
 async def root():
+    plugins_count = len(plugin_manager.get_all_plugins()) if plugin_manager else 0
     return {
         "message": "JARVIS Core API v1.1.0",
         "status": "online",
         "llama_cpp": llama_runtime.get_status(),
-        "plugins": len(plugin_manager.get_all_plugins()),
+        "plugins": plugins_count,
         "endpoints": {
             "websocket": "/ws",
             "docs": "/docs",
@@ -655,7 +691,6 @@ if __name__ == "__main__":
     print("[INFO] Starting JARVIS Core API...")
     print(f"[INFO] llama.cpp available: {llama_runtime.get_status()['available']}")
     print(f"[INFO] Device: {llama_runtime.device}")
-    print(f"[INFO] Plugins discovered: {len(plugin_manager.get_all_plugins())}")
     
     # Starte Backend
     uvicorn.run(app, host="0.0.0.0", port=5050)

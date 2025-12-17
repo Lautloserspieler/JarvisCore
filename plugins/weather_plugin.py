@@ -2,13 +2,14 @@
 
 import os
 import requests
+import re
 from typing import Dict, Any, Optional
 from datetime import datetime
 
 # Plugin Metadata
 PLUGIN_NAME = "Wetter"
 PLUGIN_DESCRIPTION = "Zeigt aktuelle Wetterinformationen und Vorhersagen an"
-PLUGIN_VERSION = "1.0.0"
+PLUGIN_VERSION = "1.0.2"
 PLUGIN_AUTHOR = "Lautloserspieler"
 
 
@@ -28,9 +29,16 @@ class WeatherPlugin:
         Beispiele:
         - "Wie ist das Wetter?"
         - "Wetter in München"
+        - "Wie ist das Wetter in Limburg"
         - "Wettervorhersage Berlin"
         """
         command_lower = command.lower()
+        
+        # WICHTIG: Prüfe erst ob es eine Wetter-Anfrage ist!
+        if not self._is_weather_request(command_lower):
+            return None  # Nicht unsere Zuständigkeit
+        
+        print(f"[WEATHER] Processing weather request: {command[:50]}")
         
         # Stadt extrahieren
         city = self._extract_city(command_lower)
@@ -38,30 +46,73 @@ class WeatherPlugin:
         if not city:
             city = self.default_city
         
+        print(f"[WEATHER] Extracted city: {city}")
+        
         # Aktuelle oder Vorhersage?
         if "vorhersage" in command_lower or "morgen" in command_lower:
             return self._get_forecast(city)
         else:
             return self._get_current_weather(city)
     
-    def _extract_city(self, command: str) -> Optional[str]:
-        """Extrahiert Stadtname aus Befehl"""
-        cities = [
-            "berlin", "münchen", "hamburg", "köln", "frankfurt",
-            "stuttgart", "düsseldorf", "dortmund", "essen", "leipzig",
-            "bremen", "dresden", "hannover", "nürnberg", "duisburg"
+    def _is_weather_request(self, command: str) -> bool:
+        """Prüft ob die Anfrage eine Wetter-Anfrage ist"""
+        weather_triggers = [
+            "wetter",
+            "temperatur",
+            "regen",
+            "regnet",
+            "schnee",
+            "schneit",
+            "sonne",
+            "sonnig",
+            "wolken",
+            "wolkig",
+            "gewitter",
+            "vorhersage",
+            "wettervorhersage",
+            "wetteraussicht",
+            "klima",
+            "grad celsius",
+            "°c",
         ]
         
-        for city in cities:
-            if city in command:
+        return any(trigger in command for trigger in weather_triggers)
+    
+    def _extract_city(self, command: str) -> Optional[str]:
+        """Extrahiert Stadtname aus Befehl"""
+        
+        # Pattern 1: "in [Stadt]"
+        match = re.search(r'\bin\s+([\wäöüß-]+)', command, re.IGNORECASE)
+        if match:
+            city = match.group(1).strip()
+            return city.capitalize()
+        
+        # Pattern 2: "Wetter [Stadt]"
+        match = re.search(r'wetter\s+([\wäöüß-]+)', command, re.IGNORECASE)
+        if match:
+            city = match.group(1).strip()
+            # Filtere Stopwörter
+            if city.lower() not in ['in', 'von', 'für', 'heute', 'morgen', 'ist']:
                 return city.capitalize()
         
-        # Versuche "in X" Pattern
-        if " in " in command:
-            parts = command.split(" in ")
-            if len(parts) > 1:
-                city_part = parts[1].strip().split()[0]
-                return city_part.capitalize()
+        # Pattern 3: "[Stadt]-Wetter"
+        match = re.search(r'([\wäöüß-]+)-wetter', command, re.IGNORECASE)
+        if match:
+            city = match.group(1).strip()
+            return city.capitalize()
+        
+        # Pattern 4: Bekannte Städte (Fallback)
+        common_cities = [
+            "berlin", "münchen", "hamburg", "köln", "frankfurt",
+            "stuttgart", "düsseldorf", "dortmund", "essen", "leipzig",
+            "bremen", "dresden", "hannover", "nürnberg", "duisburg",
+            "limburg", "wiesbaden", "bonn", "mannheim", "karlsruhe",
+            "augsburg", "freiburg", "lübeck", "rostock", "kiel"
+        ]
+        
+        for city in common_cities:
+            if city in command:
+                return city.capitalize()
         
         return None
     
@@ -96,7 +147,10 @@ class WeatherPlugin:
             description = data["weather"][0]["description"].capitalize()
             wind_speed = data["wind"]["speed"]
             
-            result = f"🌤️ Wetter in {city}:\n\n"
+            # Get actual city name from API response
+            actual_city = data["name"]
+            
+            result = f"🌤️ Wetter in {actual_city}:\n\n"
             result += f"🌡️ Temperatur: {temp:.1f}°C (gefühlt {feels_like:.1f}°C)\n"
             result += f"☁️ Bedingungen: {description}\n"
             result += f"💧 Luftfeuchtigkeit: {humidity}%\n"
@@ -104,6 +158,10 @@ class WeatherPlugin:
             
             return result
             
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                return f"❌ Stadt '{city}' nicht gefunden. Bitte überprüfe die Schreibweise."
+            return f"❌ HTTP-Fehler: {e.response.status_code}"
         except requests.exceptions.RequestException as e:
             return f"❌ Fehler beim Abrufen des Wetters: {str(e)}"
         except KeyError as e:
@@ -130,8 +188,10 @@ class WeatherPlugin:
             response.raise_for_status()
             data = response.json()
             
+            actual_city = data["city"]["name"]
+            
             # 3 Tage (alle 8 Einträge = 1 Tag bei 3h Intervallen)
-            result = f"📅 3-Tage Vorhersage für {city}:\n\n"
+            result = f"📅 3-Tage Vorhersage für {actual_city}:\n\n"
             
             # Gruppiere nach Tagen
             days = {}
@@ -159,6 +219,10 @@ class WeatherPlugin:
             
             return result.strip()
             
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                return f"❌ Stadt '{city}' nicht gefunden."
+            return f"❌ HTTP-Fehler: {e.response.status_code}"
         except requests.exceptions.RequestException as e:
             return f"❌ Fehler beim Abrufen der Vorhersage: {str(e)}"
         except KeyError as e:

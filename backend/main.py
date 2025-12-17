@@ -89,11 +89,16 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
     Returns: (response_text, is_plugin_response)
     """
     
+    print(f"\n[DEBUG] === generate_ai_response called ===")
+    print(f"[DEBUG] Message: {message[:100]}")
+    print(f"[DEBUG] Session: {session_id}")
+    
     # STEP 1: Try plugin processing first
     if plugin_manager:
         plugin_response = plugin_manager.process_message(message, {"session_id": session_id})
         if plugin_response:
-            print(f"[INFO] Plugin handled message: {message[:50]}...")
+            print(f"[DEBUG] ✅ Plugin handled message")
+            print(f"[DEBUG] Plugin response: {plugin_response[:100]}...")
             logs_db.append({
                 "id": str(uuid.uuid4()),
                 "timestamp": datetime.now().isoformat(),
@@ -103,6 +108,8 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
             })
             return plugin_response, True  # Mark as plugin response
     
+    print(f"[DEBUG] ⚠️ No plugin handled message, using LLM")
+    
     # STEP 2: No plugin handled it -> use LLM
     if not llama_runtime.is_loaded:
         return "Bitte laden Sie zuerst ein Modell unter 'Modelle'.", False
@@ -111,15 +118,28 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
         # Build history - ONLY include non-plugin messages
         history = []
         if session_id in messages_db:
+            print(f"[DEBUG] Session has {len(messages_db[session_id])} total messages")
+            
             # Filter: nur messages die NICHT von Plugins sind
-            for msg in messages_db[session_id][-10:]:
-                # Skip plugin responses (marked with isPlugin=True)
-                if msg.get('isPlugin', False):
+            for i, msg in enumerate(messages_db[session_id][-10:]):
+                is_plugin = msg.get('isPlugin', False)
+                is_user = msg.get('isUser', False)
+                text_preview = msg.get('text', '')[:50]
+                
+                print(f"[DEBUG] Msg {i}: isUser={is_user}, isPlugin={is_plugin}, text={text_preview}")
+                
+                # Skip plugin responses
+                if is_plugin:
+                    print(f"[DEBUG]   → SKIPPED (plugin response)")
                     continue
+                    
                 history.append({
-                    'role': 'user' if msg['isUser'] else 'assistant',
+                    'role': 'user' if is_user else 'assistant',
                     'content': msg['text']
                 })
+                print(f"[DEBUG]   → ADDED to history")
+        
+        print(f"[DEBUG] Final history length: {len(history)} messages")
         
         # Limit to last 5 conversation turns
         history = history[-10:]
@@ -138,6 +158,7 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
                 f"with {result['model']} on {result['device']} "
                 f"({result['tokens_per_second']:.1f} tok/s)"
             )
+            print(f"[DEBUG] LLM response: {result['text'][:100]}...")
             return result['text'], False  # Mark as LLM response
         else:
             print(f"[ERROR] Generation failed: {result.get('error', 'Unknown error')}")
@@ -145,6 +166,8 @@ async def generate_ai_response(message: str, session_id: str) -> tuple[str, bool
         
     except Exception as e:
         print(f"[ERROR] AI generation exception: {e}")
+        import traceback
+        traceback.print_exc()
         return f"Fehler bei der Antwort-Generierung: {str(e)}", False
 
 # WebSocket endpoint
@@ -161,7 +184,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_message = message.get('message', '')
                 session_id = message.get('sessionId', 'default')
                 
+                print(f"\n[INFO] ════════════════════════════════════════")
                 print(f"[INFO] Chat message received: {user_message[:50]}...")
+                print(f"[INFO] ════════════════════════════════════════")
                 
                 if session_id not in messages_db:
                     messages_db[session_id] = []
@@ -175,6 +200,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     'timestamp': datetime.now().isoformat()
                 })
                 
+                print(f"[DEBUG] Stored user message with isPlugin=False")
+                
                 await websocket.send_text(json.dumps({
                     'type': 'typing_start',
                     'sessionId': session_id
@@ -184,6 +211,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 response_text, is_plugin = await generate_ai_response(user_message, session_id)
                 response_id = str(uuid.uuid4())
                 
+                print(f"[DEBUG] Response generated: is_plugin={is_plugin}")
+                print(f"[DEBUG] Response preview: {response_text[:100]}...")
+                
                 # Store response with plugin flag
                 messages_db[session_id].append({
                     'id': response_id,
@@ -192,6 +222,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     'isPlugin': is_plugin,  # Mark plugin responses
                     'timestamp': datetime.now().isoformat()
                 })
+                
+                print(f"[DEBUG] Stored response with isPlugin={is_plugin}")
+                print(f"[INFO] ════════════════════════════════════════\n")
                 
                 await websocket.send_text(json.dumps({
                     'type': 'chat_response',
@@ -214,6 +247,8 @@ async def websocket_endpoint(websocket: WebSocket):
         print("[INFO] WebSocket disconnected")
     except Exception as e:
         print(f"[ERROR] WebSocket error: {e}")
+        import traceback
+        traceback.print_exc()
 
 # Logs API
 @app.get("/api/logs")

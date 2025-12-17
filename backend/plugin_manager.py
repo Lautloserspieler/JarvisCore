@@ -4,7 +4,7 @@ import sys
 import importlib
 import inspect
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Callable
 import json
 
 class PluginManager:
@@ -49,6 +49,10 @@ class PluginManager:
         self.enabled_plugins: Dict[str, bool] = {}
         self.config_file = self.root / "config" / "plugins.json"
         
+        # Callbacks for plugin notifications
+        self.websocket_callback: Optional[Callable] = None
+        self.tts_callback: Optional[Callable] = None
+        
         print(f"[PLUGINS] Initializing Plugin Manager...")
         print(f"[PLUGINS] Root: {self.root}")
         print(f"[PLUGINS] Looking for plugins in: {self.plugins_dir}")
@@ -61,6 +65,58 @@ class PluginManager:
         
         self._initialized = True
         print(f"[PLUGINS] Plugin Manager ready with {len(self.plugins)} plugins")
+    
+    def set_websocket_callback(self, callback: Callable):
+        """Register WebSocket callback for plugin notifications"""
+        self.websocket_callback = callback
+        print("[PLUGINS] WebSocket callback registered")
+        
+        # Pass to timer plugin if loaded
+        if 'timer_plugin' in self.plugins:
+            try:
+                module = self.plugins['timer_plugin']['module']
+                if hasattr(module, 'get_plugin_instance'):
+                    plugin_instance = module.get_plugin_instance()
+                    plugin_instance.set_websocket_callback(callback)
+            except Exception as e:
+                print(f"[PLUGINS] Failed to set timer callback: {e}")
+    
+    def set_tts_callback(self, callback: Callable):
+        """Register TTS callback for plugin voice output"""
+        self.tts_callback = callback
+        print("[PLUGINS] TTS callback registered")
+        
+        # Pass to timer plugin if loaded
+        if 'timer_plugin' in self.plugins:
+            try:
+                module = self.plugins['timer_plugin']['module']
+                if hasattr(module, 'get_plugin_instance'):
+                    plugin_instance = module.get_plugin_instance()
+                    plugin_instance.set_tts_callback(callback)
+            except Exception as e:
+                print(f"[PLUGINS] Failed to set timer TTS callback: {e}")
+    
+    def process_message(self, message: str, context: Dict[str, Any]) -> Optional[str]:
+        """
+        Process a user message through enabled plugins.
+        Returns plugin response if handled, None otherwise.
+        """
+        # Try each enabled plugin
+        for plugin_id, plugin in self.plugins.items():
+            if not plugin['enabled']:
+                continue
+            
+            try:
+                module = plugin['module']
+                if hasattr(module, 'process'):
+                    response = module.process(message, context)
+                    if response:
+                        print(f"[PLUGINS] {plugin['name']} handled message")
+                        return response
+            except Exception as e:
+                print(f"[PLUGINS] Error in {plugin['name']}: {e}")
+        
+        return None
     
     def _load_config(self):
         """Load plugin configuration from file"""
@@ -217,6 +273,19 @@ class PluginManager:
         plugin['enabled'] = True
         self.enabled_plugins[plugin_id] = True
         self._save_config()
+        
+        # Register callbacks if it's timer plugin
+        if plugin_id == 'timer_plugin':
+            try:
+                module = plugin['module']
+                if hasattr(module, 'get_plugin_instance'):
+                    plugin_instance = module.get_plugin_instance()
+                    if self.websocket_callback:
+                        plugin_instance.set_websocket_callback(self.websocket_callback)
+                    if self.tts_callback:
+                        plugin_instance.set_tts_callback(self.tts_callback)
+            except Exception as e:
+                print(f"[PLUGINS] Failed to register timer callbacks: {e}")
         
         print(f"[PLUGINS] Enabled: {plugin['name']}")
         return {'success': True, 'message': f"Plugin {plugin['name']} aktiviert"}

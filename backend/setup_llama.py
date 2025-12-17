@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""Automatische llama-cpp-python Installation mit GPU-Erkennung und Build-Tools-Prüfung"""
+"""Automatische llama-cpp-python Installation mit GPU-Erkennung und Build-Tools-Installation"""
 
 import subprocess
 import sys
 import platform
 import os
 import shutil
+import urllib.request
+import tempfile
+import webbrowser
+
+# Build Tools Download URLs
+VS_BUILDTOOLS_URL = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
 
 def run_command(cmd, shell=False):
     """Führt Befehl aus und gibt Ausgabe zurück"""
@@ -96,6 +102,62 @@ def uninstall_llama():
     print("\n[INFO] Entferne vorhandenes llama-cpp-python...")
     subprocess.run([sys.executable, "-m", "pip", "uninstall", "llama-cpp-python", "-y"], 
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def download_build_tools():
+    """Lädt Visual Studio Build Tools herunter"""
+    print("\n[INFO] 📥 Lade Visual Studio Build Tools herunter...")
+    print("[INFO] Größe: ~3 GB, dies kann einige Minuten dauern...\n")
+    
+    try:
+        temp_dir = tempfile.gettempdir()
+        installer_path = os.path.join(temp_dir, "vs_BuildTools.exe")
+        
+        # Download mit Progress
+        def download_progress(block_num, block_size, total_size):
+            downloaded = block_num * block_size
+            if total_size > 0:
+                percent = min(100, downloaded * 100 / total_size)
+                print(f"\r[INFO] Download: {percent:.1f}% ({downloaded / (1024*1024):.1f} MB / {total_size / (1024*1024):.1f} MB)", end="")
+        
+        urllib.request.urlretrieve(VS_BUILDTOOLS_URL, installer_path, download_progress)
+        print("\n[INFO] ✅ Download abgeschlossen!")
+        return installer_path
+    
+    except Exception as e:
+        print(f"\n[FEHLER] Download fehlgeschlagen: {e}")
+        return None
+
+def install_build_tools_windows(installer_path):
+    """Installiert Visual Studio Build Tools auf Windows"""
+    print("\n[INFO] 🛠️  Starte Build Tools Installation...")
+    print("[INFO] Dies erfordert Administrator-Rechte!")
+    print("[INFO] Installation dauert ca. 5-15 Minuten...\n")
+    
+    # Installationsbefehl mit den benötigten Komponenten
+    install_cmd = [
+        installer_path,
+        "--quiet",
+        "--wait",
+        "--norestart",
+        "--add", "Microsoft.VisualStudio.Workload.VCTools",
+        "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+        "--add", "Microsoft.VisualStudio.Component.Windows11SDK.22621",
+        "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project"
+    ]
+    
+    try:
+        result = subprocess.run(install_cmd, check=False)
+        if result.returncode == 0 or result.returncode == 3010:  # 3010 = Neustart erforderlich
+            print("\n[INFO] ✅ Build Tools erfolgreich installiert!")
+            if result.returncode == 3010:
+                print("[INFO] 🔄 Ein Neustart wird empfohlen")
+            return True
+        else:
+            print(f"\n[FEHLER] Installation fehlgeschlagen (Code: {result.returncode})")
+            return False
+    except Exception as e:
+        print(f"\n[FEHLER] Installation fehlgeschlagen: {e}")
+        return False
 
 def install_llama_prebuilt():
     """Installiert vorkompiliertes llama-cpp-python (nur CPU, schnell)"""
@@ -204,17 +266,20 @@ def show_build_tools_help():
     
     print("\n" + "⚠️ "*30)
     print("\n[WARNUNG] C++ Build-Tools nicht gefunden!")
-    print("\nUm GPU-Beschleunigung zu aktivieren, installiere Build-Tools:\n")
+    print("\nFür GPU-Beschleunigung werden Build-Tools benötigt.\n")
     
     if system == "Windows":
-        print("📥 Download: https://visualstudio.microsoft.com/de/visual-cpp-build-tools/")
-        print("\n✅ Erforderliche Komponenten:")
-        print("   - Desktopentwicklung mit C++")
-        print("   - MSVC v143 oder neuer")
-        print("   - Windows 10 SDK")
-        print("   - CMake-Tools für Windows")
-        print("\n⏱️  Installation dauert ca. 5-10 Minuten")
-        print("🔄 Neustart erforderlich nach Installation")
+        print("🔧 Build-Tools Optionen:\n")
+        print("   1️⃣  Automatische Installation (empfohlen)")
+        print("      - Download + Installation automatisch")
+        print("      - Dauert ca. 15-20 Minuten")
+        print("      - Erfordert Administrator-Rechte\n")
+        print("   2️⃣  Manuelle Installation")
+        print("      - Download: https://visualstudio.microsoft.com/de/visual-cpp-build-tools/")
+        print("      - Installiere: Desktopentwicklung mit C++\n")
+        print("   3️⃣  CPU-Version ohne GPU (schnell)")
+        print("      - Vorkompiliertes Paket")
+        print("      - Keine GPU-Beschleunigung")
     else:
         print("Auf Ubuntu/Debian:")
         print("   sudo apt-get install build-essential cmake")
@@ -225,6 +290,14 @@ def show_build_tools_help():
         print("   brew install cmake")
     
     print("\n" + "⚠️ "*30 + "\n")
+
+def ask_user_choice():
+    """Fragt Benutzer nach bevorzugter Installation"""
+    while True:
+        choice = input("Wähle Option [1/2/3]: ").strip()
+        if choice in ["1", "2", "3"]:
+            return choice
+        print("[FEHLER] Ungültige Eingabe! Bitte 1, 2 oder 3 eingeben.")
 
 def main():
     print("""
@@ -249,6 +322,32 @@ def main():
     # Erkenne GPU
     gpu_type = detect_gpu()
     
+    # Wenn GPU erkannt aber keine Build-Tools: Frage Benutzer
+    if gpu_type != "cpu" and not has_build_tools and platform.system() == "Windows":
+        show_build_tools_help()
+        choice = ask_user_choice()
+        
+        if choice == "1":  # Automatische Installation
+            installer_path = download_build_tools()
+            if installer_path:
+                if install_build_tools_windows(installer_path):
+                    print("\n[INFO] ✅ Build-Tools installiert!")
+                    print("[INFO] Bitte starte deinen Computer neu.")
+                    print("[INFO] Nach dem Neustart führe erneut aus: python setup_llama.py\n")
+                    return 0
+                else:
+                    print("\n[INFO] Installation fehlgeschlagen, fahre mit CPU-Version fort...\n")
+            else:
+                print("\n[INFO] Download fehlgeschlagen, fahre mit CPU-Version fort...\n")
+        
+        elif choice == "2":  # Manuelle Installation
+            print("\n[INFO] Öffne Download-Seite im Browser...")
+            webbrowser.open("https://visualstudio.microsoft.com/de/visual-cpp-build-tools/")
+            print("[INFO] Nach der Installation führe erneut aus: python setup_llama.py")
+            print("[INFO] Fahre jetzt mit CPU-Version fort...\n")
+        
+        # Choice 3 oder Fallback: CPU-Version
+    
     # Deinstalliere vorhandenes
     uninstall_llama()
     
@@ -256,42 +355,23 @@ def main():
     success = False
     install_mode = "unbekannt"
     
-    if gpu_type == "nvidia":
-        if has_build_tools:
-            print("\n[INFO] 🚀 Installiere mit NVIDIA CUDA Support...")
-            success = install_llama_nvidia()
-            install_mode = "NVIDIA CUDA"
-        else:
-            show_build_tools_help()
-            print("\n[INFO] Fallback auf vorkompilierte CPU-Version...\n")
+    if gpu_type == "nvidia" and has_build_tools:
+        print("\n[INFO] 🚀 Installiere mit NVIDIA CUDA Support...")
+        success = install_llama_nvidia()
+        install_mode = "NVIDIA CUDA"
+    elif gpu_type == "amd" and has_build_tools:
+        print("\n[INFO] 🚀 Installiere mit AMD ROCm Support...")
+        success = install_llama_amd()
+        if not success:
+            print("\n[INFO] ROCm-Installation fehlgeschlagen, versuche CPU-Version...\n")
             success = install_llama_prebuilt()
             install_mode = "CPU (vorkompiliert)"
-    
-    elif gpu_type == "amd":
-        if has_build_tools:
-            print("\n[INFO] 🚀 Installiere mit AMD ROCm Support...")
-            success = install_llama_amd()
-            if not success:
-                print("\n[INFO] ROCm-Installation fehlgeschlagen, versuche CPU-Version...\n")
-                success = install_llama_prebuilt()
-                install_mode = "CPU (vorkompiliert)"
-            else:
-                install_mode = "AMD ROCm"
         else:
-            show_build_tools_help()
-            print("\n[INFO] Fallback auf vorkompilierte CPU-Version...\n")
-            success = install_llama_prebuilt()
-            install_mode = "CPU (vorkompiliert)"
-    
-    else:  # CPU
-        if has_build_tools:
-            print("\n[INFO] Installiere CPU-Version (aus Quellcode)...")
-            success = install_llama_cpu()
-            install_mode = "CPU (optimiert)"
-        else:
-            print("\n[INFO] Installiere vorkompilierte CPU-Version...")
-            success = install_llama_prebuilt()
-            install_mode = "CPU (vorkompiliert)"
+            install_mode = "AMD ROCm"
+    else:
+        print("\n[INFO] Installiere vorkompilierte CPU-Version...")
+        success = install_llama_prebuilt()
+        install_mode = "CPU (vorkompiliert)"
     
     # Überprüfe Installation
     if success and verify_installation():
@@ -302,8 +382,8 @@ def main():
         
         if not has_build_tools and gpu_type != "cpu":
             print("\n[TIPP] 💡 Um GPU-Beschleunigung zu aktivieren:")
-            print("      1. Installiere C++ Build-Tools (siehe Anleitung oben)")
-            print("      2. Führe erneut aus: python setup_llama.py")
+            print("      Führe erneut aus: python setup_llama.py")
+            print("      Und wähle Option 1 für automatische Build-Tools Installation")
         
         print("\n[INFO] ▶️  Du kannst jetzt starten: python main.py")
         print("✅"*30 + "\n")
@@ -313,7 +393,7 @@ def main():
         print("\n[FEHLER] 💥 Installation fehlgeschlagen!")
         print("\n[INFO] Problemlösung:")
         print("      1. Prüfe Fehlermeldungen oben")
-        print("      2. Installiere Build-Tools falls fehlend")
+        print("      2. Führe Script erneut aus: python setup_llama.py")
         print("      3. Versuche manuelle Installation:")
         print("         pip install llama-cpp-python --only-binary :all:")
         print("\n[INFO] 📚 Vollständige Dokumentation: https://github.com/Lautloserspieler/JarvisCore")

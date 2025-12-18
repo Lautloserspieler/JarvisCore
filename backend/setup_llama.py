@@ -302,6 +302,40 @@ def uninstall_llama():
     subprocess.run([sys.executable, "-m", "pip", "uninstall", "llama-cpp-python", "-y"], 
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+def fix_numpy_version():
+    """Stellt sicher dass NumPy <2.0 installiert ist"""
+    print("\n[INFO] Prüfe NumPy Version...")
+    
+    try:
+        import numpy as np
+        version = np.__version__
+        major = int(version.split('.')[0])
+        
+        if major >= 2:
+            print(f"[INFO] NumPy {version} gefunden - downgrade auf 1.x für Kompatibilität...")
+            result = subprocess.run([
+                sys.executable, "-m", "pip", "install",
+                "numpy>=1.24.3,<2.0",
+                "--force-reinstall"
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                print("[INFO] NumPy erfolgreich auf 1.x downgraded")
+                return True
+            else:
+                print("[WARNUNG] NumPy downgrade fehlgeschlagen")
+                return False
+        else:
+            print(f"[INFO] NumPy {version} ist kompatibel")
+            return True
+    except ImportError:
+        print("[INFO] NumPy wird installiert...")
+        result = subprocess.run([
+            sys.executable, "-m", "pip", "install",
+            "numpy>=1.24.3,<2.0"
+        ], capture_output=True, text=True)
+        return result.returncode == 0
+
 def install_llama_cpu():
     """Installiert llama-cpp-python für CPU"""
     print("\n" + "="*60)
@@ -396,14 +430,18 @@ def main():
             uninstall_llama()
             success = install_llama_cpu()
             
-            if success and verify_installation():
-                print("\nInstallation erfolgreich.")
-                print("JarvisCore kann jetzt mit 'python main.py' im Projekt-Root gestartet werden.")
-                return 0
-            else:
-                print("\nInstallation fehlgeschlagen.")
-                print("Bitte Build-Tools installieren und Script erneut ausführen.")
-                return 1
+            if success:
+                # NumPy Version fixen
+                fix_numpy_version()
+                
+                if verify_installation():
+                    print("\nInstallation erfolgreich.")
+                    print("JarvisCore kann jetzt mit 'python main.py' im Projekt-Root gestartet werden.")
+                    return 0
+            
+            print("\nInstallation fehlgeschlagen.")
+            print("Bitte Build-Tools installieren und Script erneut ausführen.")
+            return 1
     else:
         print("Build-Tools erkannt.")
     
@@ -448,14 +486,18 @@ def main():
         print("\nInstallation im CPU-Modus...")
         success = install_llama_cpu()
     
-    if success and verify_installation():
-        print("\nInstallation erfolgreich.")
-        print("JarvisCore kann jetzt mit 'python main.py' im Projekt-Root gestartet werden.")
-        return 0
-    else:
-        print("\nInstallation fehlgeschlagen.")
-        print("Bitte Fehlermeldungen prüfen und erneut versuchen.")
-        return 1
+    if success:
+        # NumPy Version fixen
+        fix_numpy_version()
+        
+        if verify_installation():
+            print("\nInstallation erfolgreich.")
+            print("JarvisCore kann jetzt mit 'python main.py' im Projekt-Root gestartet werden.")
+            return 0
+    
+    print("\nInstallation fehlgeschlagen.")
+    print("Bitte Fehlermeldungen prüfen und erneut versuchen.")
+    return 1
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -1,0 +1,39 @@
+{
+  "memoryTab": {
+    "loading": "Lade Gedächtnis...",
+    "totalMemories": "Gesamte Erinnerungen",
+    "storedEntries": "Gespeicherte Einträge",
+    "storageUsage": "Speichernutzung",
+    "lastUpdate": "Letzte Aktualisierung",
+    "today": "Heute",
+    "memoryTypes": "Erinnerungstypen",
+    "recentMemories": "Kürzliche Erinnerungen",
+    "recentDescription": "Zuletzt gespeicherte Informationen",
+    "clearAll": "Alle löschen",
+    "noMemories": "Noch keine Erinnerungen gespeichert",
+    "relevance": "Relevanz"
+  },
+  "modelsTab": {
+    "loadError": "Modelle konnten nicht geladen werden",
+    "downloadStarted": "Download gestartet",
+    "downloading": "Modell {{model}} wird heruntergeladen",
+    "downloadComplete": "Download abgeschlossen",
+    "downloadFailed": "Download fehlgeschlagen",
+    "downloadError": "Download konnte nicht gestartet werden",
+    "modelLoaded": "Modell geladen",
+    "loadFailed": "Laden fehlgeschlagen",
+    "modelUnloaded": "Modell entladen",
+    "allUnloaded": "Alle Modelle wurden entladen",
+    "active": "Aktiv",
+    "downloaded": "Heruntergeladen",
+    "notDownloaded": "Nicht heruntergeladen",
+    "unloadModel": "Modell entladen",
+    "activeModel": "Aktives Modell",
+    "downloadRunning": "Download läuft",
+    "progress": "Fortschritt",
+    "provider": "Provider",
+    "size": "Größe",
+    "download": "Herunterladen",
+    "load": "Laden"
+  }
+}

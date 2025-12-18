@@ -35,7 +35,7 @@ def check_cuda_toolkit():
     for cuda_path in cuda_paths:
         if Path(cuda_path).exists():
             # Find version
-            versions = [d for d in Path(cuda_path).iterdir() if d.is_dir() and d.name.startswith(('v', '11', '12'))]
+            versions = [d for d in Path(cuda_path).iterdir() if d.is_dir() and d.name.startswith(('v', '11', '12', '13'))]
             if versions:
                 latest = sorted(versions)[-1]
                 return True, str(latest)
@@ -127,20 +127,22 @@ def show_build_tools_guide():
     
     if system == "Windows":
         print("🔧 Windows Build-Tools Installation:\n")
-        print("   📦 Option 1: Visual Studio Build Tools (EMPFOHLEN)\n")
-        print("      1️⃣  Download Build Tools (aktuelle Version):")
+        print("   📦 Option 1: Visual Studio Build Tools 2026 (EMPFOHLEN)\n")
+        print("      1️⃣  Download Build Tools:")
         print("         https://visualstudio.microsoft.com/downloads/")
-        print("         -> Scrolle zu 'Tools for Visual Studio 2022'")
-        print("         -> Download 'Build Tools für Visual Studio 2022'\n")
+        print("         -> Scrolle zu 'Tools for Visual Studio 2026'")
+        print("         -> Download 'Build Tools für Visual Studio 2026'\n")
         print("      2️⃣  Installiere mit folgenden Komponenten:")
         print("         ✅ Desktop-Entwicklung mit C++")
-        print("         ✅ MSVC v143 - VS 2022 C++ x64/x86-Buildtools")
-        print("         ✅ Windows 10/11 SDK (neueste Version)")
+        print("         ✅ MSVC v145 - VS 2026 C++ x64/x86-Buildtools")
+        print("         ✅ Windows 11 SDK (neueste Version)")
         print("         ✅ CMake-Tools für Windows\n")
         print("      3️⃣  Installation dauert ca. 10-15 Minuten")
         print("         Benötigt ca. 4-8 GB Speicher\n")
         print("      4️⃣  Starte PC neu\n")
         print("      5️⃣  Führe erneut aus: python backend/setup_llama.py\n")
+        print("   🔹 Alternative: VS 2022 Build Tools (stabil)\n")
+        print("      -> Gleicher Link, wähle 'Visual Studio 2022' statt 2026\n")
         print("   📦 Option 2: Scoop (Schneller, weniger Speicher)\n")
         print("      1️⃣  Installiere Scoop (PowerShell als Admin):")
         print("         Set-ExecutionPolicy RemoteSigned -Scope CurrentUser")
@@ -181,7 +183,7 @@ def show_cuda_installation_guide():
     print("\n[WARNUNG] CUDA Toolkit nicht gefunden!\n")
     print("Für NVIDIA GPU-Beschleunigung wird CUDA Toolkit benötigt.\n")
     print("🔧 CUDA Toolkit Installation:\n")
-    print("   1️⃣  Download CUDA Toolkit 12.x (aktuelle Version):")
+    print("   1️⃣  Download CUDA Toolkit 12.x/13.x:")
     print("      https://developer.nvidia.com/cuda-downloads\n")
     print("   2️⃣  Wähle dein System:")
     print("      - Windows -> x86_64 -> 11 -> exe (local)")
@@ -191,6 +193,7 @@ def show_cuda_installation_guide():
     print("      - Benötigt ca. 3 GB Speicher\n")
     print("   4️⃣  Starte PC neu\n")
     print("   5️⃣  Führe erneut aus: python backend/setup_llama.py\n")
+    print("ℹ️  Hinweis: CUDA 12.x und 13.x werden beide unterstützt\n")
     print("ℹ️  Alternative: CPU-Version installieren (Option 2)\n")
     print("⚠️ "*30 + "\n")
 
@@ -285,8 +288,8 @@ def verify_installation():
 def main():
     print("""
     ╭──────────────────────────────────────────────────────────────╮
-    │       JARVIS Core - llama.cpp Setup Script v3.1          │
-    │    GPU-Erkennung + Build-Tools + CUDA Toolkit Support    │
+    │       JARVIS Core - llama.cpp Setup Script v4.0          │
+    │      VS 2026 + CUDA 13.x Support + GPU-Erkennung        │
     ╰──────────────────────────────────────────────────────────────╯
     """)
     

@@ -19,6 +19,155 @@ class CUDASetup:
         self.cuda_version = None
         self.cuda_home = None
         self.nvcc_path = None
+        self.build_tools_available = False
+
+    def check_build_tools(self) -> bool:
+        """Prüft ob Build-Tools installiert sind"""
+        print("\n🔧 Prüfe Build-Tools...")
+        
+        system = platform.system()
+        missing_tools = []
+        
+        # CMAKE prüfen
+        if not self._check_command("cmake"):
+            missing_tools.append("cmake")
+        else:
+            print("✅ cmake gefunden")
+        
+        # C++ Compiler prüfen
+        if system == "Windows":
+            # Visual Studio Build Tools oder MinGW
+            if not self._check_command("cl") and not self._check_command("gcc"):
+                missing_tools.append("Visual Studio Build Tools oder MinGW")
+            else:
+                print("✅ C++ Compiler gefunden")
+        elif system == "Linux":
+            if not self._check_command("gcc") or not self._check_command("gМ"):
+                missing_tools.append("gcc/g++")
+            else:
+                print("✅ gcc/g++ gefunden")
+        elif system == "Darwin":
+            if not self._check_command("clang"):
+                missing_tools.append("Xcode Command Line Tools")
+            else:
+                print("✅ clang gefunden")
+        
+        if missing_tools:
+            print(f"\n❌ Fehlende Build-Tools: {', '.join(missing_tools)}")
+            self._show_build_tools_guide(missing_tools)
+            return False
+        
+        self.build_tools_available = True
+        print("✅ Alle Build-Tools vorhanden!")
+        return True
+    
+    def _check_command(self, cmd: str) -> bool:
+        """Prüft ob ein Befehl verfügbar ist"""
+        try:
+            check_cmd = "where" if platform.system() == "Windows" else "which"
+            result = subprocess.run(
+                [check_cmd, cmd],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            return result.returncode == 0
+        except Exception:
+            return False
+    
+    def _show_build_tools_guide(self, missing_tools: list):
+        """Zeigt detaillierte Installationsanleitung für Build-Tools"""
+        system = platform.system()
+        
+        print("\n" + "="*70)
+        print("📖 BUILD-TOOLS INSTALLATIONSANLEITUNG")
+        print("="*70)
+        
+        print("\n⚠️  Um llama-cpp-python mit optimaler Performance zu bauen,")
+        print("   benötigst du folgende Build-Tools:\n")
+        
+        if system == "Windows":
+            print("👉 **Windows - 2 Optionen:**\n")
+            
+            print("**Option 1: Visual Studio Build Tools (Empfohlen)**")
+            print("   1. Download: https://visualstudio.microsoft.com/downloads/")
+            print("   2. Scrolle zu 'Build Tools für Visual Studio 2022'")
+            print("   3. Download und Installieren")
+            print("   4. Wähle bei Installation aus:")
+            print("      - 'C++ Build Tools'")
+            print("      - 'Windows 10/11 SDK'")
+            print("   5. Installation dauert ~5-10 Minuten (ca. 7 GB)\n")
+            
+            print("**Option 2: MinGW-w64 + CMAKE (Leichtgewichtig)**")
+            print("   1. CMAKE installieren:")
+            print("      - Download: https://cmake.org/download/")
+            print("      - Wähle 'Windows x64 Installer'")
+            print("      - Bei Installation: 'Add CMAKE to system PATH' auswählen")
+            print("")
+            print("   2. MinGW-w64 installieren:")
+            print("      - Download: https://www.mingw-w64.org/downloads/")
+            print("      - Oder via Chocolatey: choco install mingw")
+            print("      - Füge MinGW/bin zu PATH hinzu\n")
+            
+            print("**Nach Installation:**")
+            print("   - CMD/PowerShell **NEU STARTEN**")
+            print("   - Setup erneut ausführen: python scripts/setup_cuda.py")
+        
+        elif system == "Linux":
+            print("👉 **Linux - Installation:**\n")
+            
+            # Distro-spezifische Anleitungen
+            print("**Debian/Ubuntu/Mint:**")
+            print("   sudo apt update")
+            print("   sudo apt install build-essential cmake")
+            print("")
+            
+            print("**Fedora/RHEL/CentOS:**")
+            print("   sudo dnf groupinstall 'Development Tools'")
+            print("   sudo dnf install cmake")
+            print("")
+            
+            print("**Arch Linux:**")
+            print("   sudo pacman -S base-devel cmake")
+            print("")
+            
+            print("**openSUSE:**")
+            print("   sudo zypper install -t pattern devel_C_C++")
+            print("   sudo zypper install cmake")
+            print("")
+            
+            print("**Nach Installation:**")
+            print("   python scripts/setup_cuda.py")
+        
+        elif system == "Darwin":
+            print("👉 **macOS - Installation:**\n")
+            
+            print("**Xcode Command Line Tools:**")
+            print("   xcode-select --install")
+            print("")
+            print("   Oder via Homebrew:")
+            print("   brew install cmake")
+            print("")
+            
+            print("**Nach Installation:**")
+            print("   python scripts/setup_cuda.py")
+        
+        print("\n" + "="*70)
+        print("💡 **Alternative: CPU-Only Installation (ohne Build-Tools)**")
+        print("="*70)
+        print("\nWenn du keine Build-Tools installieren möchtest, kannst du")
+        print("llama-cpp-python als vorkompilierte CPU-Version installieren:\n")
+        print("   pip install llama-cpp-python --prefer-binary\n")
+        print("⚠️  **Nachteile:**")
+        print("   - Keine GPU-Beschleunigung (auch wenn CUDA vorhanden)")
+        print("   - Langsamere Inferenz-Geschwindigkeit")
+        print("   - Nicht optimal für produktiven Einsatz\n")
+        
+        print("="*70)
+        print("❓ **Fragen?**")
+        print("   - Dokumentation: docs/SETUP.md")
+        print("   - Issues: https://github.com/Lautloserspieler/JarvisCore/issues")
+        print("="*70 + "\n")
 
     def detect_cuda(self) -> bool:
         """Erkennt ob CUDA installiert ist"""
@@ -131,6 +280,12 @@ class CUDASetup:
     def install_llama_cpp(self) -> bool:
         """Installiert llama-cpp-python mit oder ohne CUDA"""
         print("\n📦 Installiere llama-cpp-python...")
+        
+        # Build-Tools prüfen
+        if not self.check_build_tools():
+            print("\n❌ **Installation abgebrochen!**")
+            print("   Installiere zuerst die Build-Tools (siehe Anleitung oben).\n")
+            return False
 
         # Basis-Command
         cmd = [sys.executable, "-m", "pip", "install", "--upgrade"]
@@ -249,9 +404,10 @@ class CUDASetup:
 
     def print_summary(self):
         """Gibt Setup-Zusammenfassung aus"""
-        print("\n" + "=" * 60)
+        print("\n" + "="*60)
         print("📊 CUDA Setup Zusammenfassung")
-        print("=" * 60)
+        print("="*60)
+        print(f"Build-Tools:       {'✅ Ja' if self.build_tools_available else '❌ Nein'}")
         print(f"CUDA verfügbar:    {'✅ Ja' if self.cuda_available else '❌ Nein'}")
         if self.cuda_version:
             print(f"CUDA Version:      {self.cuda_version}")
@@ -260,7 +416,7 @@ class CUDASetup:
         if self.nvcc_path:
             print(f"nvcc Pfad:         {self.nvcc_path}")
         print(f"llama-cpp Modus:   {'🚀 GPU' if self.cuda_available else '🔧 CPU'}")
-        print("=" * 60)
+        print("="*60)
 
         if not self.cuda_available:
             print("\n💡 CUDA Installation (optional für bessere Performance):")
@@ -272,9 +428,9 @@ class CUDASetup:
 
 def main():
     """Hauptfunktion"""
-    print("\n" + "=" * 60)
+    print("\n" + "="*60)
     print("🚀 JarvisCore - Automatisches CUDA Setup")
-    print("=" * 60)
+    print("="*60)
 
     setup = CUDASetup()
 

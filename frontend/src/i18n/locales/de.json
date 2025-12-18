@@ -1,0 +1,106 @@
+{
+  "common": {
+    "save": "Speichern",
+    "export": "Exportieren",
+    "import": "Importieren",
+    "reset": "Zurücksetzen",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "loading": "Lädt...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "warning": "Warnung"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "description": "Konfiguriere JARVIS Verhalten und Aussehen",
+    "export": "Exportieren",
+    "import": "Importieren",
+    "exportSuccess": "Einstellungen exportiert",
+    "exportDesc": "Konfiguration als JSON heruntergeladen",
+    "importSuccess": "Einstellungen importiert",
+    "importDesc": "Konfiguration erfolgreich geladen",
+    "importError": "Import fehlgeschlagen",
+    "importErrorDesc": "Ungültige Einstellungsdatei"
+  },
+  "tabs": {
+    "llm": "LLM",
+    "plugins": "Plugins",
+    "ui": "Oberfläche",
+    "api": "API",
+    "advanced": "Erweitert"
+  },
+  "llm": {
+    "title": "🧠 LLM Einstellungen",
+    "description": "Aktiviere Sprachmodell für Antworten",
+    "activeModel": "Aktives Modell",
+    "enable": "Sprachmodell aktivieren",
+    "enableDesc": "Nutze lokales KI-Modell für Antworten",
+    "contextLength": "Context-Länge",
+    "contextLengthDesc": "Tokens Gesprächsspeicher (Erfordert Modell-Neustart)",
+    "temperature": "Temperatur",
+    "precise": "Präzise",
+    "creative": "Kreativ",
+    "saveSettings": "LLM Einstellungen speichern",
+    "settingsSaved": "Einstellungen gespeichert",
+    "settingsSavedDesc": "llama.cpp Parameter aktualisiert",
+    "saveError": "Einstellungen konnten nicht gespeichert werden"
+  },
+  "plugins": {
+    "title": "Installierte Plugins",
+    "description": "Verwalte Plugins und Erweiterungen",
+    "noPlugins": "Keine Plugins verfügbar",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "enabled": "Plugin aktiviert",
+    "disabled": "Plugin deaktiviert",
+    "enableError": "Plugin konnte nicht aktiviert werden",
+    "disableError": "Plugin konnte nicht deaktiviert werden",
+    "loadError": "Plugins konnten nicht geladen werden",
+    "version": "v"
+  },
+  "ui": {
+    "title": "Benutzeroberfläche",
+    "description": "Passe Aussehen und Verhalten an",
+    "theme": "Thema",
+    "dark": "Dunkel",
+    "light": "Hell",
+    "auto": "Automatisch",
+    "fontSize": "Schriftgröße",
+    "small": "Klein",
+    "medium": "Mittel",
+    "large": "Groß",
+    "autoScroll": "Automatisches Scrollen",
+    "notifications": "Benachrichtigungen",
+    "soundEffects": "Soundeffekte"
+  },
+  "api": {
+    "title": "API Konfiguration",
+    "description": "Backend Verbindungseinstellungen",
+    "backendUrl": "Backend URL",
+    "backendUrlPlaceholder": "http://localhost:5050",
+    "websocketUrl": "WebSocket URL",
+    "websocketUrlPlaceholder": "ws://localhost:5050",
+    "timeout": "Timeout (ms)",
+    "retryAttempts": "Wiederholungsversuche",
+    "apiKey": "API Schlüssel (Optional)",
+    "apiKeyPlaceholder": "Leer für lokale Nutzung"
+  },
+  "advanced": {
+    "title": "Erweiterte Einstellungen",
+    "description": "Expertenkonfiguration",
+    "systemPrompt": "System Prompt",
+    "systemPromptDesc": "Definiert JARVIS Persönlichkeit und Verhalten",
+    "systemPromptPlaceholder": "Du bist JARVIS...",
+    "dangerZone": "⚠️ Gefährliche Zone",
+    "resetAll": "Alle Einstellungen zurücksetzen",
+    "resetSuccess": "Zurückgesetzt",
+    "resetSuccessDesc": "Alle Einstellungen zurückgesetzt"
+  },
+  "language": {
+    "label": "Sprache",
+    "en": "🇬🇧 English",
+    "de": "🇩🇪 Deutsch"
+  }
+}

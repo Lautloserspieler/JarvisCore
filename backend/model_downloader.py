@@ -17,8 +17,8 @@ MODEL_URLS = {
     "qwen": {
         "url": "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
         "filename": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
-        "size_gb": 5.2,
-        "requires_token": True  # bartowski models require token
+        "size_gb": 4.8,
+        "requires_token": False  # bartowski quantizations are public
     },
     "deepseek": {
         "url": "https://huggingface.co/Triangle104/DeepSeek-R1-Distill-Llama-8B-Q4_K_M-GGUF/resolve/main/deepseek-r1-distill-llama-8b-q4_k_m.gguf",
@@ -30,25 +30,25 @@ MODEL_URLS = {
         "url": "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
         "filename": "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
         "size_gb": 2.0,
-        "requires_token": True  # bartowski models require token
+        "requires_token": False  # bartowski quantizations are public
     },
     "phi3-mini": {
-        "url": "https://huggingface.co/bartowski/Phi-3-mini-128k-instruct-GGUF/resolve/main/Phi-3-mini-128k-instruct-Q4_K_M.gguf",
-        "filename": "Phi-3-mini-128k-instruct-Q4_K_M.gguf",
-        "size_gb": 2.3,
-        "requires_token": True  # bartowski models require token
+        "url": "https://huggingface.co/bartowski/Phi-3.1-mini-128k-instruct-GGUF/resolve/main/Phi-3.1-mini-128k-instruct-Q4_K_M.gguf",
+        "filename": "Phi-3.1-mini-128k-instruct-Q4_K_M.gguf",
+        "size_gb": 2.4,
+        "requires_token": False  # bartowski quantizations are public
     },
     "gemma2-9b": {
         "url": "https://huggingface.co/bartowski/gemma-2-9b-it-GGUF/resolve/main/gemma-2-9b-it-Q4_K_M.gguf",
         "filename": "gemma-2-9b-it-Q4_K_M.gguf",
         "size_gb": 5.4,
-        "requires_token": True  # bartowski models require token
+        "requires_token": False  # bartowski quantizations are public
     },
     "llama33-70b": {
         "url": "https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF/resolve/main/Llama-3.3-70B-Instruct-Q4_K_M.gguf",
         "filename": "Llama-3.3-70B-Instruct-Q4_K_M.gguf",
         "size_gb": 40.0,
-        "requires_token": True  # bartowski models require token
+        "requires_token": False  # bartowski quantizations are public
     }
 }
 

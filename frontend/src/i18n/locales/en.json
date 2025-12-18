@@ -145,6 +145,23 @@
     "importErrorDesc": "Invalid settings file",
     "saved": "Settings saved"
   },
+  "settingsTab": {
+    "savedDescription": "Configuration saved to data/settings.json",
+    "tts": {
+      "title": "TTS Settings",
+      "enable": "Enable TTS",
+      "description": "Text-to-speech voice output",
+      "speechRate": "Speech Rate",
+      "volume": "Volume"
+    },
+    "speech": {
+      "title": "Speech Recognition",
+      "enableWakeWord": "Enable Wake Word",
+      "wakeWordDesc": "Activate with \"Hey JARVIS\"",
+      "continuousListening": "Continuous Listening",
+      "continuousDesc": "No wake word required"
+    }
+  },
   "tabs": {
     "llm": "LLM",
     "plugins": "Plugins",
@@ -156,8 +173,8 @@
     "title": "LLM Settings",
     "description": "Enable language model for responses",
     "activeModel": "Active Model",
-    "enable": "Enable Language Model",
-    "enableDesc": "Use local AI model for responses",
+    "enable": "Enable LLM",
+    "enableDesc": "Use language model for responses",
     "contextLength": "Context Length",
     "contextLengthDesc": "Tokens of conversation memory (Requires model restart)",
     "temperature": "Temperature",

@@ -124,6 +124,14 @@ class ModelDownloader:
         
         model_info = MODEL_URLS[model_id]
         
+        # If no token provided, try environment as fallback
+        if not hf_token:
+            hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+            if hf_token:
+                print("[INFO] Using HF token from environment")
+        else:
+            print("[INFO] Using HF token from parameter")
+        
         # Check if we should use GGUF fallback URL (for gated original models)
         use_gguf_fallback = False
         if "gguf_url" in model_info:
@@ -132,9 +140,11 @@ class ModelDownloader:
                 use_gguf_fallback = True
                 url = model_info["gguf_url"]
                 requires_token = model_info.get("gguf_requires_token", False)
+                print(f"[INFO] Using fallback GGUF URL (no token provided)")
             else:
                 url = model_info["url"]
                 requires_token = model_info.get("requires_token", False)
+                print(f"[INFO] Using official repo URL (token provided)")
         else:
             url = model_info["url"]
             requires_token = model_info.get("requires_token", False)
@@ -142,18 +152,15 @@ class ModelDownloader:
         filename = model_info["filename"]
         output_path = self.models_dir / filename
         
-        # Check if token is needed but not provided
+        # Final check: if token is still needed but not available, error out
         if requires_token and not hf_token:
-            # Try to get from environment
-            hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
-            
-            if not hf_token:
-                return {
-                    "success": False,
-                    "message": "This model requires a HuggingFace token. Please provide one.",
-                    "file_path": None,
-                    "requires_token": True
-                }
+            print(f"[ERROR] Token required but not provided for {model_id}")
+            return {
+                "success": False,
+                "message": "This model requires a HuggingFace token. Please provide one.",
+                "file_path": None,
+                "requires_token": True
+            }
         
         # Check if already downloaded
         if self.is_model_downloaded(model_id):
@@ -176,6 +183,7 @@ class ModelDownloader:
             headers = {}
             if hf_token:
                 headers["Authorization"] = f"Bearer {hf_token}"
+                print(f"[INFO] Added Authorization header with token")
             
             # Stream download with progress
             print(f"[INFO] Downloading {model_id} from {url}")
@@ -238,6 +246,8 @@ class ModelDownloader:
             if e.response.status_code in [401, 403]:
                 error_msg = "Authentication required. Please provide a valid HuggingFace token."
                 print(f"[ERROR] {error_msg}")
+                print(f"[ERROR] Status: {e.response.status_code}, URL: {url}")
+                print(f"[ERROR] Had token: {bool(hf_token)}")
                 
                 if output_path.exists():
                     output_path.unlink()

@@ -23,11 +23,11 @@
     "speaking": "SPEAKING"
   },
   "navigation": {
-    "chat": "💬 Chat",
-    "dashboard": "📊 Dashboard",
-    "memory": "🧠 Memory",
-    "models": "🤖 Models",
-    "settings": "⚙️ Settings"
+    "chat": "Chat",
+    "dashboard": "Dashboard",
+    "memory": "Memory",
+    "models": "Models",
+    "settings": "Settings"
   },
   "chat": {
     "title": "Chat",
@@ -146,14 +146,14 @@
     "saved": "Settings saved"
   },
   "tabs": {
-    "llm": "🧠 LLM",
-    "plugins": "🔌 Plugins",
-    "ui": "🎨 Interface",
-    "api": "🔗 API",
-    "advanced": "⚙️ Advanced"
+    "llm": "LLM",
+    "plugins": "Plugins",
+    "ui": "Interface",
+    "api": "API",
+    "advanced": "Advanced"
   },
   "llm": {
-    "title": "🧠 LLM Settings",
+    "title": "LLM Settings",
     "description": "Enable language model for responses",
     "activeModel": "Active Model",
     "enable": "Enable Language Model",
@@ -181,13 +181,13 @@
     "device": "Device"
   },
   "plugins": {
-    "title": "🔌 Installed Plugins",
+    "title": "Installed Plugins",
     "description": "Manage plugins and extensions",
     "noPlugins": "No plugins available",
     "enable": "Enable",
     "disable": "Disable",
     "enabled": "Plugin enabled",
-    "disabled": "Plugin disabled",
+    "disabled": "Plugin deactivated",
     "enableError": "Failed to enable plugin",
     "disableError": "Failed to disable plugin",
     "loadError": "Failed to load plugins",
@@ -204,29 +204,29 @@
     "save": "Save"
   },
   "ui": {
-    "title": "🎨 User Interface",
+    "title": "User Interface",
     "description": "Customize appearance and behavior",
     "theme": "Theme",
-    "dark": "🌙 Dark",
-    "light": "☀️ Light",
-    "auto": "🔄 Auto",
+    "dark": "Dark",
+    "light": "Light",
+    "auto": "Auto",
     "fontSize": "Font Size",
     "small": "Small",
     "medium": "Medium",
     "large": "Large",
     "autoScroll": "Auto Scroll",
     "autoScrollDesc": "Auto scroll chat to bottom",
-    "notifications": "🔔 Notifications",
+    "notifications": "Notifications",
     "notificationsDesc": "Show notifications",
-    "soundEffects": "🔊 Sound Effects",
+    "soundEffects": "Sound Effects",
     "soundEffectsDesc": "Play sound effects",
     "compactMode": "Compact Mode",
     "compactModeDesc": "Reduced UI size",
-    "animations": "🎬 Animations",
+    "animations": "Animations",
     "animationsDesc": "Show transitions and animations"
   },
   "api": {
-    "title": "🔗 API Configuration",
+    "title": "API Configuration",
     "description": "Backend connection settings",
     "backendUrl": "Backend URL",
     "backendUrlPlaceholder": "http://localhost:5050",
@@ -244,31 +244,31 @@
     "disconnected": "CONNECTING"
   },
   "advanced": {
-    "title": "⚙️ Advanced Settings",
+    "title": "Advanced Settings",
     "description": "Expert configuration",
     "systemPrompt": "System Prompt",
     "systemPromptDesc": "Defines JARVIS personality and behavior",
     "systemPromptPlaceholder": "You are JARVIS, a helpful AI assistant...",
-    "dangerZone": "⚠️ Danger Zone",
+    "dangerZone": "Danger Zone",
     "resetAll": "Reset All Settings",
     "resetSuccess": "Reset",
     "resetSuccessDesc": "All settings reset to defaults",
     "resetConfirm": "Are you sure you want to reset all settings?",
-    "logs": "📋 Logs",
+    "logs": "Logs",
     "viewLogs": "View Logs",
     "clearLogs": "Clear Logs",
     "exportLogs": "Export Logs",
-    "debug": "🐛 Debug Mode",
+    "debug": "Debug Mode",
     "debugDesc": "Enable debug logging",
-    "cache": "💾 Cache",
+    "cache": "Cache",
     "clearCache": "Clear Cache",
     "cacheCleared": "Cache cleared"
   },
   "language": {
-    "label": "🌍 Language",
+    "label": "Language",
     "selectLanguage": "Select Language",
-    "en": "🇬🇧 English",
-    "de": "🇩🇪 Deutsch",
+    "en": "English",
+    "de": "Deutsch",
     "changed": "Language changed",
     "restartRequired": "Page is being refreshed..."
   },

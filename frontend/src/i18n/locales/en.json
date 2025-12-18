@@ -16,12 +16,16 @@
     "close": "Close",
     "open": "Open",
     "refresh": "Refresh",
-    "retry": "Retry"
+    "retry": "Retry",
+    "ready": "READY",
+    "listening": "LISTENING",
+    "processing": "PROCESSING",
+    "speaking": "SPEAKING"
   },
   "navigation": {
     "chat": "💬 Chat",
     "dashboard": "📊 Dashboard",
-    "memory": "🧠 Knowledge Base",
+    "memory": "🧠 Memory",
     "models": "🤖 Models",
     "settings": "⚙️ Settings"
   },
@@ -236,8 +240,8 @@
     "connectionSuccess": "Connection successful",
     "connectionFailed": "Connection failed",
     "status": "Status",
-    "connected": "Connected",
-    "disconnected": "Disconnected"
+    "connected": "ONLINE",
+    "disconnected": "CONNECTING"
   },
   "advanced": {
     "title": "⚙️ Advanced Settings",
@@ -269,7 +273,7 @@
     "restartRequired": "Page is being refreshed..."
   },
   "errors": {
-    "connectionFailed": "Connection failed",
+    "connectionFailed": "ERROR",
     "modelLoadFailed": "Failed to load model",
     "pluginError": "Plugin error",
     "networkError": "Network error",

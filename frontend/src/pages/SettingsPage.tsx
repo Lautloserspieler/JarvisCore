@@ -86,7 +86,11 @@ const SettingsPage: React.FC = () => {
     api_key: ''
   });
 
-  const [systemPrompt, setSystemPrompt] = useState('Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte präzise und freundlich.');
+  const [systemPrompt, setSystemPrompt] = useState(
+    currentLanguage === 'de' 
+      ? 'Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte präzise und freundlich.'
+      : 'You are JARVIS, a helpful AI assistant. Respond precisely and in a friendly manner.'
+  );
   const [modelInfo, setModelInfo] = useState<any>(null);
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [loadingPlugins, setLoadingPlugins] = useState<{[key: string]: boolean}>({});
@@ -97,6 +101,15 @@ const SettingsPage: React.FC = () => {
     loadModelInfo();
     loadPlugins();
   }, []);
+
+  // Update system prompt when language changes
+  useEffect(() => {
+    setSystemPrompt(
+      currentLanguage === 'de'
+        ? 'Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte präzise und freundlich.'
+        : 'You are JARVIS, a helpful AI assistant. Respond precisely and in a friendly manner.'
+    );
+  }, [currentLanguage]);
 
   const loadSettings = async () => {
     try {
@@ -127,7 +140,6 @@ const SettingsPage: React.FC = () => {
       const response = await fetch('http://localhost:5050/api/plugins');
       if (response.ok) {
         const data = await response.json();
-        // Filter out demo plugins (calculator, system_info, time_plugin)
         const filtered = data.filter((p: Plugin) => 
           !['calculator_plugin', 'system_info_plugin', 'time_plugin'].includes(p.id)
         );
@@ -156,7 +168,6 @@ const SettingsPage: React.FC = () => {
       if (response.ok) {
         const result = await response.json();
         
-        // Update local state
         setPlugins(prev => 
           prev.map(p => 
             p.id === pluginId ? { ...p, enabled } : p
@@ -289,7 +300,7 @@ const SettingsPage: React.FC = () => {
             title={t('language.label')}
           >
             <Globe className="w-4 h-4 mr-2" />
-            {currentLanguage === 'de' ? t('language.en') : t('language.de')}
+            {currentLanguage === 'de' ? 'EN' : 'DE'}
           </Button>
           
           <Button variant="outline" onClick={exportSettings}>
@@ -312,23 +323,23 @@ const SettingsPage: React.FC = () => {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="llama">
             <Zap className="w-4 h-4 mr-2" />
-            {t('tabs.llm')}
+            {t('tabs.llm').replace('🧠 ', '')}
           </TabsTrigger>
           <TabsTrigger value="plugins">
             <Plug className="w-4 h-4 mr-2" />
-            {t('tabs.plugins')}
+            {t('tabs.plugins').replace('🔌 ', '')}
           </TabsTrigger>
           <TabsTrigger value="ui">
             <Settings2 className="w-4 h-4 mr-2" />
-            {t('tabs.ui')}
+            {t('tabs.ui').replace('🎨 ', '')}
           </TabsTrigger>
           <TabsTrigger value="api">
             <Database className="w-4 h-4 mr-2" />
-            {t('tabs.api')}
+            {t('tabs.api').replace('🔗 ', '')}
           </TabsTrigger>
           <TabsTrigger value="advanced">
             <Shield className="w-4 h-4 mr-2" />
-            {t('tabs.advanced')}
+            {t('tabs.advanced').replace('⚙️ ', '')}
           </TabsTrigger>
         </TabsList>
 
@@ -336,7 +347,7 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="llama" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{t('llm.title')}</CardTitle>
+              <CardTitle>{t('llm.title').replace('🧠 ', '')}</CardTitle>
               <CardDescription>
                 {t('llm.description')}
                 {modelInfo && (
@@ -418,7 +429,7 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="plugins" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{t('plugins.title')}</CardTitle>
+              <CardTitle>{t('plugins.title').replace('🔌 ', '')}</CardTitle>
               <CardDescription>{t('plugins.description')}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -467,27 +478,27 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="ui" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{t('ui.title')}</CardTitle>
+              <CardTitle>{t('ui.title').replace('🎨 ', '')}</CardTitle>
               <CardDescription>{t('ui.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>{t('ui.theme')}</Label>
-                <Select value={uiSettings.theme} onValueChange={(val: any) => setUISettings({ ...uiSettings, theme: val })}>
+                <Select value={uiSettings.theme} onValueChange={(val: any) => setUISettings({ ...uiSettings, theme: val }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dark">{t('ui.dark')}</SelectItem>
-                    <SelectItem value="light">{t('ui.light')}</SelectItem>
-                    <SelectItem value="auto">{t('ui.auto')}</SelectItem>
+                    <SelectItem value="dark">{t('ui.dark').replace('🌙 ', '')}</SelectItem>
+                    <SelectItem value="light">{t('ui.light').replace('☀️ ', '')}</SelectItem>
+                    <SelectItem value="auto">{t('ui.auto').replace('🔄 ', '')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label>{t('ui.fontSize')}</Label>
-                <Select value={uiSettings.fontSize} onValueChange={(val: any) => setUISettings({ ...uiSettings, fontSize: val })}>
+                <Select value={uiSettings.fontSize} onValueChange={(val: any) => setUISettings({ ...uiSettings, fontSize: val }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -510,7 +521,7 @@ const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>{t('ui.notifications')}</Label>
+                <Label>{t('ui.notifications').replace('🔔 ', '')}</Label>
                 <Switch
                   checked={uiSettings.notifications}
                   onCheckedChange={(val) => setUISettings({ ...uiSettings, notifications: val })}
@@ -518,7 +529,7 @@ const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>{t('ui.soundEffects')}</Label>
+                <Label>{t('ui.soundEffects').replace('🔊 ', '')}</Label>
                 <Switch
                   checked={uiSettings.soundEffects}
                   onCheckedChange={(val) => setUISettings({ ...uiSettings, soundEffects: val })}
@@ -532,7 +543,7 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="api" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{t('api.title')}</CardTitle>
+              <CardTitle>{t('api.title').replace('🔗 ', '')}</CardTitle>
               <CardDescription>{t('api.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -591,7 +602,7 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="advanced" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{t('advanced.title')}</CardTitle>
+              <CardTitle>{t('advanced.title').replace('⚙️ ', '')}</CardTitle>
               <CardDescription>{t('advanced.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

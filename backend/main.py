@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List, Dict, Tuple
 from datetime import datetime
@@ -26,7 +26,7 @@ if sys.platform == 'win32':
 # Import llama.cpp inference
 from core.llama_inference import llama_runtime
 # Import model downloader
-from backend.model_downloader import model_downloader
+from backend.model_downloader import model_downloader, MODEL_URLS
 
 # Initialize plugin manager IMMEDIATELY at import time
 print("[BACKEND] Initializing plugin manager...")
@@ -117,6 +117,9 @@ messages_db = {}
 memories_db: List[Dict] = []  # For memory tab
 logs_db: List[Dict] = []  # For logs tab
 
+# HuggingFace token storage (in-memory, can be persisted to file later)
+hf_token_storage: Optional[str] = None
+
 print("[INFO] JARVIS Core API initializing...")
 
 # Add initial log entry
@@ -127,6 +130,11 @@ logs_db.append({
     "message": "JARVIS Core API initialized",
     "source": "backend"
 })
+
+# Try to load token from environment on startup
+if os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN"):
+    hf_token_storage = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    print("[INFO] HuggingFace token loaded from environment")
 
 # AI Response Generator mit Plugin-Integration und llama.cpp
 async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool, Optional[int], Optional[float]]:
@@ -500,18 +508,81 @@ async def health_check():
         "plugins": len(enabled_plugins)
     }
 
+# HuggingFace Token API
+@app.get("/api/hf-token/status")
+async def get_hf_token_status():
+    """Check if HF token is configured"""
+    return {
+        "has_token": hf_token_storage is not None,
+        "source": "environment" if (os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")) else "stored"
+    }
+
+@app.post("/api/hf-token")
+async def set_hf_token(data: dict = Body(...)):
+    """Store HuggingFace token"""
+    global hf_token_storage
+    token = data.get("token", "").strip()
+    
+    if not token:
+        return {"success": False, "message": "Token cannot be empty"}
+    
+    # Basic validation (HF tokens start with 'hf_')
+    if not token.startswith("hf_"):
+        return {"success": False, "message": "Invalid token format. HuggingFace tokens start with 'hf_'"}
+    
+    hf_token_storage = token
+    print("[INFO] HuggingFace token stored")
+    
+    logs_db.append({
+        "id": str(uuid.uuid4()),
+        "timestamp": datetime.now().isoformat(),
+        "level": "info",
+        "message": "HuggingFace token configured",
+        "source": "models"
+    })
+    
+    return {"success": True, "message": "Token saved successfully"}
+
+@app.delete("/api/hf-token")
+async def delete_hf_token():
+    """Remove stored HuggingFace token"""
+    global hf_token_storage
+    hf_token_storage = None
+    print("[INFO] HuggingFace token removed")
+    return {"success": True, "message": "Token removed"}
+
 # Models API
 @app.get("/api/models")
 async def get_models():
-    models = [
-        {"id": "mistral", "name": "Mistral 7B Nemo", "provider": "Mistral AI", "description": "Code, technische Details, Systembefehle", "size": "7.5 GB", "hf_model": "second-state/Mistral-Nemo-Instruct-2407-GGUF", "capabilities": ["code", "technical", "german"], "isDownloaded": model_downloader.is_model_downloaded("mistral"), "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "mistral"},
-        {"id": "qwen", "name": "Qwen 2.5 7B", "provider": "Alibaba", "description": "Vielseitig, mehrsprachig, balanciert", "size": "5.2 GB", "hf_model": "bartowski/Qwen2.5-7B-Instruct-GGUF", "capabilities": ["multilingual", "balanced", "fast"], "isDownloaded": model_downloader.is_model_downloaded("qwen"), "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "qwen"},
-        {"id": "deepseek", "name": "DeepSeek R1 8B", "provider": "DeepSeek", "description": "Analysen, Reasoning, komplexe Daten", "size": "6.9 GB", "hf_model": "Triangle104/DeepSeek-R1-Distill-Llama-8B-Q4_K_M-GGUF", "capabilities": ["analysis", "reasoning", "data"], "isDownloaded": model_downloader.is_model_downloaded("deepseek"), "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "deepseek"},
-        {"id": "llama32-3b", "name": "Llama 3.2 3B", "provider": "Meta", "description": "Klein, schnell, effizient fuer einfache Aufgaben", "size": "2.0 GB", "hf_model": "bartowski/Llama-3.2-3B-Instruct-GGUF", "capabilities": ["fast", "lightweight", "efficient"], "isDownloaded": model_downloader.is_model_downloaded("llama32-3b"), "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "llama32-3b"},
-        {"id": "phi3-mini", "name": "Phi-3 Mini", "provider": "Microsoft", "description": "Kompakt, schnell, optimiert fuer Konversation", "size": "2.3 GB", "hf_model": "bartowski/Phi-3-mini-128k-instruct-GGUF", "capabilities": ["compact", "chat", "quick"], "isDownloaded": model_downloader.is_model_downloaded("phi3-mini"), "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "phi3-mini"},
-        {"id": "gemma2-9b", "name": "Gemma 2 9B", "provider": "Google", "description": "Stark, vielseitig, ausgewogen", "size": "5.4 GB", "hf_model": "bartowski/gemma-2-9b-it-GGUF", "capabilities": ["powerful", "versatile", "balanced"], "isDownloaded": model_downloader.is_model_downloaded("gemma2-9b"), "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "gemma2-9b"},
-        {"id": "llama33-70b", "name": "Llama 3.3 70B", "provider": "Meta", "description": "Sehr gross, sehr stark, hoechste Qualitaet", "size": "40 GB", "hf_model": "bartowski/Llama-3.3-70B-Instruct-GGUF", "capabilities": ["flagship", "high-quality", "advanced"], "isDownloaded": model_downloader.is_model_downloaded("llama33-70b"), "isActive": llama_runtime.is_loaded and llama_runtime.model_name == "llama33-70b"}
-    ]
+    models = []
+    for model_id, model_info in MODEL_URLS.items():
+        model_data = {
+            "id": model_id,
+            "name": model_id.replace("-", " ").title(),
+            "size": f"{model_info['size_gb']} GB",
+            "requires_token": model_info.get("requires_token", False),
+            "isDownloaded": model_downloader.is_model_downloaded(model_id),
+            "isActive": llama_runtime.is_loaded and llama_runtime.model_name == model_id
+        }
+        
+        # Add metadata based on model
+        if model_id == "mistral":
+            model_data.update({"name": "Mistral 7B Nemo", "provider": "Mistral AI", "description": "Code, technische Details, Systembefehle", "hf_model": "second-state/Mistral-Nemo-Instruct-2407-GGUF", "capabilities": ["code", "technical", "german"]})
+        elif model_id == "qwen":
+            model_data.update({"name": "Qwen 2.5 7B", "provider": "Alibaba", "description": "Vielseitig, mehrsprachig, balanciert", "hf_model": "bartowski/Qwen2.5-7B-Instruct-GGUF", "capabilities": ["multilingual", "balanced", "fast"]})
+        elif model_id == "deepseek":
+            model_data.update({"name": "DeepSeek R1 8B", "provider": "DeepSeek", "description": "Analysen, Reasoning, komplexe Daten", "hf_model": "Triangle104/DeepSeek-R1-Distill-Llama-8B-Q4_K_M-GGUF", "capabilities": ["analysis", "reasoning", "data"]})
+        elif model_id == "llama32-3b":
+            model_data.update({"name": "Llama 3.2 3B", "provider": "Meta", "description": "Klein, schnell, effizient fuer einfache Aufgaben", "hf_model": "bartowski/Llama-3.2-3B-Instruct-GGUF", "capabilities": ["fast", "lightweight", "efficient"]})
+        elif model_id == "phi3-mini":
+            model_data.update({"name": "Phi-3 Mini", "provider": "Microsoft", "description": "Kompakt, schnell, optimiert fuer Konversation", "hf_model": "bartowski/Phi-3-mini-128k-instruct-GGUF", "capabilities": ["compact", "chat", "quick"]})
+        elif model_id == "gemma2-9b":
+            model_data.update({"name": "Gemma 2 9B", "provider": "Google", "description": "Stark, vielseitig, ausgewogen", "hf_model": "bartowski/gemma-2-9b-it-GGUF", "capabilities": ["powerful", "versatile", "balanced"]})
+        elif model_id == "llama33-70b":
+            model_data.update({"name": "Llama 3.3 70B", "provider": "Meta", "description": "Sehr gross, sehr stark, hoechste Qualitaet", "hf_model": "bartowski/Llama-3.3-70B-Instruct-GGUF", "capabilities": ["flagship", "high-quality", "advanced"]})
+        
+        models.append(model_data)
+    
     return models
 
 @app.get("/api/models/active")
@@ -526,11 +597,22 @@ async def get_download_status():
     return model_downloader.get_download_status()
 
 @app.post("/api/models/{model_id}/download")
-async def download_model(model_id: str):
+async def download_model(model_id: str, data: dict = Body(default={})):
     print(f"[INFO] Download request for model: {model_id}")
     status = model_downloader.get_download_status()
     if status["is_downloading"]:
         return {"success": False, "message": f"Bereits am Herunterladen von {status['current_model']}", "status": status}
+    
+    # Get token from request or stored token
+    hf_token = data.get("token") or hf_token_storage
+    
+    # Check if model requires token
+    if model_downloader.requires_token(model_id) and not hf_token:
+        return {
+            "success": False,
+            "message": "This model requires a HuggingFace token",
+            "requires_token": True
+        }
     
     logs_db.append({"id": str(uuid.uuid4()), "timestamp": datetime.now().isoformat(), "level": "info", "message": f"Starting model download: {model_id}", "source": "models"})
     loop = asyncio.get_event_loop()
@@ -538,7 +620,7 @@ async def download_model(model_id: str):
     def progress_callback(progress: float, status_text: str):
         print(f"[DOWNLOAD] {model_id}: {progress:.1f}% - {status_text}")
     
-    result = await loop.run_in_executor(None, lambda: model_downloader.download_model(model_id, progress_callback))
+    result = await loop.run_in_executor(None, lambda: model_downloader.download_model(model_id, hf_token, progress_callback))
     
     if result["success"]:
         logs_db.append({"id": str(uuid.uuid4()), "timestamp": datetime.now().isoformat(), "level": "info", "message": f"Model {model_id} downloaded successfully", "source": "models"})
@@ -611,7 +693,8 @@ async def root():
             "memory": "/api/memory",
             "logs": "/api/logs",
             "plugins": "/api/plugins",
-            "settings": "/api/settings"
+            "settings": "/api/settings",
+            "hf_token": "/api/hf-token"
         }
     }
 

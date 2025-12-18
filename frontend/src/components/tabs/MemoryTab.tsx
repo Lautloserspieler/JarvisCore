@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ interface MemoryStats {
 }
 
 const MemoryTab = () => {
+  const { t, i18n } = useTranslation();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [stats, setStats] = useState<MemoryStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ const MemoryTab = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[600px]">
-        <div className="text-muted-foreground">Lade Gedächtnis...</div>
+        <div className="text-muted-foreground">{t('memoryTab.loading')}</div>
       </div>
     );
   }
@@ -61,18 +63,18 @@ const MemoryTab = () => {
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesamte Erinnerungen</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('memoryTab.totalMemories')}</CardTitle>
             <Brain className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalMemories || 0}</div>
-            <p className="text-xs text-muted-foreground mt-2">Gespeicherte Einträge</p>
+            <p className="text-xs text-muted-foreground mt-2">{t('memoryTab.storedEntries')}</p>
           </CardContent>
         </Card>
 
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Speichernutzung</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('memoryTab.storageUsage')}</CardTitle>
             <Brain className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -85,14 +87,14 @@ const MemoryTab = () => {
 
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Letzte Aktualisierung</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('memoryTab.lastUpdate')}</CardTitle>
             <RefreshCw className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-sm font-bold">
-              {stats?.lastUpdated ? new Date(stats.lastUpdated).toLocaleTimeString('de-DE') : 'N/A'}
+              {stats?.lastUpdated ? new Date(stats.lastUpdated).toLocaleTimeString(i18n.language) : 'N/A'}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Heute</p>
+            <p className="text-xs text-muted-foreground mt-2">{t('memoryTab.today')}</p>
           </CardContent>
         </Card>
       </div>
@@ -101,7 +103,7 @@ const MemoryTab = () => {
       {stats && stats.byType && Object.keys(stats.byType).length > 0 && (
         <Card className="holo-panel">
           <CardHeader>
-            <CardTitle>Erinnerungstypen</CardTitle>
+            <CardTitle>{t('memoryTab.memoryTypes')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -121,12 +123,12 @@ const MemoryTab = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Kürzliche Erinnerungen</CardTitle>
-              <CardDescription>Zuletzt gespeicherte Informationen</CardDescription>
+              <CardTitle>{t('memoryTab.recentMemories')}</CardTitle>
+              <CardDescription>{t('memoryTab.recentDescription')}</CardDescription>
             </div>
             <Button variant="outline" size="sm">
               <Trash2 className="h-4 w-4 mr-2" />
-              Alle löschen
+              {t('memoryTab.clearAll')}
             </Button>
           </div>
         </CardHeader>
@@ -134,7 +136,7 @@ const MemoryTab = () => {
           {memories.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Noch keine Erinnerungen gespeichert</p>
+              <p>{t('memoryTab.noMemories')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -145,14 +147,14 @@ const MemoryTab = () => {
                       {memory.type}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(memory.timestamp).toLocaleString('de-DE')}
+                      {new Date(memory.timestamp).toLocaleString(i18n.language)}
                     </span>
                   </div>
                   <p className="text-sm">{memory.content}</p>
                   <div className="mt-2">
                     <Progress value={memory.relevance * 100} className="h-1" />
                     <span className="text-xs text-muted-foreground mt-1">
-                      Relevanz: {(memory.relevance * 100).toFixed(0)}%
+                      {t('memoryTab.relevance')}: {(memory.relevance * 100).toFixed(0)}%
                     </span>
                   </div>
                 </div>

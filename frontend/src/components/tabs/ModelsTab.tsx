@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,7 @@ interface DownloadStatus {
 }
 
 const ModelsTab = () => {
+  const { t } = useTranslation();
   const [models, setModels] = useState<Model[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeModel, setActiveModel] = useState<Model | null>(null);
@@ -49,8 +51,8 @@ const ModelsTab = () => {
     } catch (error) {
       console.error('Failed to fetch models:', error);
       toast({
-        title: 'Fehler',
-        description: 'Modelle konnten nicht geladen werden',
+        title: t('common.error'),
+        description: t('modelsTab.loadError'),
         variant: 'destructive'
       });
     } finally {
@@ -73,8 +75,8 @@ const ModelsTab = () => {
   const handleDownload = async (modelId: string) => {
     try {
       toast({
-        title: 'Download gestartet',
-        description: `Modell ${modelId} wird heruntergeladen...`
+        title: t('modelsTab.downloadStarted'),
+        description: t('modelsTab.downloading', { model: modelId })
       });
 
       const response = await fetch(`${API_BASE_URL}/api/models/${modelId}/download`, {
@@ -84,13 +86,13 @@ const ModelsTab = () => {
       
       if (data.success) {
         toast({
-          title: 'Download abgeschlossen',
+          title: t('modelsTab.downloadComplete'),
           description: data.message
         });
         fetchModels();
       } else {
         toast({
-          title: 'Download fehlgeschlagen',
+          title: t('modelsTab.downloadFailed'),
           description: data.message,
           variant: 'destructive'
         });
@@ -98,8 +100,8 @@ const ModelsTab = () => {
     } catch (error) {
       console.error('Download failed:', error);
       toast({
-        title: 'Fehler',
-        description: 'Download konnte nicht gestartet werden',
+        title: t('common.error'),
+        description: t('modelsTab.downloadError'),
         variant: 'destructive'
       });
     }
@@ -115,13 +117,13 @@ const ModelsTab = () => {
       
       if (data.success) {
         toast({
-          title: 'Modell geladen',
+          title: t('modelsTab.modelLoaded'),
           description: data.message
         });
         fetchModels();
       } else {
         toast({
-          title: 'Laden fehlgeschlagen',
+          title: t('modelsTab.loadFailed'),
           description: data.message,
           variant: 'destructive'
         });
@@ -129,8 +131,8 @@ const ModelsTab = () => {
     } catch (error) {
       console.error('Load failed:', error);
       toast({
-        title: 'Fehler',
-        description: 'Modell konnte nicht geladen werden',
+        title: t('common.error'),
+        description: t('modelsTab.loadError'),
         variant: 'destructive'
       });
     }
@@ -146,8 +148,8 @@ const ModelsTab = () => {
       
       if (data.success) {
         toast({
-          title: 'Modell entladen',
-          description: 'Alle Modelle wurden entladen'
+          title: t('modelsTab.modelUnloaded'),
+          description: t('modelsTab.allUnloaded')
         });
         fetchModels();
       }
@@ -187,7 +189,7 @@ const ModelsTab = () => {
       return (
         <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
           <CheckCircle className="w-3 h-3 mr-1" />
-          AKTIV
+          {t('modelsTab.active').toUpperCase()}
         </Badge>
       );
     }
@@ -196,7 +198,7 @@ const ModelsTab = () => {
       return (
         <Badge className="bg-primary/20 text-primary border-primary/50">
           <CheckCircle className="w-3 h-3 mr-1" />
-          Heruntergeladen
+          {t('modelsTab.downloaded')}
         </Badge>
       );
     }
@@ -204,7 +206,7 @@ const ModelsTab = () => {
     return (
       <Badge className="bg-muted text-muted-foreground border-border">
         <XCircle className="w-3 h-3 mr-1" />
-        Nicht heruntergeladen
+        {t('modelsTab.notDownloaded')}
       </Badge>
     );
   };
@@ -228,7 +230,7 @@ const ModelsTab = () => {
           className="border-primary/30 hover:bg-primary/10"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
-          Aktualisieren
+          {t('common.refresh')}
         </Button>
         
         {activeModel && (
@@ -239,7 +241,7 @@ const ModelsTab = () => {
             className="border-destructive/30 hover:bg-destructive/10 text-destructive"
           >
             <Power className="w-4 h-4 mr-2" />
-            Modell entladen
+            {t('modelsTab.unloadModel')}
           </Button>
         )}
       </div>
@@ -250,7 +252,7 @@ const ModelsTab = () => {
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-400" />
-              Aktives Modell: {activeModel.name || activeModel.id}
+              {t('modelsTab.activeModel')}: {activeModel.name || activeModel.id}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -262,13 +264,13 @@ const ModelsTab = () => {
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
               <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-              Download läuft: {downloadStatus.current_model}
+              {t('modelsTab.downloadRunning')}: {downloadStatus.current_model}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Fortschritt</span>
+                <span className="text-muted-foreground">{t('modelsTab.progress')}</span>
                 <span className="text-primary font-medium">{downloadStatus.progress.toFixed(1)}%</span>
               </div>
               <Progress value={downloadStatus.progress} className="h-2" />
@@ -305,7 +307,7 @@ const ModelsTab = () => {
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="flex items-center gap-2">
                       <HardDrive className="w-4 h-4" />
-                      Provider
+                      {t('modelsTab.provider')}
                     </span>
                     <span className="text-foreground">{model.provider}</span>
                   </div>
@@ -314,7 +316,7 @@ const ModelsTab = () => {
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="flex items-center gap-2">
                       <HardDrive className="w-4 h-4" />
-                      Größe
+                      {t('modelsTab.size')}
                     </span>
                     <span className="text-foreground">{model.size}</span>
                   </div>
@@ -332,7 +334,7 @@ const ModelsTab = () => {
                   {isDownloading && (
                     <div className="space-y-2 pt-2 border-t border-border/50">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Wird heruntergeladen...</span>
+                        <span className="text-muted-foreground">{t('modelsTab.downloading')}...</span>
                         <span className="text-primary font-medium">{downloadStatus.progress.toFixed(1)}%</span>
                       </div>
                       <Progress value={downloadStatus.progress} className="h-2" />
@@ -350,7 +352,7 @@ const ModelsTab = () => {
                         disabled={downloadStatus.is_downloading}
                       >
                         <Download className="w-4 h-4 mr-2" />
-                        Herunterladen
+                        {t('modelsTab.download')}
                       </Button>
                     )}
                     
@@ -374,7 +376,7 @@ const ModelsTab = () => {
                         onClick={() => handleLoad(model.id)}
                       >
                         <Cpu className="w-4 h-4 mr-2" />
-                        Laden
+                        {t('modelsTab.load')}
                       </Button>
                     )}
                     
@@ -386,7 +388,7 @@ const ModelsTab = () => {
                         disabled
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        Aktiv
+                        {t('modelsTab.active')}
                       </Button>
                     )}
                   </div>

@@ -386,7 +386,6 @@ Weitere Hilfe: [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)
 - Vector Database
 - Multi-User Support
 - Cloud Deployment
-- Mobile App
 
 ---
 

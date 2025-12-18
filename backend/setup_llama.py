@@ -123,16 +123,19 @@ def show_path_fix_guide(vs_install):
     print("      1️⃣  Drücke Windows-Taste")
     print("      2️⃣  Tippe: 'Developer Command Prompt'")
     print(f"      3️⃣  Öffne: 'Developer Command Prompt for VS {vs_install['year']}'")
-    print("      4️⃣  Führe aus: python backend/setup_llama.py\n")
+    print("      4️⃣  Navigiere zu JarvisCore: cd C:\\Pfad\\zu\\JarvisCore")
+    print("      5️⃣  Führe aus: python backend/setup_llama.py\n")
     print("   Option 2: Developer PowerShell\n")
     print("      1️⃣  Drücke Windows-Taste")
     print("      2️⃣  Tippe: 'Developer PowerShell'")
     print(f"      3️⃣  Öffne: 'Developer PowerShell for VS {vs_install['year']}'")
-    print("      4️⃣  Führe aus: python backend/setup_llama.py\n")
+    print("      4️⃣  Navigiere zu JarvisCore: cd C:\\Pfad\\zu\\JarvisCore")
+    print("      5️⃣  Führe aus: python backend/setup_llama.py\n")
     print("   Option 3: vcvarsall.bat manuell (Fortgeschritten)\n")
     print("      In deinem Terminal/PowerShell:")
     vcvars_path = Path(vs_install['path']) / "VC" / "Auxiliary" / "Build" / "vcvarsall.bat"
     print(f'      \"{vcvars_path}\" x64')
+    print("      cd C:\\Pfad\\zu\\JarvisCore")
     print("      python backend/setup_llama.py\n")
     print("👉 WICHTIG: Normales CMD/PowerShell funktioniert NICHT!\n")
     print("👉 Du MUSST 'Developer Command Prompt' verwenden!\n")
@@ -227,7 +230,8 @@ def show_build_tools_guide():
         print("      4️⃣  Starte PC neu\n")
         print("      5️⃣  👉 WICHTIG: Verwende 'Developer Command Prompt'!")
         print("         (NICHT normales CMD/PowerShell)\n")
-        print("      6️⃣  Führe aus: python backend/setup_llama.py\n")
+        print("      6️⃣  Navigiere zu JarvisCore: cd C:\\Pfad\\zu\\JarvisCore")
+        print("      7️⃣  Führe aus: python backend/setup_llama.py\n")
         print("   🔹 Alternative: VS 2022 Build Tools (stabil)\n")
         print("      -> Gleicher Link, wähle 'Visual Studio 2022' statt 2026\n")
         print("   📦 Option 2: Scoop (Schneller, weniger Speicher)\n")
@@ -237,7 +241,8 @@ def show_build_tools_guide():
         print("      2️⃣  Installiere Build-Tools:")
         print("         scoop install cmake")
         print("         scoop install llvm\n")
-        print("      3️⃣  Führe erneut aus: python backend/setup_llama.py\n")
+        print("      3️⃣  Navigiere zu JarvisCore: cd C:\\Pfad\\zu\\JarvisCore")
+        print("      4️⃣  Führe aus: python backend/setup_llama.py\n")
     
     elif system == "Linux":
         print("🔧 Linux Build-Tools Installation:\n")
@@ -249,7 +254,9 @@ def show_build_tools_guide():
         print("      sudo dnf install cmake\n")
         print("   📦 Arch Linux:\n")
         print("      sudo pacman -S base-devel cmake\n")
-        print("   Danach: python backend/setup_llama.py\n")
+        print("   Danach:")
+        print("      cd /pfad/zu/JarvisCore")
+        print("      python backend/setup_llama.py\n")
     
     elif system == "Darwin":  # macOS
         print("🔧 macOS Build-Tools Installation:\n")
@@ -259,7 +266,9 @@ def show_build_tools_guide():
         print("      /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"\n")
         print("   3️⃣  Installiere CMake:")
         print("      brew install cmake\n")
-        print("   Danach: python backend/setup_llama.py\n")
+        print("   Danach:")
+        print("      cd /pfad/zu/JarvisCore")
+        print("      python backend/setup_llama.py\n")
     
     print("ℹ️  Alternative: CPU-Version ohne Build-Tools (Option 2 wählen)\n")
     print("⚠️ "*30 + "\n")
@@ -382,7 +391,7 @@ def verify_installation():
 def main():
     print("""
     ╭──────────────────────────────────────────────────────────────╮
-    │       JARVIS Core - llama.cpp Setup Script v4.2          │
+    │       JARVIS Core - llama.cpp Setup Script v4.3          │
     │VS 2026 + CUDA 13.x + PATH-Fix + DLL-Fix + GPU-Erkennung│
     ╰──────────────────────────────────────────────────────────────╯
     """)
@@ -413,7 +422,8 @@ def main():
             print("\n[INFO] 📖 Folge der Anleitung oben.")
             print("\n[INFO] Nach der Installation:")
             print("   1. Öffne 'Developer Command Prompt' (WICHTIG!)")
-            print("   2. Führe aus: python backend/setup_llama.py\n")
+            print("   2. Navigiere zu JarvisCore: cd C:\\Pfad\\zu\\JarvisCore")
+            print("   3. Führe aus: python backend/setup_llama.py\n")
             print("[INFO] Installation pausiert. Bis gleich! 👋\n")
             return 0
         else:
@@ -433,7 +443,7 @@ def main():
                 print("      1. Installiere Build-Tools (siehe Anleitung oben)")
                 print("      2. Öffne 'Developer Command Prompt'")
                 print("      3. Führe erneut aus: python backend/setup_llama.py")
-                print("\n[INFO] ▶️  Du kannst jetzt starten: python backend/main.py")
+                print("\n[INFO] ▶️  Du kannst jetzt starten: python main.py")
                 print("✅"*30 + "\n")
                 return 0
             else:
@@ -513,7 +523,8 @@ def main():
             print("      1. Installiere CUDA Toolkit")
             print("      2. Führe erneut aus: python backend/setup_llama.py")
         
-        print("\n[INFO] ▶️  Du kannst jetzt starten: python backend/main.py")
+        print("\n[INFO] ▶️  Du kannst jetzt starten: python main.py")
+        print("[INFO] (Im JarvisCore Root-Verzeichnis, NICHT in backend/)")
         print("✅"*30 + "\n")
         return 0
     else:

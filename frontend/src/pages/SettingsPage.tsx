@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -9,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Download, Upload, RotateCcw, Save, Settings2, Zap, Shield, Database, Plug } from 'lucide-react';
+import { Download, Upload, RotateCcw, Save, Settings2, Zap, Shield, Database, Plug, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface LlamaSettings {
   temperature: number;
@@ -51,6 +53,8 @@ interface Plugin {
 }
 
 const SettingsPage: React.FC = () => {
+  const { t } = useTranslation();
+  const { currentLanguage, switchLanguage } = useLanguage();
   const { toast } = useToast();
   
   // State
@@ -132,8 +136,8 @@ const SettingsPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to load plugins:', error);
       toast({
-        title: 'Fehler',
-        description: 'Plugins konnten nicht geladen werden',
+        title: t('common.error'),
+        description: t('plugins.loadError'),
         variant: 'destructive'
       });
     }
@@ -160,8 +164,8 @@ const SettingsPage: React.FC = () => {
         );
         
         toast({
-          title: 'Erfolg',
-          description: result.message || (enabled ? 'Plugin aktiviert' : 'Plugin deaktiviert')
+          title: t('common.success'),
+          description: result.message || (enabled ? t('plugins.enabled') : t('plugins.disabled'))
         });
       } else {
         throw new Error('Plugin konnte nicht geändert werden');
@@ -169,8 +173,8 @@ const SettingsPage: React.FC = () => {
     } catch (error) {
       console.error('Error toggling plugin:', error);
       toast({
-        title: 'Fehler',
-        description: enabled ? 'Plugin konnte nicht aktiviert werden' : 'Plugin konnte nicht deaktiviert werden',
+        title: t('common.error'),
+        description: enabled ? t('plugins.enableError') : t('plugins.disableError'),
         variant: 'destructive'
       });
     } finally {
@@ -188,14 +192,14 @@ const SettingsPage: React.FC = () => {
 
       if (response.ok) {
         toast({
-          title: 'Einstellungen gespeichert',
-          description: 'llama.cpp Parameter aktualisiert'
+          title: t('llm.settingsSaved'),
+          description: t('llm.settingsSavedDesc')
         });
       }
     } catch (error) {
       toast({
-        title: 'Fehler',
-        description: 'Einstellungen konnten nicht gespeichert werden',
+        title: t('common.error'),
+        description: t('llm.saveError'),
         variant: 'destructive'
       });
     }
@@ -213,12 +217,12 @@ const SettingsPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `jarvis-einstellungen-${Date.now()}.json`;
+    a.download = `jarvis-${t('settings.export').toLowerCase()}-${Date.now()}.json`;
     a.click();
 
     toast({
-      title: 'Einstellungen exportiert',
-      description: 'Konfiguration als JSON heruntergeladen'
+      title: t('settings.exportSuccess'),
+      description: t('settings.exportDesc')
     });
   };
 
@@ -236,13 +240,13 @@ const SettingsPage: React.FC = () => {
         setSystemPrompt(imported.systemPrompt || systemPrompt);
 
         toast({
-          title: 'Einstellungen importiert',
-          description: 'Konfiguration erfolgreich geladen'
+          title: t('settings.importSuccess'),
+          description: t('settings.importDesc')
         });
       } catch (error) {
         toast({
-          title: 'Import fehlgeschlagen',
-          description: 'Ungültige Einstellungsdatei',
+          title: t('settings.importError'),
+          description: t('settings.importErrorDesc'),
           variant: 'destructive'
         });
       }
@@ -264,8 +268,8 @@ const SettingsPage: React.FC = () => {
     });
 
     toast({
-      title: 'Zurückgesetzt',
-      description: 'Alle Einstellungen zurückgesetzt'
+      title: t('advanced.resetSuccess'),
+      description: t('advanced.resetSuccessDesc')
     });
   };
 
@@ -273,19 +277,30 @@ const SettingsPage: React.FC = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Einstellungen</h1>
-          <p className="text-muted-foreground">Konfiguriere JARVIS Verhalten und Aussehen</p>
+          <h1 className="text-3xl font-bold">{t('settings.title')}</h1>
+          <p className="text-muted-foreground">{t('settings.description')}</p>
         </div>
         <div className="flex gap-2">
+          {/* Language Switcher */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => switchLanguage(currentLanguage === 'de' ? 'en' : 'de')}
+            title={t('language.label')}
+          >
+            <Globe className="w-4 h-4 mr-2" />
+            {currentLanguage === 'de' ? t('language.en') : t('language.de')}
+          </Button>
+          
           <Button variant="outline" onClick={exportSettings}>
             <Download className="w-4 h-4 mr-2" />
-            Exportieren
+            {t('settings.export')}
           </Button>
           <label>
             <Button variant="outline" asChild>
               <span>
                 <Upload className="w-4 h-4 mr-2" />
-                Importieren
+                {t('settings.import')}
               </span>
             </Button>
             <input type="file" accept=".json" onChange={importSettings} className="hidden" />
@@ -297,23 +312,23 @@ const SettingsPage: React.FC = () => {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="llama">
             <Zap className="w-4 h-4 mr-2" />
-            LLM
+            {t('tabs.llm')}
           </TabsTrigger>
           <TabsTrigger value="plugins">
             <Plug className="w-4 h-4 mr-2" />
-            Plugins
+            {t('tabs.plugins')}
           </TabsTrigger>
           <TabsTrigger value="ui">
             <Settings2 className="w-4 h-4 mr-2" />
-            Oberfläche
+            {t('tabs.ui')}
           </TabsTrigger>
           <TabsTrigger value="api">
             <Database className="w-4 h-4 mr-2" />
-            API
+            {t('tabs.api')}
           </TabsTrigger>
           <TabsTrigger value="advanced">
             <Shield className="w-4 h-4 mr-2" />
-            Erweitert
+            {t('tabs.advanced')}
           </TabsTrigger>
         </TabsList>
 
@@ -321,12 +336,12 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="llama" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>🧠 LLM Einstellungen</CardTitle>
+              <CardTitle>{t('llm.title')}</CardTitle>
               <CardDescription>
-                Aktiviere Sprachmodell für Antworten
+                {t('llm.description')}
                 {modelInfo && (
                   <div className="mt-2 text-sm">
-                    <span className="font-semibold">Aktives Modell:</span> {modelInfo.model} ({modelInfo.device})
+                    <span className="font-semibold">{t('llm.activeModel')}:</span> {modelInfo.model} ({modelInfo.device})
                   </div>
                 )}
               </CardDescription>
@@ -335,9 +350,9 @@ const SettingsPage: React.FC = () => {
               {/* Enable LLM Switch */}
               <div className="flex items-center justify-between p-4 bg-accent/50 rounded-lg">
                 <div className="space-y-0.5">
-                  <Label className="text-base">Sprachmodell aktivieren</Label>
+                  <Label className="text-base">{t('llm.enable')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Nutze lokales KI-Modell für Antworten
+                    {t('llm.enableDesc')}
                   </p>
                 </div>
                 <Switch
@@ -351,7 +366,7 @@ const SettingsPage: React.FC = () => {
               {/* Context Length */}
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <Label>Context-Länge</Label>
+                  <Label>{t('llm.contextLength')}</Label>
                   <span className="text-sm text-muted-foreground">{llamaSettings.context_window} Tokens</span>
                 </div>
                 <Slider
@@ -363,7 +378,7 @@ const SettingsPage: React.FC = () => {
                   className="w-full"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {llamaSettings.context_window} Tokens Gesprächsspeicher (Erfordert Modell-Neustart)
+                  {llamaSettings.context_window} {t('llm.contextLengthDesc')}
                 </p>
               </div>
 
@@ -372,7 +387,7 @@ const SettingsPage: React.FC = () => {
               {/* Temperature */}
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <Label>Temperatur</Label>
+                  <Label>{t('llm.temperature')}</Label>
                   <span className="text-sm text-muted-foreground">{llamaSettings.temperature}</span>
                 </div>
                 <Slider
@@ -384,15 +399,15 @@ const SettingsPage: React.FC = () => {
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>0.0 (Präzise)</span>
-                  <span>2.0 (Kreativ)</span>
+                  <span>0.0 ({t('llm.precise')})</span>
+                  <span>2.0 ({t('llm.creative')})</span>
                 </div>
               </div>
 
               <div className="pt-4">
                 <Button onClick={saveLlamaSettings} className="w-full">
                   <Save className="w-4 h-4 mr-2" />
-                  LLM Einstellungen speichern
+                  {t('llm.saveSettings')}
                 </Button>
               </div>
             </CardContent>
@@ -403,13 +418,13 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="plugins" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Installierte Plugins</CardTitle>
-              <CardDescription>Verwalte Plugins und Erweiterungen</CardDescription>
+              <CardTitle>{t('plugins.title')}</CardTitle>
+              <CardDescription>{t('plugins.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               {plugins.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p>Keine Plugins verfügbar</p>
+                  <p>{t('plugins.noPlugins')}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -422,7 +437,7 @@ const SettingsPage: React.FC = () => {
                         <h3 className="font-semibold">{plugin.name}</h3>
                         <p className="text-sm text-muted-foreground">{plugin.description}</p>
                         <div className="flex gap-2 mt-1">
-                          <span className="text-xs bg-muted px-2 py-1 rounded">v{plugin.version}</span>
+                          <span className="text-xs bg-muted px-2 py-1 rounded">{t('plugins.version')}{plugin.version}</span>
                           <span className="text-xs bg-muted px-2 py-1 rounded">{plugin.author}</span>
                         </div>
                       </div>
@@ -433,11 +448,11 @@ const SettingsPage: React.FC = () => {
                         size="sm"
                       >
                         {loadingPlugins[plugin.id] ? (
-                          'Lädt...'
+                          t('common.loading')
                         ) : plugin.enabled ? (
-                          'Deaktivieren'
+                          t('plugins.disable')
                         ) : (
-                          'Aktivieren'
+                          t('plugins.enable')
                         )}
                       </Button>
                     </div>
@@ -452,34 +467,34 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="ui" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Benutzeroberfläche</CardTitle>
-              <CardDescription>Passe Aussehen und Verhalten an</CardDescription>
+              <CardTitle>{t('ui.title')}</CardTitle>
+              <CardDescription>{t('ui.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label>Thema</Label>
+                <Label>{t('ui.theme')}</Label>
                 <Select value={uiSettings.theme} onValueChange={(val: any) => setUISettings({ ...uiSettings, theme: val })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dark">Dunkel</SelectItem>
-                    <SelectItem value="light">Hell</SelectItem>
-                    <SelectItem value="auto">Automatisch</SelectItem>
+                    <SelectItem value="dark">{t('ui.dark')}</SelectItem>
+                    <SelectItem value="light">{t('ui.light')}</SelectItem>
+                    <SelectItem value="auto">{t('ui.auto')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Schriftgröße</Label>
+                <Label>{t('ui.fontSize')}</Label>
                 <Select value={uiSettings.fontSize} onValueChange={(val: any) => setUISettings({ ...uiSettings, fontSize: val })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="small">Klein</SelectItem>
-                    <SelectItem value="medium">Mittel</SelectItem>
-                    <SelectItem value="large">Groß</SelectItem>
+                    <SelectItem value="small">{t('ui.small')}</SelectItem>
+                    <SelectItem value="medium">{t('ui.medium')}</SelectItem>
+                    <SelectItem value="large">{t('ui.large')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -487,7 +502,7 @@ const SettingsPage: React.FC = () => {
               <Separator />
 
               <div className="flex items-center justify-between">
-                <Label>Automatisches Scrollen</Label>
+                <Label>{t('ui.autoScroll')}</Label>
                 <Switch
                   checked={uiSettings.autoScroll}
                   onCheckedChange={(val) => setUISettings({ ...uiSettings, autoScroll: val })}
@@ -495,7 +510,7 @@ const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>Benachrichtigungen</Label>
+                <Label>{t('ui.notifications')}</Label>
                 <Switch
                   checked={uiSettings.notifications}
                   onCheckedChange={(val) => setUISettings({ ...uiSettings, notifications: val })}
@@ -503,7 +518,7 @@ const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>Soundeffekte</Label>
+                <Label>{t('ui.soundEffects')}</Label>
                 <Switch
                   checked={uiSettings.soundEffects}
                   onCheckedChange={(val) => setUISettings({ ...uiSettings, soundEffects: val })}
@@ -517,30 +532,30 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="api" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>API Konfiguration</CardTitle>
-              <CardDescription>Backend Verbindungseinstellungen</CardDescription>
+              <CardTitle>{t('api.title')}</CardTitle>
+              <CardDescription>{t('api.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Backend URL</Label>
+                <Label>{t('api.backendUrl')}</Label>
                 <Input
                   value={apiSettings.backend_url}
                   onChange={(e) => setAPISettings({ ...apiSettings, backend_url: e.target.value })}
-                  placeholder="http://localhost:5050"
+                  placeholder={t('api.backendUrlPlaceholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>WebSocket URL</Label>
+                <Label>{t('api.websocketUrl')}</Label>
                 <Input
                   value={apiSettings.ws_url}
                   onChange={(e) => setAPISettings({ ...apiSettings, ws_url: e.target.value })}
-                  placeholder="ws://localhost:5050"
+                  placeholder={t('api.websocketUrlPlaceholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Timeout (ms)</Label>
+                <Label>{t('api.timeout')}</Label>
                 <Input
                   type="number"
                   value={apiSettings.timeout}
@@ -549,7 +564,7 @@ const SettingsPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Wiederholungsversuche</Label>
+                <Label>{t('api.retryAttempts')}</Label>
                 <Input
                   type="number"
                   value={apiSettings.retry_attempts}
@@ -560,12 +575,12 @@ const SettingsPage: React.FC = () => {
               <Separator />
 
               <div className="space-y-2">
-                <Label>API Schlüssel (Optional)</Label>
+                <Label>{t('api.apiKey')}</Label>
                 <Input
                   type="password"
                   value={apiSettings.api_key}
                   onChange={(e) => setAPISettings({ ...apiSettings, api_key: e.target.value })}
-                  placeholder="Leer für lokale Nutzung"
+                  placeholder={t('api.apiKeyPlaceholder')}
                 />
               </div>
             </CardContent>
@@ -576,30 +591,30 @@ const SettingsPage: React.FC = () => {
         <TabsContent value="advanced" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Erweiterte Einstellungen</CardTitle>
-              <CardDescription>Expertenkonfiguration</CardDescription>
+              <CardTitle>{t('advanced.title')}</CardTitle>
+              <CardDescription>{t('advanced.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>System Prompt</Label>
+                <Label>{t('advanced.systemPrompt')}</Label>
                 <Textarea
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
                   rows={6}
-                  placeholder="Du bist JARVIS..."
+                  placeholder={t('advanced.systemPromptPlaceholder')}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Definiert JARVIS Persönlichkeit und Verhalten
+                  {t('advanced.systemPromptDesc')}
                 </p>
               </div>
 
               <Separator />
 
               <div className="space-y-2">
-                <Label>⚠️ Gefährliche Zone</Label>
+                <Label>{t('advanced.dangerZone')}</Label>
                 <Button variant="destructive" onClick={resetToDefaults} className="w-full">
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Alle Einstellungen zurücksetzen
+                  {t('advanced.resetAll')}
                 </Button>
               </div>
             </CardContent>

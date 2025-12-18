@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { RefreshCw, Download, Power, Brain, HardDrive, Cpu, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { RefreshCw, Download, Power, Brain, HardDrive, Cpu, CheckCircle, XCircle, Loader2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/api';
+import TokenDialog from '@/components/models/TokenDialog';
 
 interface Model {
   id: string;
@@ -16,6 +17,7 @@ interface Model {
   hf_model: string;
   isActive: boolean;
   isDownloaded: boolean;
+  requires_token: boolean;
   capabilities: string[];
 }
 
@@ -26,7 +28,7 @@ interface DownloadStatus {
 }
 
 const ModelsTab = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [models, setModels] = useState<Model[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeModel, setActiveModel] = useState<Model | null>(null);
@@ -35,7 +37,23 @@ const ModelsTab = () => {
     current_model: null,
     progress: 0
   });
+  const [showTokenDialog, setShowTokenDialog] = useState(false);
+  const [currentModel, setCurrentModel] = useState<Model | null>(null);
+  const [hasToken, setHasToken] = useState(false);
   const { toast } = useToast();
+
+  const lang = i18n.language.startsWith('de') ? 'de' : 'en';
+
+  // Check if HF token is stored
+  const checkTokenStatus = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/hf-token/status`);
+      const data = await response.json();
+      setHasToken(data.has_token);
+    } catch (error) {
+      console.error('Failed to check token status:', error);
+    }
+  };
 
   // Fetch models from API
   const fetchModels = async () => {
@@ -72,17 +90,41 @@ const ModelsTab = () => {
   };
 
   // Download model
-  const handleDownload = async (modelId: string) => {
+  const handleDownload = async (modelId: string, token?: string) => {
+    const model = models.find(m => m.id === modelId);
+    if (!model) return;
+
+    // Check if token is needed and we don't have one
+    if (model.requires_token && !hasToken && !token) {
+      setCurrentModel(model);
+      setShowTokenDialog(true);
+      return;
+    }
+
     try {
       toast({
         title: t('modelsTab.downloadStarted'),
         description: t('modelsTab.downloading', { model: modelId })
       });
 
+      const body: any = {};
+      if (token) {
+        body.token = token;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/models/${modelId}/download`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
       });
       const data = await response.json();
+      
+      if (data.requires_token) {
+        // Show token dialog
+        setCurrentModel(model);
+        setShowTokenDialog(true);
+        return;
+      }
       
       if (data.success) {
         toast({
@@ -102,6 +144,40 @@ const ModelsTab = () => {
       toast({
         title: t('common.error'),
         description: t('modelsTab.downloadError'),
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Handle token dialog submit
+  const handleTokenSubmit = async ({ token, remember }: { token: string, remember: boolean }) => {
+    try {
+      // Save token if remember is checked
+      if (remember) {
+        const response = await fetch(`${API_BASE_URL}/api/hf-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          setHasToken(true);
+        }
+      }
+      
+      // Close dialog
+      setShowTokenDialog(false);
+      
+      // Start download with token
+      if (currentModel) {
+        await handleDownload(currentModel.id, remember ? undefined : token);
+      }
+    } catch (error) {
+      console.error('Failed to save token:', error);
+      toast({
+        title: t('common.error'),
+        description: lang === 'de' ? 'Fehler beim Speichern des Tokens' : 'Failed to save token',
         variant: 'destructive'
       });
     }
@@ -160,6 +236,7 @@ const ModelsTab = () => {
 
   // Poll for download progress
   useEffect(() => {
+    checkTokenStatus();
     fetchModels();
     fetchDownloadStatus();
 
@@ -296,6 +373,12 @@ const ModelsTab = () => {
                   <CardTitle className="text-base font-display flex items-center gap-2">
                     <Brain className="w-5 h-5 text-primary" />
                     {model.name}
+                    {/* Token Required Badge */}
+                    {model.requires_token && (
+                      <Badge className="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/50">
+                        <Lock className="w-3 h-3" />
+                      </Badge>
+                    )}
                   </CardTitle>
                   {getStatusBadge(model)}
                 </div>
@@ -398,6 +481,16 @@ const ModelsTab = () => {
           );
         })}
       </div>
+
+      {/* Token Dialog */}
+      {showTokenDialog && currentModel && (
+        <TokenDialog
+          modelName={currentModel.name}
+          language={lang}
+          onClose={() => setShowTokenDialog(false)}
+          onSubmit={handleTokenSubmit}
+        />
+      )}
     </div>
   );
 };

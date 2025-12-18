@@ -41,7 +41,7 @@ def find_vs_installation():
         if not Path(base_path).exists():
             continue
         
-        # Suche nach Jahren (2022, 2026, etc.)
+        # Suche nach Jahren (2022, 2026, etc.) und Versionen (18, 17, etc.)
         for year_path in Path(base_path).iterdir():
             if not year_path.is_dir():
                 continue
@@ -320,12 +320,17 @@ def install_llama_cpu():
     print("💻 Installiere llama-cpp-python für CPU")
     print("="*60 + "\n")
     
+    # Setze CMAKE_ARGS für korrekten 64-bit Build
+    env = os.environ.copy()
+    env["CMAKE_ARGS"] = "-DLLAMA_NATIVE=OFF -DCMAKE_GENERATOR_PLATFORM=x64"
+    
     result = subprocess.run([
         sys.executable, "-m", "pip", "install",
         "llama-cpp-python",
         "--force-reinstall",
-        "--no-cache-dir"
-    ])
+        "--no-cache-dir",
+        "--no-binary", "llama-cpp-python"  # Build from source
+    ], env=env)
     
     return result.returncode == 0
 
@@ -337,7 +342,7 @@ def install_llama_nvidia():
     print("="*60 + "\n")
     
     env = os.environ.copy()
-    env["CMAKE_ARGS"] = "-DGGML_CUDA=on"
+    env["CMAKE_ARGS"] = "-DGGML_CUDA=on -DCMAKE_GENERATOR_PLATFORM=x64"
     
     result = subprocess.run([
         sys.executable, "-m", "pip", "install",
@@ -365,6 +370,8 @@ def verify_installation():
             print("[ERFOLG] ✅ Llama-Klasse erfolgreich importiert")
         except Exception as e:
             print(f"[FEHLER] ❌ Llama-Import fehlgeschlagen: {e}")
+            print("\n[DEBUG] Dies könnte ein DLL-Architektur-Problem sein.")
+            print("[INFO] Versuche Neuinstallation mit --no-binary...\n")
             return False
         
         return True
@@ -375,13 +382,14 @@ def verify_installation():
 def main():
     print("""
     ╭──────────────────────────────────────────────────────────────╮
-    │       JARVIS Core - llama.cpp Setup Script v4.1          │
-    │   VS 2026 + CUDA 13.x + PATH-Fix + GPU-Erkennung       │
+    │       JARVIS Core - llama.cpp Setup Script v4.2          │
+    │VS 2026 + CUDA 13.x + PATH-Fix + DLL-Fix + GPU-Erkennung│
     ╰──────────────────────────────────────────────────────────────╯
     """)
     
     print(f"[INFO] System: {platform.system()} {platform.machine()}")
     print(f"[INFO] Python: {sys.version.split()[0]}")
+    print(f"[INFO] Python Architektur: {platform.architecture()[0]}")
     print()
     
     # Prüfe Build-Tools
@@ -409,7 +417,9 @@ def main():
             print("[INFO] Installation pausiert. Bis gleich! 👋\n")
             return 0
         else:
-            print("\n[INFO] 💻 Fahre mit CPU-Installation fort...")
+            print("\n[WARNUNG] ⚠️  CPU-Installation ohne Build-Tools ist instabil!")
+            print("[INFO] Empfehlung: Installiere Build-Tools für zuverlässige Installation.\n")
+            print("[INFO] 💻 Fahre mit CPU-Installation fort (experimentell)...")
             install_mode = "cpu"
             # Skip weitere Checks, gehe direkt zur Installation
             uninstall_llama()
@@ -430,10 +440,9 @@ def main():
                 print("\n" + "❌"*30)
                 print("\n[FEHLER] 💥 Installation fehlgeschlagen!")
                 print("\n[INFO] Problemlösung:")
-                print("      1. Prüfe Fehlermeldungen oben")
-                print("      2. Aktualisiere pip: python -m pip install --upgrade pip")
-                print("      3. Versuche manuelle Installation:")
-                print("         pip install llama-cpp-python")
+                print("      1. Installiere Build-Tools (EMPFOHLEN)")
+                print("      2. Verwende 'Developer Command Prompt'")
+                print("      3. Führe erneut aus: python backend/setup_llama.py")
                 print("\n[INFO] 📚 Vollständige Dokumentation: https://github.com/Lautloserspieler/JarvisCore")
                 print("❌"*30 + "\n")
                 return 1
@@ -489,7 +498,7 @@ def main():
         print("\n[INFO] 🚀 Installiere mit NVIDIA CUDA Support...")
         success = install_llama_nvidia()
     else:
-        print("\n[INFO] 💻 Installiere CPU-Version...")
+        print("\n[INFO] 💻 Installiere CPU-Version (mit 64-bit Fix)...")
         success = install_llama_cpu()
     
     # Überprüfe Installation
@@ -510,11 +519,14 @@ def main():
     else:
         print("\n" + "❌"*30)
         print("\n[FEHLER] 💥 Installation fehlgeschlagen!")
-        print("\n[INFO] Problemlösung:")
-        print("      1. Prüfe Fehlermeldungen oben")
-        print("      2. Aktualisiere pip: python -m pip install --upgrade pip")
-        print("      3. Versuche manuelle Installation:")
-        print("         pip install llama-cpp-python")
+        print("\n[INFO] Häufige Ursachen:")
+        print("      1. DLL-Architektur-Konflikt (32-bit vs 64-bit)")
+        print("      2. Build-Tools nicht richtig konfiguriert")
+        print("      3. Fehlende Abhängigkeiten\n")
+        print("[INFO] Problemlösung:")
+        print("      1. Stelle sicher du verwendest 64-bit Python")
+        print("      2. Verwende 'Developer Command Prompt' statt normales CMD")
+        print("      3. Führe erneut aus: python backend/setup_llama.py")
         print("\n[INFO] 📚 Vollständige Dokumentation: https://github.com/Lautloserspieler/JarvisCore")
         print("❌"*30 + "\n")
         return 1

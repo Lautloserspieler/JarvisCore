@@ -23,11 +23,11 @@
     "speaking": "ANTWORTE"
   },
   "navigation": {
-    "chat": "💬 Chat",
-    "dashboard": "📊 Dashboard",
-    "memory": "🧠 Gedächtnis",
-    "models": "🤖 Modelle",
-    "settings": "⚙️ Einstellungen"
+    "chat": "Chat",
+    "dashboard": "Dashboard",
+    "memory": "Gedächtnis",
+    "models": "Modelle",
+    "settings": "Einstellungen"
   },
   "chat": {
     "title": "Chat",
@@ -146,14 +146,14 @@
     "saved": "Einstellungen gespeichert"
   },
   "tabs": {
-    "llm": "🧠 LLM",
-    "plugins": "🔌 Plugins",
-    "ui": "🎨 Oberfläche",
-    "api": "🔗 API",
-    "advanced": "⚙️ Erweitert"
+    "llm": "LLM",
+    "plugins": "Plugins",
+    "ui": "Oberfläche",
+    "api": "API",
+    "advanced": "Erweitert"
   },
   "llm": {
-    "title": "🧠 LLM Einstellungen",
+    "title": "LLM Einstellungen",
     "description": "Aktiviere Sprachmodell für Antworten",
     "activeModel": "Aktives Modell",
     "enable": "Sprachmodell aktivieren",
@@ -181,7 +181,7 @@
     "device": "Gerät"
   },
   "plugins": {
-    "title": "🔌 Installierte Plugins",
+    "title": "Installierte Plugins",
     "description": "Verwalte Plugins und Erweiterungen",
     "noPlugins": "Keine Plugins verfügbar",
     "enable": "Aktivieren",
@@ -204,29 +204,29 @@
     "save": "Speichern"
   },
   "ui": {
-    "title": "🎨 Benutzeroberfläche",
+    "title": "Benutzeroberfläche",
     "description": "Passe Aussehen und Verhalten an",
     "theme": "Thema",
-    "dark": "🌙 Dunkel",
-    "light": "☀️ Hell",
-    "auto": "🔄 Automatisch",
+    "dark": "Dunkel",
+    "light": "Hell",
+    "auto": "Automatisch",
     "fontSize": "Schriftgröße",
     "small": "Klein",
     "medium": "Mittel",
     "large": "Groß",
     "autoScroll": "Automatisches Scrollen",
     "autoScrollDesc": "Chat automatisch nach unten scrollen",
-    "notifications": "🔔 Benachrichtigungen",
+    "notifications": "Benachrichtigungen",
     "notificationsDesc": "Zeige Benachrichtigungen an",
-    "soundEffects": "🔊 Soundeffekte",
+    "soundEffects": "Soundeffekte",
     "soundEffectsDesc": "Spiele Soundeffekte ab",
     "compactMode": "Kompaktmodus",
     "compactModeDesc": "Reduzierte UI-Größe",
-    "animations": "🎬 Animationen",
+    "animations": "Animationen",
     "animationsDesc": "Zeige Übergänge und Animationen"
   },
   "api": {
-    "title": "🔗 API Konfiguration",
+    "title": "API Konfiguration",
     "description": "Backend Verbindungseinstellungen",
     "backendUrl": "Backend URL",
     "backendUrlPlaceholder": "http://localhost:5050",
@@ -244,31 +244,31 @@
     "disconnected": "VERBINDE"
   },
   "advanced": {
-    "title": "⚙️ Erweiterte Einstellungen",
+    "title": "Erweiterte Einstellungen",
     "description": "Expertenkonfiguration",
     "systemPrompt": "System Prompt",
     "systemPromptDesc": "Definiert JARVIS Persönlichkeit und Verhalten",
     "systemPromptPlaceholder": "Du bist JARVIS, ein hilfreicher KI-Assistent...",
-    "dangerZone": "⚠️ Gefährliche Zone",
+    "dangerZone": "Gefährliche Zone",
     "resetAll": "Alle Einstellungen zurücksetzen",
     "resetSuccess": "Zurückgesetzt",
     "resetSuccessDesc": "Alle Einstellungen zurückgesetzt",
     "resetConfirm": "Alle Einstellungen wirklich zurücksetzen?",
-    "logs": "📋 Logs",
+    "logs": "Logs",
     "viewLogs": "Logs anzeigen",
     "clearLogs": "Logs löschen",
     "exportLogs": "Logs exportieren",
-    "debug": "🐛 Debug-Modus",
+    "debug": "Debug-Modus",
     "debugDesc": "Aktiviere Debug-Logging",
-    "cache": "💾 Cache",
+    "cache": "Cache",
     "clearCache": "Cache leeren",
     "cacheCleared": "Cache geleert"
   },
   "language": {
-    "label": "🌍 Sprache",
+    "label": "Sprache",
     "selectLanguage": "Sprache wählen",
-    "en": "🇬🇧 English",
-    "de": "🇩🇪 Deutsch",
+    "en": "English",
+    "de": "Deutsch",
     "changed": "Sprache geändert",
     "restartRequired": "Seite wird aktualisiert..."
   },

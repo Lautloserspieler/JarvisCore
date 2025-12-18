@@ -8,6 +8,7 @@ import os
 import shutil
 import webbrowser
 from pathlib import Path
+import glob
 
 def run_command(cmd, shell=False):
     """Führt Befehl aus und gibt Ausgabe zurück"""
@@ -21,6 +22,121 @@ def run_command(cmd, shell=False):
         return result.stdout.strip(), result.returncode
     except Exception as e:
         return "", 1
+
+def find_vs_installation():
+    """Sucht nach Visual Studio Build Tools Installation"""
+    system = platform.system()
+    if system != "Windows":
+        return None, []
+    
+    # Suche nach VS Installationen
+    vs_paths = [
+        "C:/Program Files (x86)/Microsoft Visual Studio",
+        "C:/Program Files/Microsoft Visual Studio",
+    ]
+    
+    found_installations = []
+    
+    for base_path in vs_paths:
+        if not Path(base_path).exists():
+            continue
+        
+        # Suche nach Jahren (2022, 2026, etc.)
+        for year_path in Path(base_path).iterdir():
+            if not year_path.is_dir():
+                continue
+            
+            # Suche nach Editionen (BuildTools, Community, Professional, Enterprise)
+            for edition_path in year_path.iterdir():
+                if not edition_path.is_dir():
+                    continue
+                
+                # Prüfe ob cl.exe existiert
+                msvc_path = edition_path / "VC" / "Tools" / "MSVC"
+                if msvc_path.exists():
+                    # Finde neueste MSVC Version
+                    msvc_versions = sorted([d for d in msvc_path.iterdir() if d.is_dir()], reverse=True)
+                    if msvc_versions:
+                        compiler_path = msvc_versions[0] / "bin" / "Hostx64" / "x64" / "cl.exe"
+                        if compiler_path.exists():
+                            found_installations.append({
+                                "year": year_path.name,
+                                "edition": edition_path.name,
+                                "path": str(edition_path),
+                                "compiler": str(compiler_path),
+                                "msvc_version": msvc_versions[0].name
+                            })
+    
+    if found_installations:
+        # Wähle neueste Installation
+        latest = sorted(found_installations, key=lambda x: x["year"], reverse=True)[0]
+        return latest, found_installations
+    
+    return None, []
+
+def check_build_tools():
+    """Prüft ob C++ Build-Tools verfügbar sind"""
+    system = platform.system()
+    
+    if system == "Windows":
+        checks = [
+            ("cl.exe", "MSVC Compiler"),
+            ("cmake", "CMake"),
+        ]
+        
+        missing = []
+        for cmd, name in checks:
+            if shutil.which(cmd) is None:
+                missing.append(name)
+        
+        # Wenn cl.exe fehlt, prüfe ob VS installiert ist (nicht im PATH)
+        if "MSVC Compiler" in missing:
+            vs_install, all_installs = find_vs_installation()
+            if vs_install:
+                return False, missing, vs_install
+        
+        return len(missing) == 0, missing, None
+    
+    else:  # Linux/Mac
+        checks = [
+            ("gcc", "GCC"),
+            ("g++", "G++"),
+            ("cmake", "CMake"),
+        ]
+        
+        missing = []
+        for cmd, name in checks:
+            if shutil.which(cmd) is None:
+                missing.append(name)
+        
+        return len(missing) == 0, missing, None
+
+def show_path_fix_guide(vs_install):
+    """Zeigt Anleitung zum PATH-Fix"""
+    print("\n" + "🔧"*30)
+    print("\n[INFO] ✅ Visual Studio Build Tools gefunden!\n")
+    print(f"   Version: {vs_install['year']} {vs_install['edition']}")
+    print(f"   Pfad: {vs_install['path']}\n")
+    print("❌ ABER: Build-Tools sind nicht im PATH!\n")
+    print("🔧 Lösung: Developer Command Prompt verwenden\n")
+    print("   Option 1: Developer Command Prompt (EMPFOHLEN)\n")
+    print("      1️⃣  Drücke Windows-Taste")
+    print("      2️⃣  Tippe: 'Developer Command Prompt'")
+    print(f"      3️⃣  Öffne: 'Developer Command Prompt for VS {vs_install['year']}'")
+    print("      4️⃣  Führe aus: python backend/setup_llama.py\n")
+    print("   Option 2: Developer PowerShell\n")
+    print("      1️⃣  Drücke Windows-Taste")
+    print("      2️⃣  Tippe: 'Developer PowerShell'")
+    print(f"      3️⃣  Öffne: 'Developer PowerShell for VS {vs_install['year']}'")
+    print("      4️⃣  Führe aus: python backend/setup_llama.py\n")
+    print("   Option 3: vcvarsall.bat manuell (Fortgeschritten)\n")
+    print("      In deinem Terminal/PowerShell:")
+    vcvars_path = Path(vs_install['path']) / "VC" / "Auxiliary" / "Build" / "vcvarsall.bat"
+    print(f'      \"{vcvars_path}\" x64')
+    print("      python backend/setup_llama.py\n")
+    print("👉 WICHTIG: Normales CMD/PowerShell funktioniert NICHT!\n")
+    print("👉 Du MUSST 'Developer Command Prompt' verwenden!\n")
+    print("🔧"*30 + "\n")
 
 def check_cuda_toolkit():
     """Prüft ob CUDA Toolkit installiert ist"""
@@ -51,37 +167,6 @@ def check_cuda_toolkit():
         return True, nvcc_path
     
     return False, None
-
-def check_build_tools():
-    """Prüft ob C++ Build-Tools verfügbar sind"""
-    system = platform.system()
-    
-    if system == "Windows":
-        checks = [
-            ("cl.exe", "MSVC Compiler"),
-            ("cmake", "CMake"),
-        ]
-        
-        missing = []
-        for cmd, name in checks:
-            if shutil.which(cmd) is None:
-                missing.append(name)
-        
-        return len(missing) == 0, missing
-    
-    else:  # Linux/Mac
-        checks = [
-            ("gcc", "GCC"),
-            ("g++", "G++"),
-            ("cmake", "CMake"),
-        ]
-        
-        missing = []
-        for cmd, name in checks:
-            if shutil.which(cmd) is None:
-                missing.append(name)
-        
-        return len(missing) == 0, missing
 
 def detect_gpu():
     """Erkennt GPU-Typ (NVIDIA, AMD, oder keine)"""
@@ -140,7 +225,9 @@ def show_build_tools_guide():
         print("      3️⃣  Installation dauert ca. 10-15 Minuten")
         print("         Benötigt ca. 4-8 GB Speicher\n")
         print("      4️⃣  Starte PC neu\n")
-        print("      5️⃣  Führe erneut aus: python backend/setup_llama.py\n")
+        print("      5️⃣  👉 WICHTIG: Verwende 'Developer Command Prompt'!")
+        print("         (NICHT normales CMD/PowerShell)\n")
+        print("      6️⃣  Führe aus: python backend/setup_llama.py\n")
         print("   🔹 Alternative: VS 2022 Build Tools (stabil)\n")
         print("      -> Gleicher Link, wähle 'Visual Studio 2022' statt 2026\n")
         print("   📦 Option 2: Scoop (Schneller, weniger Speicher)\n")
@@ -288,8 +375,8 @@ def verify_installation():
 def main():
     print("""
     ╭──────────────────────────────────────────────────────────────╮
-    │       JARVIS Core - llama.cpp Setup Script v4.0          │
-    │      VS 2026 + CUDA 13.x Support + GPU-Erkennung        │
+    │       JARVIS Core - llama.cpp Setup Script v4.1          │
+    │   VS 2026 + CUDA 13.x + PATH-Fix + GPU-Erkennung       │
     ╰──────────────────────────────────────────────────────────────╯
     """)
     
@@ -298,20 +385,27 @@ def main():
     print()
     
     # Prüfe Build-Tools
-    has_build_tools, missing_tools = check_build_tools()
+    has_build_tools, missing_tools, vs_install = check_build_tools()
     
     if not has_build_tools:
         print(f"[WARNUNG] ⚠️  Fehlende Build-Tools: {', '.join(missing_tools)}\n")
         
-        # Zeige Anleitung und frage nach Wahl
+        # Wenn VS installiert ist, aber nicht im PATH
+        if vs_install:
+            show_path_fix_guide(vs_install)
+            print("[INFO] 👉 Schließe dieses Fenster und verwende 'Developer Command Prompt'!\n")
+            print("[INFO] Installation pausiert. Bis gleich! 👋\n")
+            return 0
+        
+        # Zeige Installations-Anleitung
         show_build_tools_guide()
         choice = ask_build_tools_choice()
         
         if choice == "1":
             print("\n[INFO] 📖 Folge der Anleitung oben.")
             print("\n[INFO] Nach der Installation:")
-            print("   1. Starte Terminal/PowerShell neu")
-            print("   2. Führe erneut aus: python backend/setup_llama.py\n")
+            print("   1. Öffne 'Developer Command Prompt' (WICHTIG!)")
+            print("   2. Führe aus: python backend/setup_llama.py\n")
             print("[INFO] Installation pausiert. Bis gleich! 👋\n")
             return 0
         else:
@@ -327,7 +421,8 @@ def main():
                 print(f"[INFO] Modus: CPU")
                 print("\n[TIPP] 💡 Für bessere Performance:")
                 print("      1. Installiere Build-Tools (siehe Anleitung oben)")
-                print("      2. Führe erneut aus: python backend/setup_llama.py")
+                print("      2. Öffne 'Developer Command Prompt'")
+                print("      3. Führe erneut aus: python backend/setup_llama.py")
                 print("\n[INFO] ▶️  Du kannst jetzt starten: python backend/main.py")
                 print("✅"*30 + "\n")
                 return 0

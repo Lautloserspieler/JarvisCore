@@ -1,10 +1,11 @@
 name: CI/CD Pipeline
 
+# Optimiert: Läuft nur bei Pull Requests und Pushes zu main
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  push:
+    branches: [ main ]  # Nur bei Push zu main, nicht bei jedem Feature-Branch
 
 jobs:
   backend-tests:

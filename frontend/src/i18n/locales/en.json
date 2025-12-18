@@ -1,0 +1,106 @@
+{
+  "common": {
+    "save": "Save",
+    "export": "Export",
+    "import": "Import",
+    "reset": "Reset",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Configure JARVIS behavior and appearance",
+    "export": "Export",
+    "import": "Import",
+    "exportSuccess": "Settings exported",
+    "exportDesc": "Configuration downloaded as JSON",
+    "importSuccess": "Settings imported",
+    "importDesc": "Configuration loaded successfully",
+    "importError": "Import failed",
+    "importErrorDesc": "Invalid settings file"
+  },
+  "tabs": {
+    "llm": "LLM",
+    "plugins": "Plugins",
+    "ui": "Interface",
+    "api": "API",
+    "advanced": "Advanced"
+  },
+  "llm": {
+    "title": "🧠 LLM Settings",
+    "description": "Enable language model for responses",
+    "activeModel": "Active Model",
+    "enable": "Enable Language Model",
+    "enableDesc": "Use local AI model for responses",
+    "contextLength": "Context Length",
+    "contextLengthDesc": "Tokens of conversation memory (Requires model restart)",
+    "temperature": "Temperature",
+    "precise": "Precise",
+    "creative": "Creative",
+    "saveSettings": "Save LLM Settings",
+    "settingsSaved": "Settings saved",
+    "settingsSavedDesc": "llama.cpp parameters updated",
+    "saveError": "Failed to save settings"
+  },
+  "plugins": {
+    "title": "Installed Plugins",
+    "description": "Manage plugins and extensions",
+    "noPlugins": "No plugins available",
+    "enable": "Enable",
+    "disable": "Disable",
+    "enabled": "Plugin enabled",
+    "disabled": "Plugin disabled",
+    "enableError": "Failed to enable plugin",
+    "disableError": "Failed to disable plugin",
+    "loadError": "Failed to load plugins",
+    "version": "v"
+  },
+  "ui": {
+    "title": "User Interface",
+    "description": "Customize appearance and behavior",
+    "theme": "Theme",
+    "dark": "Dark",
+    "light": "Light",
+    "auto": "Auto",
+    "fontSize": "Font Size",
+    "small": "Small",
+    "medium": "Medium",
+    "large": "Large",
+    "autoScroll": "Auto Scroll",
+    "notifications": "Notifications",
+    "soundEffects": "Sound Effects"
+  },
+  "api": {
+    "title": "API Configuration",
+    "description": "Backend connection settings",
+    "backendUrl": "Backend URL",
+    "backendUrlPlaceholder": "http://localhost:5050",
+    "websocketUrl": "WebSocket URL",
+    "websocketUrlPlaceholder": "ws://localhost:5050",
+    "timeout": "Timeout (ms)",
+    "retryAttempts": "Retry Attempts",
+    "apiKey": "API Key (Optional)",
+    "apiKeyPlaceholder": "Leave empty for local use"
+  },
+  "advanced": {
+    "title": "Advanced Settings",
+    "description": "Expert configuration",
+    "systemPrompt": "System Prompt",
+    "systemPromptDesc": "Defines JARVIS personality and behavior",
+    "systemPromptPlaceholder": "You are JARVIS...",
+    "dangerZone": "⚠️ Danger Zone",
+    "resetAll": "Reset All Settings",
+    "resetSuccess": "Reset",
+    "resetSuccessDesc": "All settings reset to defaults"
+  },
+  "language": {
+    "label": "Language",
+    "en": "🇬🇧 English",
+    "de": "🇩🇪 Deutsch"
+  }
+}

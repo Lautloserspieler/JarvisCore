@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ interface SystemInfo {
 }
 
 const DashboardTab = () => {
+  const { t } = useTranslation();
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ const DashboardTab = () => {
         setError(null);
       } catch (error) {
         console.error('Fehler beim Laden der Systeminfos:', error);
-        setError('Verbindung zum Backend fehlgeschlagen');
+        setError(t('dashboardTab.connectionError'));
       } finally {
         setLoading(false);
       }
@@ -54,12 +56,12 @@ const DashboardTab = () => {
     fetchSystemInfo();
     const interval = setInterval(fetchSystemInfo, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[600px]">
-        <div className="text-muted-foreground">Lade System-Informationen...</div>
+        <div className="text-muted-foreground">{t('dashboardTab.loadingInfo')}</div>
       </div>
     );
   }
@@ -79,21 +81,21 @@ const DashboardTab = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">CPU Auslastung</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardTab.cpuUsage')}</CardTitle>
             <Cpu className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{systemInfo.cpu.usage.toFixed(1)}%</div>
             <Progress value={systemInfo.cpu.usage} className="mt-2" />
             <p className="text-xs text-muted-foreground mt-2">
-              {systemInfo.cpu.count} Kerne
+              {systemInfo.cpu.count} {t('dashboardTab.cores')}
             </p>
           </CardContent>
         </Card>
 
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">RAM Nutzung</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardTab.ramUsage')}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -102,14 +104,14 @@ const DashboardTab = () => {
             </div>
             <Progress value={systemInfo.memory.percent} className="mt-2" />
             <p className="text-xs text-muted-foreground mt-2">
-              {systemInfo.memory.percent.toFixed(1)}% belegt
+              {systemInfo.memory.percent.toFixed(1)}% {t('dashboardTab.used')}
             </p>
           </CardContent>
         </Card>
 
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">GPU / Device</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardTab.gpuDevice')}</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -123,17 +125,17 @@ const DashboardTab = () => {
                 : 'mt-2'
               }
             >
-              {systemInfo.llama.available ? 'Verfügbar' : 'N/A'}
+              {systemInfo.llama.available ? t('dashboardTab.available') : 'N/A'}
             </Badge>
             <p className="text-xs text-muted-foreground mt-2">
-              {systemInfo.llama.loaded ? `Modell: ${systemInfo.llama.model_name}` : 'Kein Modell geladen'}
+              {systemInfo.llama.loaded ? `${t('dashboardTab.model')}: ${systemInfo.llama.model_name}` : t('dashboardTab.noModel')}
             </p>
           </CardContent>
         </Card>
 
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Speicher</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardTab.storage')}</CardTitle>
             <HardDrive className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -142,14 +144,14 @@ const DashboardTab = () => {
             </div>
             <Progress value={systemInfo.disk.percent} className="mt-2" />
             <p className="text-xs text-muted-foreground mt-2">
-              {systemInfo.disk.percent.toFixed(1)}% belegt
+              {systemInfo.disk.percent.toFixed(1)}% {t('dashboardTab.used')}
             </p>
           </CardContent>
         </Card>
 
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardTab.system')}</CardTitle>
             <Globe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -162,13 +164,13 @@ const DashboardTab = () => {
 
         <Card className="holo-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardTab.status')}</CardTitle>
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Online</div>
+            <div className="text-2xl font-bold">{t('dashboardTab.online')}</div>
             <Badge variant="outline" className="mt-2 bg-green-500/10 text-green-500 border-green-500/20">
-              Alle Systeme aktiv
+              {t('dashboardTab.allSystemsActive')}
             </Badge>
           </CardContent>
         </Card>
@@ -176,23 +178,23 @@ const DashboardTab = () => {
 
       <Card className="holo-panel">
         <CardHeader>
-          <CardTitle>Aktive Dienste</CardTitle>
+          <CardTitle>{t('dashboardTab.activeServices')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-medium">JARVIS Core</p>
-                <p className="text-xs text-muted-foreground">Haupt-KI-System</p>
+                <p className="text-xs text-muted-foreground">{t('dashboardTab.mainAISystem')}</p>
               </div>
               <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                Online
+                {t('dashboardTab.online')}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-medium">llama.cpp Engine</p>
-                <p className="text-xs text-muted-foreground">Lokale Inferenz</p>
+                <p className="text-xs text-muted-foreground">{t('dashboardTab.localInference')}</p>
               </div>
               <Badge 
                 variant="outline" 
@@ -201,25 +203,25 @@ const DashboardTab = () => {
                   : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
                 }
               >
-                {systemInfo.llama.loaded ? 'Geladen' : 'Standby'}
+                {systemInfo.llama.loaded ? t('dashboardTab.loaded') : t('dashboardTab.standby')}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-medium">WebSocket Server</p>
-                <p className="text-xs text-muted-foreground">Echtzeit-Kommunikation</p>
+                <p className="text-xs text-muted-foreground">{t('dashboardTab.realtimeComm')}</p>
               </div>
               <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                Verbunden
+                {t('dashboardTab.connected')}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-medium">API Server</p>
-                <p className="text-xs text-muted-foreground">REST API Schnittstelle</p>
+                <p className="text-xs text-muted-foreground">{t('dashboardTab.restInterface')}</p>
               </div>
               <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                Aktiv
+                {t('dashboardTab.active')}
               </Badge>
             </div>
           </div>

@@ -1,0 +1,56 @@
+{
+  "logsTab": {
+    "loading": "Loading logs...",
+    "title": "System Logs",
+    "description": "Real-time logging of all system events",
+    "noLogs": "No logs available"
+  },
+  "pluginsTab": {
+    "loading": "Loading plugins...",
+    "activePlugins": "Active Plugins",
+    "active": "active",
+    "noActive": "No plugins activated",
+    "version": "Version",
+    "author": "Author",
+    "status": "Status",
+    "availablePlugins": "Available Plugins",
+    "actionFailed": "Action failed"
+  },
+  "memoryTab": {
+    "loading": "Loading memory...",
+    "totalMemories": "Total Memories",
+    "storedEntries": "Stored Entries",
+    "storageUsage": "Storage Usage",
+    "lastUpdate": "Last Update",
+    "today": "Today",
+    "memoryTypes": "Memory Types",
+    "recentMemories": "Recent Memories",
+    "recentDescription": "Recently saved information",
+    "clearAll": "Clear all",
+    "noMemories": "No memories stored yet",
+    "relevance": "Relevance"
+  },
+  "modelsTab": {
+    "loadError": "Failed to load models",
+    "downloadStarted": "Download started",
+    "downloading": "Downloading model {{model}}",
+    "downloadComplete": "Download complete",
+    "downloadFailed": "Download failed",
+    "downloadError": "Failed to start download",
+    "modelLoaded": "Model loaded",
+    "loadFailed": "Load failed",
+    "modelUnloaded": "Model unloaded",
+    "allUnloaded": "All models unloaded",
+    "active": "Active",
+    "downloaded": "Downloaded",
+    "notDownloaded": "Not downloaded",
+    "unloadModel": "Unload model",
+    "activeModel": "Active Model",
+    "downloadRunning": "Download running",
+    "progress": "Progress",
+    "provider": "Provider",
+    "size": "Size",
+    "download": "Download",
+    "load": "Load"
+  }
+}

@@ -6,7 +6,7 @@ from typing import Optional, Dict
 from tqdm import tqdm
 import hashlib
 
-# Model Download URLs (HuggingFace)
+# Model Download URLs (HuggingFace - Official Repos)
 MODEL_URLS = {
     "mistral": {
         "url": "https://huggingface.co/second-state/Mistral-Nemo-Instruct-2407-GGUF/resolve/main/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
@@ -15,10 +15,10 @@ MODEL_URLS = {
         "requires_token": False
     },
     "qwen": {
-        "url": "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
-        "filename": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+        "url": "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_k_m.gguf",
+        "filename": "qwen2.5-7b-instruct-q4_k_m.gguf",
         "size_gb": 4.8,
-        "requires_token": False  # bartowski quantizations are public
+        "requires_token": False  # Official Qwen repo, no token needed
     },
     "deepseek": {
         "url": "https://huggingface.co/Triangle104/DeepSeek-R1-Distill-Llama-8B-Q4_K_M-GGUF/resolve/main/deepseek-r1-distill-llama-8b-q4_k_m.gguf",
@@ -27,28 +27,34 @@ MODEL_URLS = {
         "requires_token": False
     },
     "llama32-3b": {
-        "url": "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
-        "filename": "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+        "url": "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/original/consolidated.00.pth",
+        "filename": "Llama-3.2-3B-Instruct.gguf",
         "size_gb": 2.0,
-        "requires_token": False  # bartowski quantizations are public
+        "requires_token": True,  # Meta official repo requires gating/token
+        "gguf_url": "https://huggingface.co/unsloth/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+        "gguf_requires_token": False  # Unsloth conversion is public
     },
     "phi3-mini": {
-        "url": "https://huggingface.co/bartowski/Phi-3.1-mini-128k-instruct-GGUF/resolve/main/Phi-3.1-mini-128k-instruct-Q4_K_M.gguf",
-        "filename": "Phi-3.1-mini-128k-instruct-Q4_K_M.gguf",
+        "url": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf",
+        "filename": "Phi-3-mini-4k-instruct-q4.gguf",
         "size_gb": 2.4,
-        "requires_token": False  # bartowski quantizations are public
+        "requires_token": False  # Microsoft official GGUF repo, no token
     },
     "gemma2-9b": {
-        "url": "https://huggingface.co/bartowski/gemma-2-9b-it-GGUF/resolve/main/gemma-2-9b-it-Q4_K_M.gguf",
-        "filename": "gemma-2-9b-it-Q4_K_M.gguf",
+        "url": "https://huggingface.co/google/gemma-2-9b-it/resolve/main/model.safetensors",
+        "filename": "gemma-2-9b-it.gguf",
         "size_gb": 5.4,
-        "requires_token": False  # bartowski quantizations are public
+        "requires_token": True,  # Google official repo requires gating
+        "gguf_url": "https://huggingface.co/bartowski/gemma-2-9b-it-GGUF/resolve/main/gemma-2-9b-it-Q4_K_M.gguf",
+        "gguf_requires_token": False  # bartowski conversion is public
     },
     "llama33-70b": {
-        "url": "https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF/resolve/main/Llama-3.3-70B-Instruct-Q4_K_M.gguf",
-        "filename": "Llama-3.3-70B-Instruct-Q4_K_M.gguf",
+        "url": "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct/resolve/main/original/consolidated.00.pth",
+        "filename": "Llama-3.3-70B-Instruct.gguf",
         "size_gb": 40.0,
-        "requires_token": False  # bartowski quantizations are public
+        "requires_token": True,  # Meta official repo requires gating/token
+        "gguf_url": "https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF/resolve/main/Llama-3.3-70B-Instruct-Q4_K_M.gguf",
+        "gguf_requires_token": False  # bartowski conversion is public
     }
 }
 
@@ -81,7 +87,13 @@ class ModelDownloader:
         """Check if model requires HuggingFace token"""
         if model_id not in MODEL_URLS:
             return False
-        return MODEL_URLS[model_id].get("requires_token", False)
+        model_info = MODEL_URLS[model_id]
+        
+        # If model has a gguf_url fallback, check if that requires token
+        if "gguf_url" in model_info:
+            return model_info.get("gguf_requires_token", False)
+        
+        return model_info.get("requires_token", False)
     
     def get_download_status(self) -> Dict:
         """Get current download status"""
@@ -111,10 +123,24 @@ class ModelDownloader:
             }
         
         model_info = MODEL_URLS[model_id]
-        url = model_info["url"]
+        
+        # Check if we should use GGUF fallback URL (for gated original models)
+        use_gguf_fallback = False
+        if "gguf_url" in model_info:
+            # Use original URL if token is provided, otherwise use GGUF fallback
+            if not hf_token:
+                use_gguf_fallback = True
+                url = model_info["gguf_url"]
+                requires_token = model_info.get("gguf_requires_token", False)
+            else:
+                url = model_info["url"]
+                requires_token = model_info.get("requires_token", False)
+        else:
+            url = model_info["url"]
+            requires_token = model_info.get("requires_token", False)
+        
         filename = model_info["filename"]
         output_path = self.models_dir / filename
-        requires_token = model_info.get("requires_token", False)
         
         # Check if token is needed but not provided
         if requires_token and not hf_token:
@@ -142,8 +168,9 @@ class ModelDownloader:
             self.current_download = model_id
             self.download_progress = 0.0
             
+            source_msg = "GGUF quantization" if use_gguf_fallback else "official repo"
             if progress_callback:
-                progress_callback(0.0, "Starting download...")
+                progress_callback(0.0, f"Starting download from {source_msg}...")
             
             # Prepare headers with token if provided
             headers = {}
@@ -152,6 +179,9 @@ class ModelDownloader:
             
             # Stream download with progress
             print(f"[INFO] Downloading {model_id} from {url}")
+            if use_gguf_fallback:
+                print(f"[INFO] Using public GGUF quantization (no token required)")
+            
             response = requests.get(url, stream=True, headers=headers)
             response.raise_for_status()
             

@@ -151,9 +151,12 @@ const ModelsTab = () => {
 
   // Handle token dialog submit
   const handleTokenSubmit = async ({ token, remember }: { token: string, remember: boolean }) => {
+    console.log('[TokenDialog] Submit:', { remember, hasToken: !!token });
+    
     try {
       // Save token if remember is checked
       if (remember) {
+        console.log('[TokenDialog] Saving token to backend...');
         const response = await fetch(`${API_BASE_URL}/api/hf-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -163,15 +166,19 @@ const ModelsTab = () => {
         
         if (result.success) {
           setHasToken(true);
+          console.log('[TokenDialog] Token saved successfully');
+        } else {
+          console.error('[TokenDialog] Failed to save token:', result);
         }
       }
       
       // Close dialog
       setShowTokenDialog(false);
       
-      // Start download with token
+      // Start download with token (ALWAYS pass token, backend will use stored one if available)
       if (currentModel) {
-        await handleDownload(currentModel.id, remember ? undefined : token);
+        console.log('[TokenDialog] Starting download with token...');
+        await handleDownload(currentModel.id, token);
       }
     } catch (error) {
       console.error('Failed to save token:', error);

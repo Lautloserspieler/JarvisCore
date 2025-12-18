@@ -6,7 +6,7 @@ from typing import Optional, Dict
 from tqdm import tqdm
 import hashlib
 
-# Model Download URLs (HuggingFace - Official Repos)
+# Model Download URLs (HuggingFace - All Public GGUF Quantizations)
 MODEL_URLS = {
     "mistral": {
         "url": "https://huggingface.co/second-state/Mistral-Nemo-Instruct-2407-GGUF/resolve/main/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
@@ -18,7 +18,7 @@ MODEL_URLS = {
         "url": "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_k_m.gguf",
         "filename": "qwen2.5-7b-instruct-q4_k_m.gguf",
         "size_gb": 4.8,
-        "requires_token": False  # Official Qwen repo, no token needed
+        "requires_token": False  # Official Qwen GGUF repo, public
     },
     "deepseek": {
         "url": "https://huggingface.co/Triangle104/DeepSeek-R1-Distill-Llama-8B-Q4_K_M-GGUF/resolve/main/deepseek-r1-distill-llama-8b-q4_k_m.gguf",
@@ -27,34 +27,28 @@ MODEL_URLS = {
         "requires_token": False
     },
     "llama32-3b": {
-        "url": "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/original/consolidated.00.pth",
-        "filename": "Llama-3.2-3B-Instruct.gguf",
+        "url": "https://huggingface.co/unsloth/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+        "filename": "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
         "size_gb": 2.0,
-        "requires_token": True,  # Meta official repo requires gating/token
-        "gguf_url": "https://huggingface.co/unsloth/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
-        "gguf_requires_token": False  # Unsloth conversion is public
+        "requires_token": False  # Public unsloth GGUF conversion
     },
     "phi3-mini": {
         "url": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf",
         "filename": "Phi-3-mini-4k-instruct-q4.gguf",
         "size_gb": 2.4,
-        "requires_token": False  # Microsoft official GGUF repo, no token
+        "requires_token": False  # Microsoft official GGUF, public
     },
     "gemma2-9b": {
-        "url": "https://huggingface.co/google/gemma-2-9b-it/resolve/main/model.safetensors",
-        "filename": "gemma-2-9b-it.gguf",
+        "url": "https://huggingface.co/bartowski/gemma-2-9b-it-GGUF/resolve/main/gemma-2-9b-it-Q4_K_M.gguf",
+        "filename": "gemma-2-9b-it-Q4_K_M.gguf",
         "size_gb": 5.4,
-        "requires_token": True,  # Google official repo requires gating
-        "gguf_url": "https://huggingface.co/bartowski/gemma-2-9b-it-GGUF/resolve/main/gemma-2-9b-it-Q4_K_M.gguf",
-        "gguf_requires_token": False  # bartowski conversion is public
+        "requires_token": False  # Public bartowski GGUF conversion
     },
     "llama33-70b": {
-        "url": "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct/resolve/main/original/consolidated.00.pth",
-        "filename": "Llama-3.3-70B-Instruct.gguf",
+        "url": "https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF/resolve/main/Llama-3.3-70B-Instruct-Q4_K_M.gguf",
+        "filename": "Llama-3.3-70B-Instruct-Q4_K_M.gguf",
         "size_gb": 40.0,
-        "requires_token": True,  # Meta official repo requires gating/token
-        "gguf_url": "https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF/resolve/main/Llama-3.3-70B-Instruct-Q4_K_M.gguf",
-        "gguf_requires_token": False  # bartowski conversion is public
+        "requires_token": False  # Public bartowski GGUF conversion
     }
 }
 
@@ -84,16 +78,8 @@ class ModelDownloader:
         return model_path.exists() and model_path.stat().st_size > 1024  # > 1KB
     
     def requires_token(self, model_id: str) -> bool:
-        """Check if model requires HuggingFace token"""
-        if model_id not in MODEL_URLS:
-            return False
-        model_info = MODEL_URLS[model_id]
-        
-        # If model has a gguf_url fallback, check if that requires token
-        if "gguf_url" in model_info:
-            return model_info.get("gguf_requires_token", False)
-        
-        return model_info.get("requires_token", False)
+        """Check if model requires HuggingFace token - Always False now (public GGUF only)"""
+        return False
     
     def get_download_status(self) -> Dict:
         """Get current download status"""
@@ -109,7 +95,7 @@ class ModelDownloader:
         
         Args:
             model_id: Model identifier (e.g. 'mistral', 'qwen')
-            hf_token: Optional HuggingFace token for gated models
+            hf_token: Ignored (all models are now public GGUF)
             progress_callback: Optional callback(progress_percent: float, status: str)
         
         Returns:
@@ -123,44 +109,9 @@ class ModelDownloader:
             }
         
         model_info = MODEL_URLS[model_id]
-        
-        # If no token provided, try environment as fallback
-        if not hf_token:
-            hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
-            if hf_token:
-                print("[INFO] Using HF token from environment")
-        else:
-            print("[INFO] Using HF token from parameter")
-        
-        # Check if we should use GGUF fallback URL (for gated original models)
-        use_gguf_fallback = False
-        if "gguf_url" in model_info:
-            # Use original URL if token is provided, otherwise use GGUF fallback
-            if not hf_token:
-                use_gguf_fallback = True
-                url = model_info["gguf_url"]
-                requires_token = model_info.get("gguf_requires_token", False)
-                print(f"[INFO] Using fallback GGUF URL (no token provided)")
-            else:
-                url = model_info["url"]
-                requires_token = model_info.get("requires_token", False)
-                print(f"[INFO] Using official repo URL (token provided)")
-        else:
-            url = model_info["url"]
-            requires_token = model_info.get("requires_token", False)
-        
+        url = model_info["url"]
         filename = model_info["filename"]
         output_path = self.models_dir / filename
-        
-        # Final check: if token is still needed but not available, error out
-        if requires_token and not hf_token:
-            print(f"[ERROR] Token required but not provided for {model_id}")
-            return {
-                "success": False,
-                "message": "This model requires a HuggingFace token. Please provide one.",
-                "file_path": None,
-                "requires_token": True
-            }
         
         # Check if already downloaded
         if self.is_model_downloaded(model_id):
@@ -175,20 +126,14 @@ class ModelDownloader:
             self.current_download = model_id
             self.download_progress = 0.0
             
-            source_msg = "GGUF quantization" if use_gguf_fallback else "official repo"
             if progress_callback:
-                progress_callback(0.0, f"Starting download from {source_msg}...")
+                progress_callback(0.0, "Starting download...")
             
-            # Prepare headers with token if provided
+            # No auth needed - all models are public
             headers = {}
-            if hf_token:
-                headers["Authorization"] = f"Bearer {hf_token}"
-                print(f"[INFO] Added Authorization header with token")
             
             # Stream download with progress
             print(f"[INFO] Downloading {model_id} from {url}")
-            if use_gguf_fallback:
-                print(f"[INFO] Using public GGUF quantization (no token required)")
             
             response = requests.get(url, stream=True, headers=headers)
             response.raise_for_status()
@@ -242,28 +187,9 @@ class ModelDownloader:
             self.is_downloading = False
             self.current_download = None
             
-            # Check if 401/403 (authentication error)
-            if e.response.status_code in [401, 403]:
-                error_msg = "Authentication required. Please provide a valid HuggingFace token."
-                print(f"[ERROR] {error_msg}")
-                print(f"[ERROR] Status: {e.response.status_code}, URL: {url}")
-                print(f"[ERROR] Had token: {bool(hf_token)}")
-                
-                if output_path.exists():
-                    output_path.unlink()
-                
-                if progress_callback:
-                    progress_callback(0.0, error_msg)
-                
-                return {
-                    "success": False,
-                    "message": error_msg,
-                    "file_path": None,
-                    "requires_token": True
-                }
-            
-            error_msg = f"Download error: {str(e)}"
+            error_msg = f"Download error: HTTP {e.response.status_code}"
             print(f"[ERROR] {error_msg}")
+            print(f"[ERROR] URL: {url}")
             
             if output_path.exists():
                 output_path.unlink()

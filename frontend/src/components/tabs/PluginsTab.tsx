@@ -152,7 +152,7 @@ const PluginsTab = () => {
                           {plugin.name}
                           {plugin.requires_api_key && <Key className="h-3 w-3 text-muted-foreground" />}
                         </CardTitle>
-                        <CardDescription>{plugin.description}</CardDescription>
+                        <CardDescription>{plugin.description || t('pluginsTab.noDescription')}</CardDescription>
                       </div>
                     </div>
                   </CardHeader>
@@ -196,7 +196,7 @@ const PluginsTab = () => {
                       {plugin.name}
                       {plugin.requires_api_key && <Key className="h-4 w-4 text-amber-500" />}
                     </CardTitle>
-                    <CardDescription>{plugin.description}</CardDescription>
+                    <CardDescription>{plugin.description || t('pluginsTab.noDescription')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2 text-sm">

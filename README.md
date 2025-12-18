@@ -1,4 +1,4 @@
-cd # 🤖 JARVIS Core System
+# 🤖 JARVIS Core System
 
 <div align="center">
 

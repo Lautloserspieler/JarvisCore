@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,6 +13,7 @@ interface ChatTabProps {
 }
 
 const ChatTab = ({ onStateChange }: ChatTabProps) => {
+  const { t } = useTranslation();
   const { messages, sendMessage, isTyping, isConnected, isLoading } = useChat();
   const [isListening, setIsListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -59,7 +61,7 @@ const ChatTab = ({ onStateChange }: ChatTabProps) => {
         <Alert variant="destructive" className="mb-4">
           <WifiOff className="h-4 w-4" />
           <AlertDescription>
-            WebSocket getrennt. Nachrichten werden über REST API gesendet. Verbinde neu...
+            {t('chatTab.disconnectedWarning')}
           </AlertDescription>
         </Alert>
       )}
@@ -68,13 +70,13 @@ const ChatTab = ({ onStateChange }: ChatTabProps) => {
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-muted-foreground">Lade Nachrichten...</div>
+            <div className="text-muted-foreground">{t('chatTab.loadingMessages')}</div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-muted-foreground">
-              <p className="text-lg mb-2">Willkommen bei JARVIS</p>
-              <p className="text-sm">Starten Sie eine Konversation</p>
+              <p className="text-lg mb-2">{t('chatTab.welcomeTitle')}</p>
+              <p className="text-sm">{t('chatTab.welcomeMessage')}</p>
             </div>
           </div>
         ) : (
@@ -91,7 +93,7 @@ const ChatTab = ({ onStateChange }: ChatTabProps) => {
               <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
               <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
-            <span className="text-sm text-muted-foreground">JARVIS denkt nach...</span>
+            <span className="text-sm text-muted-foreground">{t('chatTab.thinking')}</span>
           </div>
         )}
       </ScrollArea>

@@ -20,7 +20,8 @@
     "ready": "READY",
     "listening": "LISTENING",
     "processing": "PROCESSING",
-    "speaking": "SPEAKING"
+    "speaking": "SPEAKING",
+    "noDescription": "No description available"
   },
   "navigation": {
     "chat": "Chat",
@@ -114,7 +115,8 @@
     "author": "Author",
     "status": "Status",
     "availablePlugins": "Available Plugins",
-    "actionFailed": "Action failed"
+    "actionFailed": "Action failed",
+    "noDescription": "No description available"
   },
   "chat": {
     "title": "Chat",
@@ -305,7 +307,8 @@
     "settings": "Plugin Settings",
     "apiKey": "API Key",
     "apiKeyRequired": "API Key Required",
-    "save": "Save"
+    "save": "Save",
+    "noDescription": "No description available"
   },
   "ui": {
     "title": "User Interface",

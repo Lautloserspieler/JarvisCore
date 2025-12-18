@@ -106,14 +106,17 @@ const TokenDialog = ({ modelName, language, onClose, onSubmit }: TokenDialogProp
 
           {/* Token Input */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t.tokenLabel}</label>
+            <label htmlFor="hf-token" className="text-sm font-medium">{t.tokenLabel}</label>
             <Input
+              id="hf-token"
+              name="token"
               type="password"
               placeholder={t.tokenPlaceholder}
               value={token}
               onChange={(e) => setToken(e.target.value)}
               onKeyPress={handleKeyPress}
               className="font-mono"
+              autoComplete="off"
             />
             {error && (
               <p className="text-xs text-destructive">{error}</p>

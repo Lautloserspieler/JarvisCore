@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -25,6 +26,7 @@ interface Settings {
 }
 
 const SettingsTab = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [settings, setSettings] = useState<Settings>({
     llm: {
@@ -45,8 +47,8 @@ const SettingsTab = () => {
 
   const handleSave = () => {
     toast({
-      title: "Settings Saved",
-      description: "Configuration saved to data/settings.json",
+      title: t('settings.saved'),
+      description: t('settingsTab.savedDescription'),
     });
   };
 
@@ -56,14 +58,14 @@ const SettingsTab = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5" />
-            LLM Settings
+            {t('llm.title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Enable LLM</Label>
-              <p className="text-sm text-muted-foreground">Use language model for responses</p>
+              <Label>{t('llm.enable')}</Label>
+              <p className="text-sm text-muted-foreground">{t('llm.enableDesc')}</p>
             </div>
             <Switch 
               checked={settings.llm.enabled}
@@ -75,8 +77,8 @@ const SettingsTab = () => {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label>Context Length</Label>
-              <span className="text-sm text-muted-foreground">{settings.llm.contextLength} tokens</span>
+              <Label>{t('llm.contextLength')}</Label>
+              <span className="text-sm text-muted-foreground">{settings.llm.contextLength} {t('chat.tokens').toLowerCase()}</span>
             </div>
             <Slider
               value={[settings.llm.contextLength]}
@@ -96,7 +98,7 @@ const SettingsTab = () => {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label>Temperature</Label>
+              <Label>{t('llm.temperature')}</Label>
               <span className="text-sm text-muted-foreground">{settings.llm.temperature.toFixed(1)}</span>
             </div>
             <Slider
@@ -110,8 +112,8 @@ const SettingsTab = () => {
               disabled={!settings.llm.enabled}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>0.0 (Precise)</span>
-              <span>2.0 (Creative)</span>
+              <span>0.0 ({t('llm.precise')})</span>
+              <span>2.0 ({t('llm.creative')})</span>
             </div>
           </div>
         </CardContent>
@@ -121,14 +123,14 @@ const SettingsTab = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Volume2 className="h-5 w-5" />
-            TTS Settings
+            {t('settingsTab.tts.title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Enable TTS</Label>
-              <p className="text-sm text-muted-foreground">Text-to-speech voice output</p>
+              <Label>{t('settingsTab.tts.enable')}</Label>
+              <p className="text-sm text-muted-foreground">{t('settingsTab.tts.description')}</p>
             </div>
             <Switch 
               checked={settings.tts.enabled}
@@ -140,7 +142,7 @@ const SettingsTab = () => {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label>Speech Rate</Label>
+              <Label>{t('settingsTab.tts.speechRate')}</Label>
               <span className="text-sm text-muted-foreground">{settings.tts.speechRate} WPM</span>
             </div>
             <Slider
@@ -161,7 +163,7 @@ const SettingsTab = () => {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label>Volume</Label>
+              <Label>{t('settingsTab.tts.volume')}</Label>
               <span className="text-sm text-muted-foreground">{settings.tts.volume}%</span>
             </div>
             <Slider
@@ -186,14 +188,14 @@ const SettingsTab = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mic className="h-5 w-5" />
-            Speech Recognition
+            {t('settingsTab.speech.title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Enable Wake Word</Label>
-              <p className="text-sm text-muted-foreground">Activate with &quot;Hey JARVIS&quot;</p>
+              <Label>{t('settingsTab.speech.enableWakeWord')}</Label>
+              <p className="text-sm text-muted-foreground">{t('settingsTab.speech.wakeWordDesc')}</p>
             </div>
             <Switch 
               checked={settings.speech.wakeWordEnabled}
@@ -205,8 +207,8 @@ const SettingsTab = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <Label>Continuous Listening</Label>
-              <p className="text-sm text-muted-foreground">No wake word required</p>
+              <Label>{t('settingsTab.speech.continuousListening')}</Label>
+              <p className="text-sm text-muted-foreground">{t('settingsTab.speech.continuousDesc')}</p>
             </div>
             <Switch 
               checked={settings.speech.continuousListening}
@@ -220,7 +222,7 @@ const SettingsTab = () => {
 
       <Button onClick={handleSave} className="w-full">
         <Save className="h-4 w-4 mr-2" />
-        Save Settings
+        {t('common.save')} {t('navigation.settings')}
       </Button>
     </div>
   );

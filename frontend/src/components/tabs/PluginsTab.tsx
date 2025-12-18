@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ interface Plugin {
 }
 
 const PluginsTab = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,8 +53,8 @@ const PluginsTab = () => {
     } catch (error) {
       console.error('Fehler beim Laden der Plugins:', error);
       toast({
-        title: 'Fehler',
-        description: 'Plugins konnten nicht geladen werden',
+        title: t('common.error'),
+        description: t('plugins.loadError'),
         variant: 'destructive'
       });
     } finally {
@@ -79,8 +81,8 @@ const PluginsTab = () => {
         );
         
         toast({
-          title: 'Erfolg',
-          description: result.message || (enabled ? 'Plugin aktiviert' : 'Plugin deaktiviert')
+          title: t('common.success'),
+          description: result.message || (enabled ? t('plugins.enabled') : t('plugins.disabled'))
         });
       } else if (result.requires_api_key && result.api_key_info) {
         const plugin = plugins.find(p => p.id === pluginId);
@@ -92,13 +94,13 @@ const PluginsTab = () => {
           setApiKeyModalOpen(true);
         }
       } else {
-        throw new Error(result.error || 'Fehler');
+        throw new Error(result.error || t('common.error'));
       }
     } catch (error) {
       console.error('Fehler:', error);
       toast({
-        title: 'Fehler',
-        description: 'Aktion fehlgeschlagen',
+        title: t('common.error'),
+        description: t('pluginsTab.actionFailed'),
         variant: 'destructive'
       });
     } finally {
@@ -116,7 +118,7 @@ const PluginsTab = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[600px]">
-        <div className="text-muted-foreground">Lade Plugins...</div>
+        <div className="text-muted-foreground">{t('pluginsTab.loading')}</div>
       </div>
     );
   }
@@ -129,13 +131,13 @@ const PluginsTab = () => {
       <div className="space-y-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Aktive Plugins</h3>
-            <Badge variant="outline">{enabledPlugins.length} aktiv</Badge>
+            <h3 className="text-lg font-semibold">{t('pluginsTab.activePlugins')}</h3>
+            <Badge variant="outline">{enabledPlugins.length} {t('pluginsTab.active')}</Badge>
           </div>
           {enabledPlugins.length === 0 ? (
             <Card className="holo-card">
               <CardContent className="py-6">
-                <p className="text-center text-muted-foreground">Keine Plugins aktiviert</p>
+                <p className="text-center text-muted-foreground">{t('pluginsTab.noActive')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -157,15 +159,15 @@ const PluginsTab = () => {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Version:</span>
+                        <span className="text-muted-foreground">{t('pluginsTab.version')}:</span>
                         <span>{plugin.version}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Autor:</span>
+                        <span className="text-muted-foreground">{t('pluginsTab.author')}:</span>
                         <span>{plugin.author}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Status:</span>
+                        <span className="text-muted-foreground">{t('pluginsTab.status')}:</span>
                         <Badge variant="outline" className="text-xs">{plugin.status}</Badge>
                       </div>
                     </div>
@@ -174,7 +176,7 @@ const PluginsTab = () => {
                       disabled={toggling[plugin.id]}
                       className="w-full"
                     >
-                      {toggling[plugin.id] ? 'Ladet...' : 'Deaktivieren'}
+                      {toggling[plugin.id] ? t('common.loading') : t('plugins.disable')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -185,7 +187,7 @@ const PluginsTab = () => {
 
         {disabledPlugins.length > 0 && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Verfuegbare Plugins</h3>
+            <h3 className="text-lg font-semibold">{t('pluginsTab.availablePlugins')}</h3>
             <div className="grid gap-4 md:grid-cols-2">
               {disabledPlugins.map((plugin) => (
                 <Card key={plugin.id} className="holo-card">
@@ -199,17 +201,17 @@ const PluginsTab = () => {
                   <CardContent className="space-y-4">
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Version:</span>
+                        <span className="text-muted-foreground">{t('pluginsTab.version')}:</span>
                         <span>{plugin.version}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Autor:</span>
+                        <span className="text-muted-foreground">{t('pluginsTab.author')}:</span>
                         <span>{plugin.author}</span>
                       </div>
                       {plugin.requires_api_key && (
                         <div className="flex items-center gap-2 text-amber-600">
                           <Key className="h-3 w-3" />
-                          <span className="text-xs">Benoetigt API-Key</span>
+                          <span className="text-xs">{t('plugins.apiKeyRequired')}</span>
                         </div>
                       )}
                     </div>
@@ -219,7 +221,7 @@ const PluginsTab = () => {
                       variant="default"
                       className="w-full"
                     >
-                      {toggling[plugin.id] ? 'Ladet...' : 'Aktivieren'}
+                      {toggling[plugin.id] ? t('common.loading') : t('plugins.enable')}
                     </Button>
                   </CardContent>
                 </Card>

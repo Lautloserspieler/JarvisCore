@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ interface LogStats {
 }
 
 const LogsTab = () => {
+  const { t, i18n } = useTranslation();
   const [logs, setLogs] = useState<Log[]>([]);
   const [stats, setStats] = useState<LogStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ const LogsTab = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[600px]">
-        <div className="text-muted-foreground">Lade Protokolle...</div>
+        <div className="text-muted-foreground">{t('logsTab.loading')}</div>
       </div>
     );
   }
@@ -107,21 +109,21 @@ const LogsTab = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>System-Protokolle</CardTitle>
-              <CardDescription>Echtzeit-Protokollierung aller Systemereignisse</CardDescription>
+              <CardTitle>{t('logsTab.title')}</CardTitle>
+              <CardDescription>{t('logsTab.description')}</CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Aktualisieren
+                {t('common.refresh')}
               </Button>
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
-                Exportieren
+                {t('common.export')}
               </Button>
               <Button variant="outline" size="sm">
                 <Trash2 className="h-4 w-4 mr-2" />
-                Löschen
+                {t('common.delete')}
               </Button>
             </div>
           </div>
@@ -154,14 +156,14 @@ const LogsTab = () => {
           <ScrollArea className="h-[400px] w-full rounded-md border border-border/40 p-4">
             {filteredLogs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>Keine Protokolle verfügbar</p>
+                <p>{t('logsTab.noLogs')}</p>
               </div>
             ) : (
               <div className="space-y-2 font-mono text-sm">
                 {filteredLogs.map((log) => (
                   <div key={log.id} className="flex items-start gap-3 p-2 rounded hover:bg-accent/50">
                     <span className="text-muted-foreground whitespace-nowrap">
-                      {new Date(log.timestamp).toLocaleTimeString('de-DE')}
+                      {new Date(log.timestamp).toLocaleTimeString(i18n.language)}
                     </span>
                     <Badge variant={getLevelBadge(log.level) as any} className="uppercase text-xs">
                       {log.level}

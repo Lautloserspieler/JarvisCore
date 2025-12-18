@@ -145,6 +145,23 @@
     "importErrorDesc": "Ungültige Einstellungsdatei",
     "saved": "Einstellungen gespeichert"
   },
+  "settingsTab": {
+    "savedDescription": "Konfiguration in data/settings.json gespeichert",
+    "tts": {
+      "title": "Sprachausgabe",
+      "enable": "Sprachausgabe aktivieren",
+      "description": "Text-zu-Sprache Ausgabe",
+      "speechRate": "Sprechgeschwindigkeit",
+      "volume": "Lautstärke"
+    },
+    "speech": {
+      "title": "Spracherkennung",
+      "enableWakeWord": "Aktivierungswort aktivieren",
+      "wakeWordDesc": "Mit \"Hey JARVIS\" aktivieren",
+      "continuousListening": "Dauerhaftes Zuhören",
+      "continuousDesc": "Kein Aktivierungswort erforderlich"
+    }
+  },
   "tabs": {
     "llm": "LLM",
     "plugins": "Plugins",

@@ -16,12 +16,16 @@
     "close": "Schließen",
     "open": "Öffnen",
     "refresh": "Aktualisieren",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "ready": "BEREIT",
+    "listening": "HÖRE ZU",
+    "processing": "VERARBEITE",
+    "speaking": "ANTWORTE"
   },
   "navigation": {
     "chat": "💬 Chat",
     "dashboard": "📊 Dashboard",
-    "memory": "🧠 Wissensbasis",
+    "memory": "🧠 Gedächtnis",
     "models": "🤖 Modelle",
     "settings": "⚙️ Einstellungen"
   },
@@ -236,8 +240,8 @@
     "connectionSuccess": "Verbindung erfolgreich",
     "connectionFailed": "Verbindung fehlgeschlagen",
     "status": "Status",
-    "connected": "Verbunden",
-    "disconnected": "Getrennt"
+    "connected": "ONLINE",
+    "disconnected": "VERBINDE"
   },
   "advanced": {
     "title": "⚙️ Erweiterte Einstellungen",
@@ -269,7 +273,7 @@
     "restartRequired": "Seite wird aktualisiert..."
   },
   "errors": {
-    "connectionFailed": "Verbindung fehlgeschlagen",
+    "connectionFailed": "FEHLER",
     "modelLoadFailed": "Modell konnte nicht geladen werden",
     "pluginError": "Plugin-Fehler",
     "networkError": "Netzwerkfehler",

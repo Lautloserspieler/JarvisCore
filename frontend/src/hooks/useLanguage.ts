@@ -1,25 +1,48 @@
 import { useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
+/**
+ * Hook für Sprachverwaltung
+ * Bietet aktuelle Sprache und Umschaltunssfunktionalität
+ */
 export const useLanguage = () => {
-  const { i18n } = useTranslation();
+  // Aktuelle Sprache
+  const currentLanguage = i18next.language || localStorage.getItem('jarvis-language') || 'en';
 
-  const currentLanguage = i18n.language as 'de' | 'en';
+  /**
+   * Sprache wechseln
+   * @param language - 'de' oder 'en'
+   */
+  const switchLanguage = useCallback((language: 'de' | 'en') => {
+    i18next.changeLanguage(language);
+    localStorage.setItem('jarvis-language', language);
+    
+    // Optional: Seite aktualisieren für sofortige Änderungen
+    // window.location.reload();
+  }, []);
 
-  const switchLanguage = useCallback((lang: 'de' | 'en') => {
-    i18n.changeLanguage(lang);
-  }, [i18n]);
-
+  /**
+   * Zwischen Deutsch und Englisch umschalten
+   */
   const toggleLanguage = useCallback(() => {
-    const newLang = currentLanguage === 'de' ? 'en' : 'de';
-    switchLanguage(newLang);
+    const newLanguage = currentLanguage === 'de' ? 'en' : 'de';
+    switchLanguage(newLanguage);
   }, [currentLanguage, switchLanguage]);
+
+  /**
+   * Verfügbare Sprachen
+   */
+  const availableLanguages = [
+    { code: 'de', name: '🇩🇪 Deutsch' },
+    { code: 'en', name: '🇬🇧 English' }
+  ];
 
   return {
     currentLanguage,
     switchLanguage,
     toggleLanguage,
-    isDE: currentLanguage === 'de',
-    isEN: currentLanguage === 'en'
+    availableLanguages,
+    isGerman: currentLanguage === 'de',
+    isEnglish: currentLanguage === 'en'
   };
 };

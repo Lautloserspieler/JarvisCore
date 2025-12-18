@@ -23,16 +23,18 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt', 'backend/requirements-dev.txt') }}
+        key: ${{ runner.os }}-pip-test-${{ hashFiles('backend/requirements-dev.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-
+          ${{ runner.os }}-pip-test-
     
-    - name: Install dependencies
+    - name: Install minimal dependencies for testing
       run: |
         cd backend
         pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+        # Install only test dependencies, skip heavy ML libraries
+        pip install pytest pytest-asyncio pytest-cov pytest-mock httpx black flake8 mypy
+        # Install minimal backend deps (skip torch, transformers, accelerate)
+        pip install fastapi uvicorn python-dotenv pydantic python-multipart websockets psutil requests pyyaml
     
     - name: Run Black formatter check
       run: |
@@ -43,7 +45,6 @@ jobs:
     - name: Run pytest
       run: |
         cd backend
-        # Skip tests that require actual modules for now
         pytest tests/ -v --tb=short || echo "Some tests failed - this is expected for initial setup"
       continue-on-error: true
 

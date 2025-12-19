@@ -1,6 +1,6 @@
-github.com/golang-jwt/jwt/v5 v5.2.1 h1:c4LZ/qv2q2lIHxrP8asDQwmXELl6CpWmOccS3ijNUw=
-github.com/golang-jwt/jwt/v5 v5.2.1/go.mod h1:pqrtFtq9PsFIqM6Bi7l1ftQmlCSrEWTKXftoD4tvmw=
-github.com/gorilla/mux v1.8.1 h1:TuBL49tXwrFdBlMeagk6mfwbsta+c17yUZIhost/3Fc=
-github.com/gorilla/mux v1.8.1/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BcV4FEJFc=
-golang.org/x/time v0.5.0 h1:o7cqLr/ZJF0Z+DT+sNrWFO3ItFtKzX6FEwI+RA8fdI=
-golang.org/x/time v0.5.0/go.mod h1:3BpJ0CmxQKgumNFASVLm8t3r/MD5KwRhAQJvqY6uqc=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
+github.com/gorilla/mux v1.8.1 h1:TuBL49tXwgrFYWhqrNgrUNEY92u81SPhu7sTdzQEiWY=
+github.com/gorilla/mux v1.8.1/go.mod h1:AKf9I4AEqPTmMytcMc0KkNouC66V3BtZ4qD5fmWSiMQ=
+golang.org/x/time v0.5.0 h1:o7cqy6amK/52YcAKIPlM3a+Fpj35zvRj2TP+e1xFSfk=
+golang.org/x/time v0.5.0/go.mod h1:3BpzKBy/shNhVucY/MWOyx10tF3SFh9QdLuxbVysPQM=

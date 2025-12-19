@@ -13,8 +13,7 @@
 [![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-orange.svg)](https://github.com/ggerganov/llama.cpp)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/Lautloserspieler/JarvisCore?style=social)](https://github.com/Lautloserspieler/JarvisCore)
-[![GitHub Issues](https://img.shields.io/github/issues/Lautloserspieler/JarvisCore)](https://github.com/Lautloserspieler/JarvisCore/issues)
-[![Last Commit](https://img.shields.io/github/last-commit/Lautloserspieler/JarvisCore)](https://github.com/Lautloserspieler/JarvisCore/commits/main)
+
 
 Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llama.cpp Inferenz**
 

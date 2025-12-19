@@ -1,0 +1,6 @@
+github.com/golang-jwt/jwt/v5 v5.2.1 h1:c4LZ/qv2q2lIHxrP8asDQwmXELl6CpWmOccS3ijNUw=
+github.com/golang-jwt/jwt/v5 v5.2.1/go.mod h1:pqrtFtq9PsFIqM6Bi7l1ftQmlCSrEWTKXftoD4tvmw=
+github.com/gorilla/mux v1.8.1 h1:TuBL49tXwrFdBlMeagk6mfwbsta+c17yUZIhost/3Fc=
+github.com/gorilla/mux v1.8.1/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BcV4FEJFc=
+golang.org/x/time v0.5.0 h1:o7cqLr/ZJF0Z+DT+sNrWFO3ItFtKzX6FEwI+RA8fdI=
+golang.org/x/time v0.5.0/go.mod h1:3BpJ0CmxQKgumNFASVLm8t3r/MD5KwRhAQJvqY6uqc=

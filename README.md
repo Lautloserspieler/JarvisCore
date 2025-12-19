@@ -4,16 +4,21 @@
 
 **Just A Rather Very Intelligent System**
 
-Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llama.cpp Inferenz**
-
+[![CI/CD](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/ci.yml/badge.svg)](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/ci.yml)
+[![Release](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/release.yml/badge.svg)](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/release.yml)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![Go](https://img.shields.io/badge/Go-1.21+-cyan.svg)](https://golang.org)
 [![Vue](https://img.shields.io/badge/Vue-3.5+-green.svg)](https://vuejs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
 [![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-orange.svg)](https://github.com/ggerganov/llama.cpp)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/Lautloserspieler/JarvisCore?style=social)](https://github.com/Lautloserspieler/JarvisCore)
+[![GitHub Issues](https://img.shields.io/github/issues/Lautloserspieler/JarvisCore)](https://github.com/Lautloserspieler/JarvisCore/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/Lautloserspieler/JarvisCore)](https://github.com/Lautloserspieler/JarvisCore/commits/main)
 
-[🇬🇧 English Version](./README_GB.md)
+Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llama.cpp Inferenz**
+
+[🇬🇧 English Version](./README_GB.md) | [📚 Docs](./docs/) | [❓ FAQ](./FAQ.md) | [🔒 Security](./SECURITY.md)
 
 </div>
 
@@ -361,7 +366,7 @@ python setup_llama.py
 # Wähle Option 3
 ```
 
-Weitere Hilfe: [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)
+Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTING.md)
 
 ---
 
@@ -386,6 +391,8 @@ Weitere Hilfe: [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)
 - Vector Database
 - Multi-User Support
 - Cloud Deployment
+
+Siehe auch: [📋 CHANGELOG](./CHANGELOG.md) für detaillierte Release Notes
 
 ---
 
@@ -428,7 +435,8 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 - [Performance Guide](docs/PERFORMANCE.md)
 - [Deployment Guide](DEPLOYMENT.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
-- [Changelog](docs/CHANGELOG.md)
+- [FAQ](FAQ.md)
+- [Changelog](CHANGELOG.md)
 
 ---
 

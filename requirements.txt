@@ -41,7 +41,7 @@ pywebview>=4.4.1
 # Torch stack (requires NumPy <2.0)
 torch>=2.1.0
 torchaudio>=2.1.0
-torchvision==0.16.1
+torchvision>=0.16.1  # Changed from ==0.16.1 for Python 3.12 compatibility
 
 # Data processing (requires NumPy <2.0)
 pandas>=1.4,<2.0

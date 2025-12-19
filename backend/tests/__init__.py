@@ -1,1 +1,1 @@
-"""Test suite for JARVIS Core Backend"""
+"""JARVIS Core backend tests package."""

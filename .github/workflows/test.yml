@@ -68,7 +68,7 @@ jobs:
       run: |
         cd go-services/auth
         go mod tidy
-        go test -v ./... || true
+        go test -v ./...
   
   # Code Quality
   code-quality:

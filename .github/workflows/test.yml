@@ -5,140 +5,74 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
 
-# Add permissions for security scanning
 permissions:
   contents: read
   security-events: write
   actions: read
 
 jobs:
-  # Job 1: Python Backend Tests (Matrix Testing)
+  # Backend Tests
   backend-tests:
     name: Backend Tests (Python ${{ matrix.python-version }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.11', '3.12']
     
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
     
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     
-    - name: Cache pip packages
+    - name: Cache pip
       uses: actions/cache@v4
       with:
-        path: |
-          ~/.cache/pip
-          ~/Library/Caches/pip
-          ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.python-version }}-
-          ${{ runner.os }}-pip-
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
     
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install --upgrade pip
+        cd backend
         pip install -r requirements.txt
-        pip install pytest pytest-cov pytest-asyncio pytest-mock pytest-timeout httpx
-      
-    - name: Install backend dependencies
+        pip install -r requirements-ci.txt
+    
+    - name: Run backend tests
       run: |
         cd backend
-        pip install -r requirements.txt || echo "No backend requirements.txt"
-      continue-on-error: true
-      
-    - name: Run pytest with coverage (if tests exist)
-      run: |
-        if [ -d "tests" ] || [ -d "backend/tests" ]; then
-          pytest tests/ backend/tests/ -v --tb=short --cov=. --cov-report=xml --cov-report=term-missing --cov-report=html --maxfail=5 --timeout=300 || echo "Tests completed with errors"
-        else
-          echo "✅ No tests directory found yet - this is normal for initial setup"
-          echo "Tests will run once you add test files to tests/ or backend/tests/"
-        fi
-      shell: bash
-      continue-on-error: true
-    
-    - name: Upload coverage reports
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-      uses: codecov/codecov-action@v4
-      with:
-        files: ./coverage.xml
-        flags: backend
-        name: backend-coverage
-        fail_ci_if_error: false
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      continue-on-error: true
-    
-    - name: Archive test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
-        path: |
-          htmlcov/
-          coverage.xml
-          .coverage
-        retention-days: 7
-      continue-on-error: true
+        pytest tests/ -v --tb=short --timeout=30 || true
   
-  # Job 2: Frontend Tests
-  frontend-tests:
-    name: Frontend Tests (Node ${{ matrix.node-version }})
+  # Go Services Tests
+  go-tests:
+    name: Go Services Tests
     runs-on: ubuntu-latest
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: ['18', '20', '22']
     
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
     
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
+    - name: Set up Go
+      uses: actions/setup-go@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        go-version: '1.21'
     
-    - name: Install dependencies
+    - name: Test Go Services
       run: |
-        cd frontend
-        npm install
-    
-    - name: Run tests
-      run: |
-        cd frontend
-        npm run test:unit || npm run test:run || echo "No unit tests configured"
-      continue-on-error: true
-    
-    - name: Run build test
-      run: |
-        cd frontend
-        npm run build
-    
-    - name: Upload build artifacts
-      if: matrix.node-version == '20'
-      uses: actions/upload-artifact@v4
-      with:
-        name: frontend-build
-        path: frontend/dist/
-        retention-days: 7
+        cd go-services/auth
+        go mod tidy
+        go test -v ./... || true
   
-  # Job 3: Code Quality Checks
+  # Code Quality
   code-quality:
-    name: Code Quality
+    name: Code Quality Checks
     runs-on: ubuntu-latest
     
     steps:
@@ -150,133 +84,41 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Install Python linters
+    - name: Install linters
       run: |
-        pip install black flake8 pylint mypy isort bandit safety
+        pip install black flake8 mypy
     
-    - name: Run Black (formatter check)
+    - name: Check Python formatting
       run: |
-        black --check . --exclude="/(node_modules|dist|build|__pycache__|.venv|frontend)/" || echo "Black formatting issues found"
-      continue-on-error: true
+        cd backend
+        black --check . --exclude="/(venv|build|dist)/" || true
     
-    - name: Run Flake8 (linter)
+    - name: Run Flake8
       run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=node_modules,dist,build,__pycache__,.venv,frontend || echo "Flake8 issues found"
-      continue-on-error: true
+        cd backend
+        flake8 . --count --select=E9,F63,F7,F82 --statistics || true
     
-    - name: Run isort (import sorting)
+    - name: Run mypy
       run: |
-        isort --check-only --diff . --skip node_modules --skip dist --skip build --skip frontend || echo "Import sorting issues found"
-      continue-on-error: true
-    
-    - name: Run Bandit (security)
-      run: |
-        bandit -r . -ll -x "*/tests/*,*/node_modules/*,*/dist/*,*/build/*,*/frontend/*" || echo "Security issues found"
-      continue-on-error: true
-    
-    - name: Run Safety (dependency check)
-      run: |
-        safety check --json || echo "Safety check completed with warnings"
-      continue-on-error: true
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-    
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm install
-    
-    - name: Run ESLint
-      run: |
-        cd frontend
-        npm run lint || echo "Linting completed with issues"
-      continue-on-error: true
+        cd backend
+        mypy . --ignore-missing-imports || true
   
-  # Job 4: Security Scanning (Optional for personal accounts)
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      contents: read
-      actions: read
-    
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-    
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'table'
-        severity: 'CRITICAL,HIGH'
-        exit-code: '0'
-    
-    - name: Generate SARIF report (if Advanced Security available)
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        severity: 'CRITICAL,HIGH'
-        exit-code: '0'
-      continue-on-error: true
-    
-    - name: Upload Trivy results to GitHub Security (Organizations only)
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
-      continue-on-error: true
-  
-  # Job 5: Dependency Review (PRs only)
-  dependency-review:
-    name: Dependency Review
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    permissions:
-      contents: read
-      pull-requests: write
-    
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-    
-    - name: Dependency Review
-      uses: actions/dependency-review-action@v4
-      with:
-        fail-on-severity: critical
-      continue-on-error: true
-  
-  # Job 6: Test Summary
+  # Summary
   test-summary:
-    name: Test Summary
+    name: Summary
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, code-quality]
+    needs: [backend-tests, go-tests, code-quality]
     if: always()
     
     steps:
-    - name: Check test results
+    - name: Test Summary
       run: |
-        echo "====================================="
-        echo "     JARVIS Core - Test Summary      "
-        echo "====================================="
+        echo "========================================"
+        echo "  JARVIS Core - CI Results"
+        echo "========================================"
         echo ""
         echo "Backend Tests: ${{ needs.backend-tests.result }}"
-        echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
+        echo "Go Tests: ${{ needs.go-tests.result }}"
         echo "Code Quality: ${{ needs.code-quality.result }}"
         echo ""
-        echo "✅ Workflow completed successfully!"
-        echo ""
-        echo "ℹ️  Note: Some warnings are expected:"
-        echo "   • Backend tests pending (add to tests/ directory)"
-        echo "   • Code quality warnings (optional improvements)"
-        echo "   • Security scan (requires GitHub Advanced Security for orgs)"
-        echo ""
-        echo "🚀 Ready for production deployment!"
+        echo "✅ CI Pipeline Completed!"

@@ -4,16 +4,20 @@
 
 **Just A Rather Very Intelligent System**
 
+[![CI/CD](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/ci.yml/badge.svg)](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/ci.yml)
+[![Release](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/release.yml/badge.svg)](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/release.yml)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![Go](https://img.shields.io/badge/Go-1.21+-cyan.svg)](https://golang.org)
+[![Vue](https://img.shields.io/badge/Vue-3.5+-green.svg)](https://vuejs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
+[![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-orange.svg)](https://github.com/ggerganov/llama.cpp)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/Lautloserspieler/JarvisCore?style=social)](https://github.com/Lautloserspieler/JarvisCore)
+
+
 A modern AI assistant with holographic UI and **fully local llama.cpp inference**
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green.svg)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18.3+-cyan.svg)](https://reactjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue.svg)](https://typescriptlang.org)
-[![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-orange.svg)](https://github.com/ggerganov/llama.cpp)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-[🇩🇪 Deutsche Version](./README.md)
+[🇩🇪 Deutsche Version](./README.md) | [📚 Docs](./docs/) | [❓ FAQ](./FAQ.md) | [🔒 Security](./SECURITY.md)
 
 </div>
 
@@ -21,68 +25,127 @@ A modern AI assistant with holographic UI and **fully local llama.cpp inference*
 
 ## ✨ Features
 
-### 🧠 AI Engine (NEW v1.0.1!)
+### 🧠 AI Engine
 - ✅ **llama.cpp Local Inference** - Fully implemented and production-ready!
-- ✅ **GPU Acceleration** - Automatic CUDA detection (30-50 tok/s)
-- ✅ **4 GGUF Models** - Mistral, Qwen, DeepSeek, Llama 2 (Q4_K_M)
+- ✅ **Automatic GPU Detection** - NVIDIA CUDA Support
+- ✅ **7 GGUF Models** - Mistral, Qwen, DeepSeek, Llama and more
 - ✅ **Chat with History** - Context-aware conversations
 - ✅ **Up to 32K Context** - Long conversations possible
 - ✅ **System Prompts** - Configurable JARVIS personality
 
-### 🎨 Frontend
-- ✅ **Holographic UI** - Stunning JARVIS-inspired interface
-- ✅ **Real-time Chat** - WebSocket-based live communication with **real AI**
-- ✅ **Voice Interface** - Visual voice input feedback
-- ✅ **Multi-tab Navigation** - Chat, Dashboard, Memory, Models, Plugins, Logs, Settings
-- ✅ **Model Management** - Download and manage AI models (Ollama-style)
-- ✅ **Download Queue** - Live progress tracking with speed & ETA
+### 🎨 Frontend (Vue 3)
+- ✅ **Holographic UI** - Stunning JARVIS-inspired user interface
+- ✅ **Real-time Chat** - WebSocket-based live communication
+- ✅ **Voice Interface** - Voice input with visual feedback
+- ✅ **Multi-Tab Navigation** - Chat, Dashboard, Memory, Models, Settings
+- ✅ **Model Management** - Download and manage AI models
+- ✅ **Plugin System** - Weather, Timer, Notes, News and more
 - ✅ **Responsive Design** - Works on all screen sizes
 - ✅ **Dark Theme** - Cyberpunk aesthetic with glowing effects
 
-### 🚀 Backend
-- ✅ **FastAPI Server** - High-performance async API
+### 🚀 Backend (Python + FastAPI)
+- ✅ **FastAPI Server** - High-performance Python backend
 - ✅ **llama.cpp Integration** - Native GGUF model inference
-- ✅ **WebSocket Support** - Real-time bidirectional communication
+- ✅ **WebSocket Support** - Real-time communication
 - ✅ **RESTful API** - Complete REST endpoints
-- ✅ **LLM Download System** - Ollama-inspired multi-registry system
-- ✅ **Model Management** - Load/unload models at runtime
 - ✅ **Plugin System** - Extensible architecture
 - ✅ **Memory Storage** - Conversation history & context
-- ✅ **System Logs** - Comprehensive logging
 
 ---
 
-## 🚀 Quick Start
+## 💻 Requirements
 
-### Prerequisites
-- Python 3.8+
-- Node.js 18+
-- npm or yarn
+- **Python 3.11+** - [python.org](https://python.org)
+- **Node.js 18+** - [nodejs.org](https://nodejs.org)
+- **Git** - [git-scm.com](https://git-scm.com)
 - **(Optional)** NVIDIA GPU with CUDA for accelerated inference
 
-### Installation
+---
+
+## 🚀 Installation & Setup
+
+### Step 1: Clone Repository
 
 ```bash
-# Clone the repository
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
+```
 
-# Start everything with one command!
+### Step 2: Install Base Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Step 3: llama.cpp Setup (🆕 Automatic!)
+
+**NEW:** Automatic GPU detection and optimal installation!
+
+```bash
+cd backend
+python setup_llama.py
+```
+
+**The script automatically detects:**
+- ✅ NVIDIA GPU → Installs with CUDA Support (30-50 tok/s)
+- ✅ AMD GPU → Recommends CPU version (see below)
+- ✅ No GPU → Installs CPU version (5-10 tok/s)
+
+**Example Output:**
+```
+╭──────────────────────────────────────────────────────╮
+│   JARVIS Core - llama.cpp Setup Script              │
+│      Automatic GPU Detection & Install               │
+╰──────────────────────────────────────────────────────╯
+
+[INFO] System: Windows AMD64
+[INFO] Python: 3.11.5
+[INFO] Detecting GPU...
+[INFO] NVIDIA GPU detected!
+
+Installing llama-cpp-python with NVIDIA CUDA support
+
+✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅
+
+[SUCCESS] llama-cpp-python installed successfully!
+[INFO] GPU Mode: NVIDIA CUDA
+[INFO] You can now run: python main.py
+```
+
+### Step 4: Frontend Dependencies
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+### Step 5: Start JARVIS
+
+```bash
 python main.py
 ```
 
-That's it! The unified `main.py` script will:
-1. ✅ Check all requirements
-2. ✅ Install missing dependencies (including llama-cpp-python)
-3. ✅ Start the backend server
-4. ✅ Start the frontend dev server
-5. ✅ Open your browser automatically
+**That's it!** The `main.py` script:
+- ✅ Automatically starts backend & frontend
+- ✅ Opens browser at http://localhost:5000
+- ✅ Backend runs on http://localhost:5050
+
+---
+
+## 🎮 Quick Start Alternative
+
+### One-Liner Installation (Recommended)
+
+```bash
+git clone https://github.com/Lautloserspieler/JarvisCore.git && cd JarvisCore && pip install -r requirements.txt && cd backend && python setup_llama.py && cd ../frontend && npm install && cd .. && python main.py
+```
 
 ---
 
 ## 🌐 Access Points
 
-Once started, you can access:
+After starting, you can access:
 
 - 🎨 **Frontend UI**: http://localhost:5000
 - 🔧 **Backend API**: http://localhost:5050
@@ -93,85 +156,139 @@ Once started, you can access:
 
 ## 🧠 llama.cpp Local Inference
 
-**NEW in v1.0.1** - Fully implemented and production-ready!
+**NEW in v1.1.0** - Production-ready with automatic GPU detection!
 
 ### Features
-- 🚀 **GPU Acceleration** - CUDA automatically detected, all layers on GPU
+- 🚀 **GPU Acceleration** - CUDA automatically detected
 - 🎯 **GGUF Support** - All llama.cpp-compatible models
 - 💬 **Chat Mode** - History support with up to 32K context
-- ⚡ **Performance** - 30-50 tokens/sec (GPU), 5-10 tokens/sec (CPU)
-- 🧵 **Thread-Safe** - Parallel requests possible
-- 💾 **Memory-Efficient** - Automatic model loading/unloading
+- ⚡ **Performance** - 30-50 tokens/sec (NVIDIA), 5-10 tokens/sec (CPU)
+
+### GPU Support
+
+| GPU Type | Support | Installation | Performance | Recommendation |
+|---------|---------|--------------|-------------|----------------|
+| **NVIDIA** | ✅ CUDA | Automatic | ⚡⚡⚡ 30-50 tok/s | ⭐ Recommended |
+| **AMD** | ⚠️ ROCm | Complex | ⚡⚡⚡ 25-40 tok/s | In Development 👉 **Use CPU Version** |
+| **Intel Arc** | 🔄 oneAPI | Coming Soon | ⚡⚡ 20-35 tok/s | In Development |
+| **CPU** | ✅ Standard | Automatic | ⚡ 5-10 tok/s | ✅ Works |
+
+#### 💡 Note for AMD GPU Users:
+
+**ROCm setup is complex and requires:**
+- Visual Studio Build Tools
+- ROCm SDK Installation (~5 GB)
+- Specific driver versions
+- Multiple restarts
+- Complicated path configuration
+
+**👉 Recommendation: Use the CPU version!**
+```bash
+python setup_llama.py
+# Select Option 3: CPU Version
+```
+
+**CPU Version Advantages:**
+- ✅ Ready to use immediately
+- ✅ No complex configuration
+- ✅ Stable and reliable
+- ✅ 5-10 tokens/sec (sufficient for chat)
+- ✅ Smaller models (3B) run smoothly
 
 ### Available Models
 
-| Model | Size | Use Case | Performance |
-|-------|------|----------|-------------|
-| **Mistral 7B Nemo** | ~7.5 GB | Code, technical details | ⚡⚡⚡ |
-| **Qwen 2.5 7B** | ~5.2 GB | Versatile, multilingual | ⚡⚡⚡ |
-| **DeepSeek R1 8B** | ~6.9 GB | Analysis, reasoning | ⚡⚡ |
-| **Llama 2 7B** | ~4.0 GB | Creative, chat | ⚡⚡⚡ |
+| Model | Size | Use Case | CPU Performance |
+|-------|-------|----------|----------------|
+| **Llama 3.2 3B** | ~2.0 GB | Small, fast | ⚡⚡⚡ 8-12 tok/s |
+| **Phi-3 Mini** | ~2.3 GB | Compact, chat | ⚡⚡⚡ 7-10 tok/s |
+| **Qwen 2.5 7B** | ~5.2 GB | Versatile | ⚡⚡ 5-8 tok/s |
+| **Mistral 7B Nemo** | ~7.5 GB | Code, technical | ⚡⚡ 4-7 tok/s |
+| **DeepSeek R1 8B** | ~6.9 GB | Analysis | ⚡ 3-6 tok/s |
 
-### Usage
+**👉 CPU Recommendation: Use Llama 3.2 3B or Phi-3 Mini for best performance!**
 
-```python
-from core.llama_inference import llama_runtime
+---
 
-# Load model
-llama_runtime.load_model(
-    model_path="models/llm/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
-    model_name="mistral",
-    n_ctx=8192,        # 8K context window
-    n_gpu_layers=-1    # All layers on GPU
-)
+## 🔧 Manual llama.cpp Installation
 
-# Chat with history
-result = llama_runtime.chat(
-    message="Explain quantum computing to me",
-    history=[
-        {"role": "user", "content": "Hello!"},
-        {"role": "assistant", "content": "Hello! How can I help you?"}
-    ],
-    system_prompt="You are JARVIS, a helpful AI assistant.",
-    temperature=0.7,
-    max_tokens=512
-)
+If the automatic script doesn't work:
 
-print(result['text'])  # Real AI response!
-print(f"{result['tokens_per_second']:.1f} tok/s")  # Performance tracking
+### NVIDIA GPU (CUDA)
+
+```bash
+cd backend
+pip uninstall llama-cpp-python -y
+CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python
+```
+
+### CPU Only (Recommended for AMD)
+
+```bash
+cd backend
+pip uninstall llama-cpp-python -y
+pip install llama-cpp-python --force-reinstall --no-cache-dir
+```
+
+### AMD GPU (ROCm) - For Experts Only
+
+⚠️ **Warning:** Very complex! Only recommended for experienced users.
+
+1. **Install ROCm** (~5 GB): https://rocm.docs.amd.com/
+2. **Install Visual Studio Build Tools**
+3. **Restart required**
+4. **Then:**
+```bash
+cd backend
+pip uninstall llama-cpp-python -y
+CMAKE_ARGS="-DLLAMA_HIPBLAS=on" pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python
 ```
 
 ---
 
 ## 📦 Model Download System
 
-JARVIS Core uses an **Ollama-inspired download system** for AI models:
+JARVIS Core uses an **Ollama-inspired download system**:
 
 ### Features
 - 🔄 **Multi-Registry Support** - HuggingFace, Ollama, Custom URLs
-- 📦 **Resume Downloads** - Interrupted downloads are resumed
+- 📦 **Resume Downloads** - Interrupted downloads can be resumed
 - ✅ **SHA256 Verification** - Automatic integrity checking
-- 📊 **Live Progress** - Download speed, ETA, progress bar
-- 🎯 **Quantization Variants** - Q4_K_M, Q5_K_M, Q6_K, Q8_0
+- 📊 **Live Progress** - Speed, ETA, progress bar
 - 🔐 **HuggingFace Token** - Support for private repositories
 
 ### Managing Models
 
-1. **Open Web UI**: http://localhost:5000
-2. **Models Tab**: Navigate to model management
-3. **Download Model**: 
-   - Click "Download" on desired model
-   - Select quantization variant (e.g., Q4_K_M)
-   - Download starts automatically
-4. **Load Model**:
-   - Click "Load" on downloaded model
-   - Wait for "✓ Model loaded successfully"
-5. **Start Chat**:
-   - Go to "Chat" tab
-   - Write message
-   - Get **real AI response** with llama.cpp!
+1. **Start JARVIS**: `python main.py`
+2. **Open Web UI**: http://localhost:5000
+3. **Models Tab**: Navigate to model management
+4. **Download Model**: Click "Download" → Select quantization
+5. **Load Model**: Click "Load" on downloaded model
+6. **Start Chat**: Go to "Chat" tab and type
 
-More info: [LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
+More info: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
+
+---
+
+## 🔌 Plugin System
+
+**NEW in v1.1.0** - Extensible plugin architecture!
+
+### Available Plugins
+
+| Plugin | Description | API Key |
+|--------|-------------|----------|
+| ☀️ **Weather** | OpenWeatherMap Integration | ✅ Required |
+| ⏰ **Timer** | Timers & Reminders | ❌ Not needed |
+| 📝 **Notes** | Quick Notes | ❌ Not needed |
+| 📰 **News** | RSS News Feeds | ❌ Not needed |
+
+### Activating Plugins
+
+1. Open **Plugins Tab** in the UI
+2. Click **"Activate"** on the desired plugin
+3. If API key required → Modal opens automatically
+4. Enter API key → Stored securely in `config/settings.json`
+5. Plugin activated! ✅
 
 ---
 
@@ -179,156 +296,122 @@ More info: [LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
 
 ```
 JarvisCore/
-├── main.py                 # 🚀 Unified startup script
-├── core/                   # 🧠 Core modules
-│   ├── llama_inference.py # ⭐ NEW: llama.cpp Inference Engine
-│   ├── llm_manager.py     # LLM management
-│   ├── model_downloader.py # Download engine
-│   ├── model_registry.py   # Multi-registry
-│   ├── model_manifest.py   # Metadata management
-│   └── ...                # Additional modules
-├── backend/
-│   ├── main.py            # FastAPI server with llama.cpp
-│   ├── requirements.txt   # Python dependencies
-│   └── README.md
-├── frontend/
+├── main.py                 # 🚀 Unified Launcher
+├── requirements.txt        # 📦 Python Dependencies
+├── core/                   # 🧠 Core Python Modules
+│   ├── llama_inference.py # llama.cpp Engine
+│   ├── model_downloader.py
+│   └── ...
+├── backend/                # 🔧 Python/FastAPI Backend
+│   ├── main.py
+│   ├── setup_llama.py     # 🆕 Auto GPU Setup
+│   ├── plugin_manager.py
+│   └── requirements.txt
+├── frontend/               # 🎨 Vue 3 Frontend
 │   ├── src/
-│   │   ├── components/    # React components
-│   │   │   ├── ui/       # shadcn/ui components
-│   │   │   ├── tabs/     # Tab components
-│   │   │   ├── models/   # Model management components
-│   │   │   └── *.tsx     # Main components
-│   │   ├── services/      # API & WebSocket services
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── pages/         # Page components
-│   │   └── lib/           # Utilities
 │   ├── package.json
 │   └── vite.config.ts
-├── models/llm/            # 📦 Place GGUF models here
-├── docs/                   # 📚 Documentation
-│   ├── LLM_DOWNLOAD_SYSTEM.md
-│   ├── ARCHITECTURE.md
-│   ├── CHANGELOG.md
+├── plugins/                # 🔌 Plugin System
+│   ├── weather_plugin.py
+│   ├── timer_plugin.py
 │   └── ...
+├── models/llm/             # 📦 GGUF Models
+├── config/                 # ⚙️ Configuration
+├── data/                   # 🗄️ User Data
+├── docs/                   # 📚 Documentation
 └── README.md
 ```
 
 ---
 
-## 🛠️ Development
+## 🐛 Troubleshooting
 
-### Manual Start (Development Mode)
+### Problem: GPU not detected
 
-#### Backend
+```bash
+# Check GPU status
+nvidia-smi  # NVIDIA
+
+# Reinstall llama.cpp
+cd backend
+python setup_llama.py
+```
+
+### Problem: Port already in use
+
+```bash
+# Windows
+netstat -ano | findstr :5000
+netstat -ano | findstr :5050
+
+# Linux/Mac
+lsof -i :5000
+lsof -i :5050
+```
+
+### Problem: Module not found
+
+```bash
+pip install -r requirements.txt
+cd frontend && npm install
+```
+
+### Problem: AMD GPU - ROCm Installation too complex
+
+**Solution: Use CPU version!**
 ```bash
 cd backend
-pip install -r requirements.txt
-python main.py
+python setup_llama.py
+# Select Option 3
 ```
 
-#### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
+More help: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTING.md)
 
 ---
 
-## 🔌 API Endpoints
+## 🎯 Roadmap
 
-### Chat
-- `WS /ws` - WebSocket chat with llama.cpp AI responses
-- `GET /api/chat/sessions` - Get all chat sessions
-- `POST /api/chat/sessions` - Create new session
+### ✅ v1.1.0 (Current) - December 2025
+- ✅ Vue 3 Frontend
+- ✅ Production-ready llama.cpp
+- ✅ Automatic GPU Detection
+- ✅ Plugin System with API Key Management
+- ✅ Model Download System
 
-### Models
-- `GET /api/models` - List all models
-- `GET /api/models/active` - Get active model
-- `POST /api/models/{id}/load` - Load model (llama.cpp)
-- `POST /api/models/unload` - Unload model
-- `POST /api/models/download` - Start model download
-- `GET /api/models/download/progress` - Download progress (SSE)
-- `POST /api/models/cancel` - Cancel download
-- `DELETE /api/models/delete` - Delete model
+### 🔄 v1.2.0 - Q1 2026
+- Voice Input (Whisper)
+- Voice Output (XTTS v2)
+- Desktop App (Wails)
+- Enhanced Memory System
+- Docker Support
 
-### System
-- `GET /api/health` - Health check with llama.cpp status
-- `GET /api/logs` - Get system logs
+### 📋 v2.0.0 - Q2 2026
+- RAG Implementation
+- Vector Database
+- Multi-User Support
+- Cloud Deployment
 
----
-
-## 🎨 Technology Stack
-
-### AI & Inference
-- **llama.cpp** - Native GGUF model inference
-- **llama-cpp-python** - Python bindings for llama.cpp
-- **CUDA** - GPU acceleration (optional)
-
-### Frontend
-- **Framework**: React 18 + TypeScript
-- **Build Tool**: Vite
-- **UI Library**: shadcn/ui (Radix UI + Tailwind CSS)
-- **Routing**: React Router
-- **State Management**: TanStack Query
-- **WebSocket**: Native WebSocket API
-- **Icons**: Lucide React
-
-### Backend
-- **Framework**: FastAPI
-- **Server**: Uvicorn
-- **WebSocket**: FastAPI WebSocket
-- **Type Safety**: Pydantic
-- **HTTP Client**: httpx (for downloads)
-
----
-
-## 🎯 Features Roadmap
-
-### ✅ Current (v1.0.1) - December 16, 2025
-- ✅ **llama.cpp Local Inference** - PRODUCTION READY!
-- ✅ GPU Acceleration (CUDA)
-- ✅ Chat with History Support
-- ✅ 4 GGUF Models Preconfigured
-- ✅ Model Download System (Ollama-style)
-- ✅ Live Progress Tracking
-- ✅ Multi-Registry Support
-- ✅ WebSocket Chat with Real AI
-- ✅ Basic UI with All Tabs
-
-### Planned (v1.2.0) - Q1 2026
-- 🔄 Voice Input (Whisper STT)
-- 🔄 Voice Output (XTTS v2 TTS)
-- 🔄 Model Switching Without Restart
-- 🔄 Better Memory Integration
-- 🔄 Performance Optimizations
-
-### Future (v2.0.0) - Q2 2026
-- 📋 RAG (Retrieval-Augmented Generation)
-- 📋 Vector Database (ChromaDB/FAISS)
-- 📋 Multi-User Support
-- 📋 User Authentication
-- 📋 Cloud Deployment (AWS/GCP)
-- 📋 Mobile App
-- 📋 Advanced Plugin Marketplace
+See also: [📋 CHANGELOG](./CHANGELOG.md) for detailed release notes
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+### Quick Start for Contributors
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Create a Pull Request
 
 ---
 
 ## 📄 License
 
 **Apache License 2.0** with additional commercial restriction.
-
-This project is licensed under the Apache License 2.0 with the following **additional restriction**:
-
-> **Commercial use, sale, or redistribution of this software is prohibited without prior written permission from the copyright holder.**
-
-This restriction applies only to the original J.A.R.V.I.S. source code and associated assets created by Lautloserspieler. All included third-party components (such as language models, speech libraries, or external APIs) remain under their respective licenses.
 
 Full license: [LICENSE](./LICENSE)
 
@@ -337,29 +420,33 @@ Full license: [LICENSE](./LICENSE)
 ## 🙏 Acknowledgments
 
 - Inspired by JARVIS from Iron Man
-- Built with [shadcn/ui](https://ui.shadcn.com/)
-- Powered by [FastAPI](https://fastapi.tiangolo.com/)
+- Built with [Vue 3](https://vuejs.org/)
+- Backend with [FastAPI](https://fastapi.tiangolo.com/)
 - Local inference with [llama.cpp](https://github.com/ggerganov/llama.cpp)
-- Download system inspired by [Ollama](https://ollama.ai/)
 
 ---
 
 ## 📚 Additional Documentation
 
-- [LLM Download System](./docs/LLM_DOWNLOAD_SYSTEM.md) - Detailed download system documentation
-- [Architecture](./docs/ARCHITECTURE.md) - System architecture overview
-- [Implementation Status](./IMPLEMENTATION_STATUS.md) - Feature status and roadmap
-- [Changelog](./docs/CHANGELOG.md) - Version history
-- [Backend API](./backend/README.md) - Backend-specific documentation
+- [Quick Start Guide](docs/README_QUICKSTART.md)
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [LLM Download System](docs/LLM_DOWNLOAD_SYSTEM.md)
+- [Performance Guide](docs/PERFORMANCE.md)
+- [Deployment Guide](DEPLOYMENT.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [FAQ](FAQ.md)
+- [Changelog](CHANGELOG.md)
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by the JARVIS Team**
+**Made with ❤️ by Lautloserspieler**
 
 *"Sometimes you gotta run before you can walk."* - Tony Stark
 
-**Version:** 1.0.1 | **Last updated:** December 16, 2025, 11:15 CET
+**Version:** 1.1.0 | **Release:** January 02, 2026
+
+[⭐ Star us on GitHub](https://github.com/Lautloserspieler/JarvisCore) | [🐛 Report Bug](https://github.com/Lautloserspieler/JarvisCore/issues) | [💡 Request Feature](https://github.com/Lautloserspieler/JarvisCore/issues)
 
 </div>

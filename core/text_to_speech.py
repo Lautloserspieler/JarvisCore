@@ -1,6 +1,7 @@
 """
-Text-to-Speech Modul fÃ¼r J.A.R.V.I.S.
-Verwendet pyttsx3 fÃ¼r deutsche Sprachausgabe
+Text-to-Speech Modul für J.A.R.V.I.S.
+Verwendet pyttsx3 für deutsche Sprachausgabe und XTTS v2 für multilingual TTS
+Mit Language-aware Voice Cloning Caching für Deutsch und Englisch
 """
 
 import pyttsx3
@@ -9,9 +10,10 @@ import queue
 import time
 import os
 import platform
+import re
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any, Union, Tuple
 
 import numpy as np
 import soundfile as sf
@@ -21,20 +23,21 @@ from core.audio_playback import AudioPlaybackWorker, PlaybackRequest
 from utils.logger import Logger
 
 class TextToSpeech:
-    """Text-zu-Sprache Konverter"""
+    """Text-zu-Sprache Konverter mit mehrsprachigem Voice Cloning"""
     
     def __init__(self, settings: Optional[object] = None):
         self.logger = Logger()
         self.engine = None
         self.is_speaking = False
         self.speech_lock = threading.Lock()
-        self._queue: "queue.Queue[tuple[str, Optional[str]]]" = queue.Queue(maxsize=200)
+        self._queue: "queue.Queue[tuple[str, Optional[str], Optional[str]]]" = queue.Queue(maxsize=200)
         self._worker_stop = threading.Event()
         self._worker_thread: Optional[threading.Thread] = None
         self._backend: str = 'pyttsx3'
         self._xtts = None  # XTTS model instance if used
         self._voice_sample: Optional[str] = None
         self._voice_latents: Optional[Dict[str, Any]] = None
+        self._voice_latents_cache: Dict[str, Optional[Dict[str, Any]]] = {}  # Per-language cache
         self._voice_effect: Optional[str] = None
         self._default_xtts_speaker: Optional[str] = None
         self._xtts_speakers: list[str] = []
@@ -45,6 +48,7 @@ class TextToSpeech:
         self._base_volume: float = 0.8
         self._style_profiles: Dict[str, Dict[str, float]] = {}
         self._current_style: str = 'neutral'
+        self._current_language: str = 'de'  # Aktuell aktive Sprache
         self._configured_preset: Optional[str] = None
         self._xtts_load_strategy: str = 'on_demand'
         self._xtts_deferred: bool = False
@@ -54,7 +58,7 @@ class TextToSpeech:
         self._playback_queue: "queue.Queue[Optional[PlaybackRequest]]" = queue.Queue(maxsize=64)
         self._playback_worker: Optional[AudioPlaybackWorker] = None
         self._tts_cache_root: Path = Path("data") / "tts"
-        self._voice_latents_path: Path = self._tts_cache_root / "xtts_voice_latents.pt"
+        self._voice_latents_path: Path = self._tts_cache_root / "xtts_voice_latents.pt"  # Legacy
         self._voice_latents_meta: Optional[Dict[str, Any]] = None
 
         # Einstellungen (duck-typed: erwartet .get)
@@ -180,12 +184,12 @@ class TextToSpeech:
                     self.engine.setProperty('voice', german_voice.id)
                     self.logger.info(f"Deutsche Stimme gefunden: {german_voice.name}")
                 else:
-                    # Fallback auf erste verfÃ¼gbare Stimme
+                    # Fallback auf erste verfügbare Stimme
                     if voices:
                         self.engine.setProperty('voice', voices[0].id)
                         self.logger.info(f"Fallback-Stimme: {voices[0].name}")
 
-            # Geschwindigkeit und LautstÃ¤rke einstellen
+            # Geschwindigkeit und Lautstärke einstellen
             try:
                 rate = int(self._speech_cfg.get('tts_rate', 180)) if isinstance(self._speech_cfg, dict) else 180
             except Exception:
@@ -204,7 +208,7 @@ class TextToSpeech:
                 # Tiefer/langsamer und minimal lauter
                 rate = max(50, min(300, int(rate * 0.9)))
                 volume = max(0.0, min(1.0, float(max(volume, 0.9))))
-                # Falls keine konkrete Stimme gesetzt wurde, versuche mÃ¤nnlich klingende DE-Stimme
+                # Falls keine konkrete Stimme gesetzt wurde, versuche männlich klingende DE-Stimme
                 if not preferred_voice_id and not german_voice:
                     for voice in voices:
                         try:
@@ -213,7 +217,7 @@ class TextToSpeech:
                             is_male_hint = any(hint in name_l for hint in ['male', 'mann', 'hans', 'markus'])
                             if is_de and is_male_hint:
                                 self.engine.setProperty('voice', voice.id)
-                                self.logger.info(f"Preset 'jarvis_marvel': mÃ¤nnliche DE-Stimme gewÃ¤hlt: {voice.name}")
+                                self.logger.info(f"Preset 'jarvis_marvel': männliche DE-Stimme gewählt: {voice.name}")
                                 break
                         except Exception:
                             continue
@@ -466,7 +470,7 @@ class TextToSpeech:
                     raise
             self._xtts_multi_speaker = self._detect_xtts_multi_speaker()
 
-            self._prepare_xtts_conditioning()
+            self._prepare_xtts_conditioning('de')  # Initialize German latents
             self._xtts_speakers = self._extract_xtts_speakers()
             self._default_xtts_speaker = self._resolve_default_xtts_speaker()
             if not self._default_xtts_speaker and self._xtts_multi_speaker:
@@ -561,6 +565,11 @@ class TextToSpeech:
                 'active': self._backend == 'xtts' and self._xtts_enabled,
                 'enabled': self._xtts_enabled,
                 'default_strategy': 'on_demand',
+                'languages_supported': ['de', 'en'],
+                'voice_cloning_cached': {
+                    'de': 'de' in self._voice_latents_cache and self._voice_latents_cache['de'] is not None,
+                    'en': 'en' in self._voice_latents_cache and self._voice_latents_cache['en'] is not None,
+                }
             }
         return catalog
     
@@ -624,7 +633,205 @@ class TextToSpeech:
         except Exception as exc:
             self.logger.debug(f"Setzen des Stils fehlgeschlagen: {exc}")
 
-    def speak(self, text: str, *, style: Optional[str] = None):
+    # ============================================================================
+    # NEUE FUNKTIONEN FÜR MEHRSPRACHIGES VOICE CLONING
+    # ============================================================================
+
+    def _get_latents_cache_path(self, language: str) -> Path:
+        """Gibt sprachspezifischen Cache-Pfad zurück."""
+        lang_code = language.split('-')[0].lower()  # de-DE -> de
+        return self._tts_cache_root / f"voice_latents_{lang_code}.pt"
+
+    def _get_voice_sample_for_language(self, language: str) -> Optional[str]:
+        """Wählt passende Voice-Sample-Datei basierend auf Sprache."""
+        lang_code = language.split('-')[0].lower()  # de-DE -> de
+        
+        # Priorität 1: Sprachspezifisches Sample aus Config
+        voice_samples = {
+            'de': self._speech_cfg.get('voice_sample_de'),
+            'en': self._speech_cfg.get('voice_sample_en'),
+        }
+        
+        configured = voice_samples.get(lang_code)
+        if configured and isinstance(configured, str) and os.path.exists(configured):
+            return configured
+        
+        # Priorität 2: Standard-Samples im voices-Ordner
+        default_samples = {
+            'de': 'models/tts/voices/Jarvis_DE.wav',
+            'en': 'models/tts/voices/Jarvis_EN.wav',
+        }
+        
+        default_path = default_samples.get(lang_code)
+        if default_path and os.path.exists(default_path):
+            return default_path
+        
+        # Fallback: Generisches Sample (Legacy)
+        if self._voice_sample:
+            return self._voice_sample
+        
+        return None
+
+    def _detect_language(self, text: str) -> str:
+        """Einfache Spracherkennung basierend auf Wörtern."""
+        if not text:
+            return self._current_language
+        
+        # Schnelle Heuristik für DE/EN
+        de_indicators = {'der', 'die', 'das', 'ich', 'ist', 'und', 'für', 'zu', 'ein', 'eine'}
+        en_indicators = {'the', 'is', 'are', 'and', 'for', 'with', 'you', 'a', 'in', 'of'}
+        
+        words = set(text.lower().split()[:15])  # Erste 15 Wörter
+        de_score = len(words & de_indicators)
+        en_score = len(words & en_indicators)
+        
+        if de_score > en_score:
+            return 'de'
+        elif en_score > de_score:
+            return 'en'
+        return self._current_language  # Fallback auf aktuelle Sprache
+
+    def _prepare_xtts_conditioning(self, language: str = 'de') -> None:
+        """Bereitet XTTS-Stimmlatenzen sprachspezifisch vor."""
+        if not self._xtts:
+            return
+        
+        lang_code = language.split('-')[0].lower()
+        cache_path = self._get_latents_cache_path(language)
+        voice_sample = self._get_voice_sample_for_language(language)
+        
+        # Prüfe ob bereits in Memory gecacht
+        if lang_code in self._voice_latents_cache and self._voice_latents_cache[lang_code] is not None:
+            self._voice_latents = self._voice_latents_cache[lang_code]
+            return
+        
+        # Versuche aus Disk zu laden
+        if self._load_xtts_conditioning_cache(cache_path, voice_sample, lang_code):
+            return
+        
+        # Neu berechnen falls nicht gecacht
+        if not voice_sample or not os.path.exists(voice_sample):
+            self._voice_latents = None
+            self._voice_latents_cache[lang_code] = None
+            self._clear_xtts_conditioning_cache(cache_path)
+            return
+        
+        try:
+            self.logger.info(f"Computing voice latents für {language}...")
+            conditioning = self._xtts.synthesizer.tts_model.get_conditioning_latents(
+                audio_path=voice_sample
+            )
+            if isinstance(conditioning, (list, tuple)) and len(conditioning) == 2:
+                gpt_latent, speaker_embedding = conditioning
+                self._voice_latents = {
+                    "gpt_cond_latent": gpt_latent,
+                    "speaker_embedding": speaker_embedding,
+                    "language": lang_code,
+                }
+                self._voice_latents_cache[lang_code] = self._voice_latents
+                self._persist_xtts_conditioning_cache(cache_path, self._voice_latents, voice_sample)
+                self.logger.info(f"XTTS Voice-Sample für {language} vorverarbeitet (Latents gecached)")
+            else:
+                self._voice_latents = None
+                self._voice_latents_cache[lang_code] = None
+                self._clear_xtts_conditioning_cache(cache_path)
+                self.logger.warning("XTTS lieferte unerwartete Conditioning-Daten; verwende speaker_wav direkt")
+        except Exception as err:
+            self._voice_latents = None
+            self._voice_latents_cache[lang_code] = None
+            self._clear_xtts_conditioning_cache(cache_path)
+            self.logger.warning(f"XTTS-Latents konnten nicht vorbereitet werden: {err}")
+
+    def _load_xtts_conditioning_cache(self, cache_path: Path, voice_sample: Optional[str], lang_code: str) -> bool:
+        """Lädt vorberechnete XTTS-Latents von der Festplatte."""
+        if not voice_sample or not cache_path.exists():
+            return False
+        try:
+            import torch
+
+            payload = torch.load(str(cache_path), map_location="cpu")
+            if not isinstance(payload, dict):
+                return False
+            gpt_latent = payload.get("gpt_cond_latent")
+            speaker_embedding = payload.get("speaker_embedding")
+            cached_sample = payload.get("sample_path")
+            cached_mtime = payload.get("sample_mtime")
+            if gpt_latent is None or speaker_embedding is None:
+                return False
+            sample_abs = os.path.abspath(voice_sample)
+            if cached_sample and os.path.exists(sample_abs):
+                if os.path.abspath(str(cached_sample)) != sample_abs:
+                    return False
+                if cached_mtime is not None:
+                    try:
+                        current_mtime = os.path.getmtime(sample_abs)
+                        if abs(current_mtime - float(cached_mtime)) > 1e-3:
+                            return False
+                    except Exception:
+                        return False
+            self._voice_latents = {
+                "gpt_cond_latent": gpt_latent,
+                "speaker_embedding": speaker_embedding,
+                "language": lang_code,
+            }
+            self._voice_latents_cache[lang_code] = self._voice_latents
+            self._voice_latents_meta = {
+                "path": cached_sample,
+                "mtime": cached_mtime,
+            }
+            self.logger.info(f"XTTS Voice-Latents für {lang_code} aus Cache geladen.")
+            return True
+        except Exception as err:
+            self.logger.debug(f"XTTS conditioning cache konnte nicht geladen werden: {err}")
+            return False
+
+    def _persist_xtts_conditioning_cache(self, cache_path: Path, latents: Dict[str, Any], voice_sample: Optional[str]) -> None:
+        """Persistiert die berechneten Latents für zukünftige Starts."""
+        if not latents or not voice_sample:
+            return
+        try:
+            import torch
+
+            def _normalize(value: Any) -> Any:
+                try:
+                    if isinstance(value, torch.Tensor):
+                        return value.detach().cpu()
+                except Exception:
+                    pass
+                return value
+
+            sample_abs = os.path.abspath(voice_sample)
+            sample_mtime = None
+            try:
+                if os.path.exists(sample_abs):
+                    sample_mtime = os.path.getmtime(sample_abs)
+            except Exception:
+                sample_mtime = None
+            payload = {
+                "gpt_cond_latent": _normalize(latents.get("gpt_cond_latent")),
+                "speaker_embedding": _normalize(latents.get("speaker_embedding")),
+                "sample_path": sample_abs,
+                "sample_mtime": sample_mtime,
+                "created": time.time(),
+                "language": latents.get("language", "de"),
+            }
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(payload, str(cache_path))
+            self._voice_latents_meta = {"path": sample_abs, "mtime": sample_mtime}
+            self.logger.info(f"XTTS Voice-Latents für {latents.get('language', 'de')} gespeichert.")
+        except Exception as err:
+            self.logger.debug(f"XTTS conditioning cache konnte nicht gespeichert werden: {err}")
+
+    def _clear_xtts_conditioning_cache(self, cache_path: Path) -> None:
+        """Entfernt den gespeicherten Latents-Cache."""
+        self._voice_latents_meta = None
+        try:
+            if cache_path.exists():
+                cache_path.unlink()
+        except Exception as err:
+            self.logger.debug(f"XTTS conditioning cache konnte nicht gelöscht werden: {err}")
+
+    def speak(self, text: str, *, style: Optional[str] = None, language: Optional[str] = None):
         """Legt Text in die Warteschlange; wird sequenziell gesprochen."""
         if not text:
             return
@@ -637,14 +844,20 @@ class TextToSpeech:
             self.logger.warning("TTS-Engine nicht initialisiert; Text verworfen")
             return
         try:
+            # Auto-detect language wenn nicht angegeben
+            if language is None:
+                language = self._detect_language(text)
+            else:
+                language = language.split('-')[0].lower()
+            
             # Kurze Normalisierung: Whitespace
             prepared = text.strip()
             if not prepared:
                 return
-            self._queue.put_nowait((prepared, style))
+            self._queue.put_nowait((prepared, style, language))
             prefix = 'XTTS' if self._backend == 'xtts' and self._xtts is not None else 'TTS'
             suffix = '...' if len(prepared) > 80 else ''
-            self.logger.info(f"{prefix} queued: {prepared[:80]}{suffix}")
+            self.logger.info(f"{prefix} queued [{language}]: {prepared[:80]}{suffix}")
         except queue.Full:
             self.logger.error("TTS-Queue voll; verwerfe aelteste Eintraege und fuege neu hinzu")
             try:
@@ -652,7 +865,7 @@ class TextToSpeech:
             except Exception:
                 pass
             try:
-                self._queue.put_nowait((prepared, style))
+                self._queue.put_nowait((prepared, style, language))
             except Exception:
                 pass
     
@@ -666,9 +879,14 @@ class TextToSpeech:
                     continue
                 if not item:
                     continue
-                text, style = item
+                text, style, language = item
                 if not text:
                     continue
+                
+                # Fallback language wenn None
+                if language is None:
+                    language = self._detect_language(text)
+                
                 effective_style = style or self._current_style
                 if effective_style:
                     self._apply_style(effective_style)
@@ -680,7 +898,7 @@ class TextToSpeech:
                             if self._xtts is None and not self._ensure_xtts_backend():
                                 self.logger.warning("XTTS-Backend nicht verfuegbar; Text verworfen")
                             elif self._backend == 'xtts' and self._xtts is not None:
-                                self._speak_xtts(text)
+                                self._speak_xtts(text, language)
                             elif self.engine is not None:
                                 self.engine.say(text)
                                 self.engine.runAndWait()
@@ -723,7 +941,7 @@ class TextToSpeech:
             self.logger.error(f"Fehler beim Stoppen der Sprachausgabe: {e}")
     
     def is_busy(self):
-        """PrÃ¼ft ob TTS gerade aktiv ist"""
+        """Prüft ob TTS gerade aktiv ist"""
         return self.is_speaking or not self._queue.empty()
 
     def shutdown(self) -> None:
@@ -751,7 +969,7 @@ class TextToSpeech:
             if self.engine:
                 self.engine.setProperty('rate', max(50, min(300, rate)))
                 self.logger.info(f"Sprechgeschwindigkeit auf {rate} gesetzt")
-                # In Settings persistieren, falls verfÃ¼gbar
+                # In Settings persistieren, falls verfügbar
                 try:
                     if self._settings and hasattr(self._settings, 'update_speech_settings'):
                         self._settings.update_speech_settings(tts_rate=int(max(50, min(300, rate))))
@@ -761,22 +979,22 @@ class TextToSpeech:
             self.logger.error(f"Fehler beim Setzen der Sprechgeschwindigkeit: {e}")
     
     def set_volume(self, volume):
-        """Setzt LautstÃ¤rke (0.0-1.0)"""
+        """Setzt Lautstärke (0.0-1.0)"""
         try:
             if self.engine:
                 self.engine.setProperty('volume', max(0.0, min(1.0, volume)))
-                self.logger.info(f"LautstÃ¤rke auf {volume} gesetzt")
-                # In Settings persistieren, falls verfÃ¼gbar
+                self.logger.info(f"Lautstärke auf {volume} gesetzt")
+                # In Settings persistieren, falls verfügbar
                 try:
                     if self._settings and hasattr(self._settings, 'update_speech_settings'):
                         self._settings.update_speech_settings(tts_volume=float(max(0.0, min(1.0, volume))))
                 except Exception:
                     pass
         except Exception as e:
-            self.logger.error(f"Fehler beim Setzen der LautstÃ¤rke: {e}")
+            self.logger.error(f"Fehler beim Setzen der Lautstärke: {e}")
     
     def get_voices(self):
-        """Gibt verfÃ¼gbare Stimmen zurÃ¼ck"""
+        """Gibt verfügbare Stimmen zurück"""
         try:
             if self.engine:
                 voices = self.engine.getProperty('voices')
@@ -790,137 +1008,17 @@ class TextToSpeech:
         try:
             if self._backend == 'pyttsx3' and self.engine:
                 self.engine.setProperty('voice', voice_id)
-                self.logger.info(f"Stimme geÃ¤ndert: {voice_id}")
-                # In Settings persistieren, falls verfÃ¼gbar
+                self.logger.info(f"Stimme geändert: {voice_id}")
+                # In Settings persistieren, falls verfügbar
                 try:
                     if self._settings and hasattr(self._settings, 'update_speech_settings'):
                         self._settings.update_speech_settings(voice_id=voice_id)
                 except Exception:
                     pass
             else:
-                self.logger.info("set_voice() wird vom aktuellen Backend nicht unterstÃ¼tzt oder ignoriert (XTTS)")
+                self.logger.info("set_voice() wird vom aktuellen Backend nicht unterstützt oder ignoriert (XTTS)")
         except Exception as e:
             self.logger.error(f"Fehler beim Setzen der Stimme: {e}")
-
-    def _prepare_xtts_conditioning(self) -> None:
-        """Bereitet XTTS-Stimmlatenzen einmalig vor, um wiederholtes Cloning zu vermeiden."""
-        if not self._xtts:
-            return
-        if self._voice_latents:
-            return
-        if self._voice_sample and self._load_xtts_conditioning_cache():
-            return
-        if not self._voice_sample or not os.path.exists(self._voice_sample):
-            self._voice_latents = None
-            self._clear_xtts_conditioning_cache()
-            return
-        try:
-            conditioning = self._xtts.synthesizer.tts_model.get_conditioning_latents(
-                audio_path=self._voice_sample
-            )
-            if isinstance(conditioning, (list, tuple)) and len(conditioning) == 2:
-                gpt_latent, speaker_embedding = conditioning
-                self._voice_latents = {
-                    "gpt_cond_latent": gpt_latent,
-                    "speaker_embedding": speaker_embedding,
-                }
-                self._persist_xtts_conditioning_cache()
-                self.logger.info("XTTS Voice-Sample vorverarbeitet (Latents gecached)")
-            else:
-                self._voice_latents = None
-                self._clear_xtts_conditioning_cache()
-                self.logger.warning("XTTS lieferte unerwartete Conditioning-Daten; verwende speaker_wav direkt")
-        except Exception as err:
-            self._voice_latents = None
-            self._clear_xtts_conditioning_cache()
-            self.logger.warning(f"XTTS-Latents konnten nicht vorbereitet werden: {err}")
-
-    def _load_xtts_conditioning_cache(self) -> bool:
-        """Lädt vorberechnete XTTS-Latents von der Festplatte, falls verfügbar."""
-        if not self._voice_sample or not self._voice_latents_path.exists():
-            return False
-        try:
-            import torch
-
-            payload = torch.load(str(self._voice_latents_path), map_location="cpu")
-            if not isinstance(payload, dict):
-                return False
-            gpt_latent = payload.get("gpt_cond_latent")
-            speaker_embedding = payload.get("speaker_embedding")
-            cached_sample = payload.get("sample_path")
-            cached_mtime = payload.get("sample_mtime")
-            if gpt_latent is None or speaker_embedding is None:
-                return False
-            sample_abs = os.path.abspath(self._voice_sample)
-            if cached_sample and os.path.exists(sample_abs):
-                if os.path.abspath(str(cached_sample)) != sample_abs:
-                    return False
-                if cached_mtime is not None:
-                    try:
-                        current_mtime = os.path.getmtime(sample_abs)
-                        if abs(current_mtime - float(cached_mtime)) > 1e-3:
-                            return False
-                    except Exception:
-                        return False
-            self._voice_latents = {
-                "gpt_cond_latent": gpt_latent,
-                "speaker_embedding": speaker_embedding,
-            }
-            self._voice_latents_meta = {
-                "path": cached_sample,
-                "mtime": cached_mtime,
-            }
-            self.logger.info("XTTS Voice-Latents aus Cache geladen.")
-            return True
-        except Exception as err:
-            self.logger.debug(f"XTTS conditioning cache konnte nicht geladen werden: {err}")
-            return False
-
-    def _persist_xtts_conditioning_cache(self) -> None:
-        """Persistiert die berechneten Latents für zukünftige Starts."""
-        if not self._voice_latents or not self._voice_sample:
-            self._clear_xtts_conditioning_cache()
-            return
-        try:
-            import torch
-
-            def _normalize(value: Any) -> Any:
-                try:
-                    if isinstance(value, torch.Tensor):
-                        return value.detach().cpu()
-                except Exception:
-                    pass
-                return value
-
-            sample_abs = os.path.abspath(self._voice_sample)
-            sample_mtime = None
-            try:
-                if os.path.exists(sample_abs):
-                    sample_mtime = os.path.getmtime(sample_abs)
-            except Exception:
-                sample_mtime = None
-            payload = {
-                "gpt_cond_latent": _normalize(self._voice_latents.get("gpt_cond_latent")),
-                "speaker_embedding": _normalize(self._voice_latents.get("speaker_embedding")),
-                "sample_path": sample_abs,
-                "sample_mtime": sample_mtime,
-                "created": time.time(),
-            }
-            self._voice_latents_path.parent.mkdir(parents=True, exist_ok=True)
-            torch.save(payload, str(self._voice_latents_path))
-            self._voice_latents_meta = {"path": sample_abs, "mtime": sample_mtime}
-            self.logger.info("XTTS Voice-Latents gespeichert.")
-        except Exception as err:
-            self.logger.debug(f"XTTS conditioning cache konnte nicht gespeichert werden: {err}")
-
-    def _clear_xtts_conditioning_cache(self) -> None:
-        """Entfernt den gespeicherten Latents-Cache."""
-        self._voice_latents_meta = None
-        try:
-            if self._voice_latents_path.exists():
-                self._voice_latents_path.unlink()
-        except Exception as err:
-            self.logger.debug(f"XTTS conditioning cache konnte nicht gelöscht werden: {err}")
 
     def _apply_voice_effects(self, wav_path: str) -> None:
         """Optional post-processing for generated audio (e.g., Jarvis Marvel effect)."""
@@ -959,7 +1057,7 @@ class TextToSpeech:
         except Exception as err:
             self.logger.warning(f'Jarvis-Stimmeneffekt konnte nicht angewendet werden: {err}')
 
-    def _xtts_generate_waveform(self, tts_kwargs: Dict[str, Any]) -> tuple[np.ndarray, int]:
+    def _xtts_generate_waveform(self, tts_kwargs: Dict[str, Any]) -> Tuple[np.ndarray, int]:
         """Erzeugt eine Wellenform direkt via XTTS, um Dateihandles zu vermeiden."""
         if not self._xtts:
             raise RuntimeError("XTTS Backend nicht initialisiert")
@@ -993,20 +1091,29 @@ class TextToSpeech:
     # ------------------------------------------------------------------
     # XTTS Backend Helpers
     # ------------------------------------------------------------------
-    def _speak_xtts(self, text: str) -> None:
+    def _speak_xtts(self, text: str, language: str = 'de') -> None:
         """Erzeugt Audio via XTTS und leitet es an den Playback-Worker weiter."""
         if not self._xtts:
             return
+        
+        # Stelle sicher dass passende Latents geladen sind
+        if language != self._current_language:
+            self._prepare_xtts_conditioning(language)
+            self._current_language = language
+        
         wav_path = self._next_output_path()
         try:
-            if self._voice_latents is None and self._voice_sample and os.path.exists(self._voice_sample):
-                self._prepare_xtts_conditioning()
+            if self._voice_latents is None and language != self._current_language:
+                voice_sample = self._get_voice_sample_for_language(language)
+                if voice_sample and os.path.exists(voice_sample):
+                    self._prepare_xtts_conditioning(language)
 
-            tts_kwargs = dict(text=text, file_path=str(wav_path), language="de")
+            tts_kwargs = dict(text=text, file_path=str(wav_path), language=language)
             used_conditioning = False
-            if self._voice_latents:
+            if self._voice_latents and self._voice_latents.get('language') == language.split('-')[0].lower():
                 try:
-                    tts_kwargs.update(self._voice_latents)
+                    tts_kwargs['gpt_cond_latent'] = self._voice_latents['gpt_cond_latent']
+                    tts_kwargs['speaker_embedding'] = self._voice_latents['speaker_embedding']
                     used_conditioning = True
                 except Exception as cond_err:
                     self.logger.debug(f"XTTS-Latents konnten nicht uebernommen werden: {cond_err}")
@@ -1015,11 +1122,12 @@ class TextToSpeech:
                 tts_kwargs.pop("speaker_wav", None)
             else:
                 sample_path = None
-                if self._voice_sample and os.path.exists(self._voice_sample):
+                voice_sample = self._get_voice_sample_for_language(language)
+                if voice_sample and os.path.exists(voice_sample):
                     try:
-                        sample_path = os.path.abspath(self._voice_sample)
+                        sample_path = os.path.abspath(voice_sample)
                     except Exception:
-                        sample_path = self._voice_sample
+                        sample_path = voice_sample
                 if sample_path:
                     tts_kwargs["speaker_wav"] = sample_path
 
@@ -1071,8 +1179,9 @@ class TextToSpeech:
                 missing = tts_kwargs.pop("speaker", None)
                 self.logger.warning(f"XTTS-Generierung schlug fehl (KeyError: {key_err}); entferne Sprecher '{missing}' und versuche Voice-Sample.")
                 try:
-                    if "speaker_wav" not in tts_kwargs and self._voice_sample:
-                        tts_kwargs["speaker_wav"] = self._voice_sample
+                    voice_sample = self._get_voice_sample_for_language(language)
+                    if "speaker_wav" not in tts_kwargs and voice_sample:
+                        tts_kwargs["speaker_wav"] = voice_sample
                     self._xtts.tts_to_file(**tts_kwargs)
                     synthesis_successful = True
                 except Exception as retry_err:

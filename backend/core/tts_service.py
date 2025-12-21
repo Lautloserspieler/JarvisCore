@@ -33,6 +33,9 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Get project root directory (2 levels up from this file)
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
 
 class Language(Enum):
     """Supported languages for TTS"""
@@ -56,10 +59,10 @@ class TTSService:
         self.using_fallback = False
         self.device = "cuda" if self.use_gpu else "cpu"
         
-        # Voice sample paths
+        # Voice sample paths (absolute paths from project root)
         self.voice_samples = {
-            Language.DE: Path("models/tts/voices/Jarvis_DE.wav"),
-            Language.EN: Path("models/tts/voices/Jarvis_EN.wav"),
+            Language.DE: PROJECT_ROOT / "models" / "tts" / "voices" / "Jarvis_DE.wav",
+            Language.EN: PROJECT_ROOT / "models" / "tts" / "voices" / "Jarvis_EN.wav",
         }
         
         # Initialize
@@ -155,6 +158,7 @@ class TTSService:
             speaker_wav = self.voice_samples.get(language)
             if not speaker_wav or not speaker_wav.exists():
                 logger.error(f"Voice sample not found: {speaker_wav}")
+                logger.error(f"Absolute path checked: {speaker_wav.absolute()}")
                 return None
             
             # Generate temp file if needed

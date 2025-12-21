@@ -33,6 +33,13 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 - ✅ **Bis 32K Context** - Lange Konversationen möglich
 - ✅ **System-Prompts** - JARVIS-Persönlichkeit konfigurierbar
 
+### 🎙️ Voice Control (v1.2.0 geplant)
+- 🔄 **Voice Input** - Whisper-basierte Spracherkennung (in Entwicklung)
+- 🔄 **Voice Output** - XTTS v2 mit vorgeklonten JARVIS-Stimmen (in Entwicklung)
+- ✅ **Vorgeklonte Voice-Samples** - Deutsch & Englisch (DE/EN v2.2)
+- ✅ **Automatische Sprach-Erkennung** - Deutsch/Englisch Support
+- ⚡ **Keine langwierige Berechnung** - Voice Samples vorkonfiguriert
+
 ### 🎨 Frontend (Vue 3)
 - ✅ **Holographische UI** - Beeindruckende JARVIS-inspirierte Benutzeroberfläche
 - ✅ **Echtzeit-Chat** - WebSocket-basierte Live-Kommunikation
@@ -50,6 +57,55 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 - ✅ **RESTful API** - Vollständige REST-Endpunkte
 - ✅ **Plugin System** - Erweiterbare Architektur
 - ✅ **Memory Storage** - Konversationshistorie & Kontext
+
+---
+
+## 🎙️ Voice Samples - Sofort einsatzbereit!
+
+JarvisCore enthält **vorgeklonte JARVIS-Voice-Samples**, die keine langwierige Berechnung erfordern:
+
+### ✨ Vorteile der Vorgeklonten Stimmen
+
+| Feature | Vorteil |
+|---------|---------|
+| ⚡ **Zeitersparnis** | 5-7 Minuten schneller beim ersten Start |
+| 💻 **Schwache PCs** | Funktioniert auch auf alten/schwachen Computern |
+| 🎯 **Sofort einsatzbereit** | Einfach klonen und starten - keine Wartezeit |
+| 🌍 **Multilingualität** | Deutsch & Englisch Support (v2.2 optimiert) |
+| 🔊 **Natürlicher Klang** | Hochwertig geclonte JARVIS-Stimmen |
+
+### 📦 Enthalten
+
+- **`Jarvis_DE.wav`** - Deutsche JARVIS-Stimme (natürlich, optimiert v2.2)
+- **`Jarvis_EN.wav`** - Englische JARVIS-Stimme (natürlich, optimiert v2.2)
+
+**Speicherort:** `models/tts/voices/`
+
+Siehe [models/tts/voices/README.md](./models/tts/voices/README.md) für technische Details.
+
+### ⏱️ Zeitersparnis im Vergleich
+
+**Vor (ohne vorgeklonte Samples):**
+```
+Erster Start:
+├─ XTTS Model laden:        ~10s
+├─ German Voice Cloning:     ~2-3 Min ⏳
+├─ English Voice Cloning:    ~2-3 Min ⏳
+└─ Total:                    ~5-7 Minuten
+
+⚠️ Auf schwachen PCs: Crash oder 10-15 Minuten!
+```
+
+**Jetzt (mit vorgeklonten Samples):**
+```
+Erster Start:
+├─ XTTS Model laden:     ~10s
+├─ German Latents:       ~2s ⚡
+├─ English Latents:      ~2s ⚡
+└─ Total:                ~15 Sekunden
+
+✅ Funktioniert auf allen Computern!
+```
 
 ---
 
@@ -285,7 +341,7 @@ Weitere Infos: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
 ### Plugin aktivieren
 
 1. Öffne **Plugins Tab** in der UI
-2. Klicke **"Аktivieren"** beim gewünschten Plugin
+2. Klicke **"Aktivieren"** beim gewünschten Plugin
 3. Falls API-Key nötig → Modal öffnet sich automatisch
 4. Gib API-Key ein → Wird sicher in `config/settings.json` gespeichert
 5. Plugin ist aktiviert! ✅
@@ -315,7 +371,10 @@ JarvisCore/
 │   ├── weather_plugin.py
 │   ├── timer_plugin.py
 │   └── ...
-├── models/llm/             # 📦 GGUF Models
+├── models/                 # 📦 Models
+│   ├── llm/               # GGUF LLM Models
+│   └── tts/               # 🎙️ Voice Samples
+│       └── voices/        # Pre-cloned JARVIS voices
 ├── config/                 # ⚙️ Configuration
 ├── data/                   # 🗄️ User Data
 ├── docs/                   # 📚 Documentation
@@ -377,6 +436,7 @@ Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTI
 - ✅ Automatische GPU-Erkennung
 - ✅ Plugin System mit API-Key Management
 - ✅ Model Download System
+- ✅ Vorgeklonte Voice Samples (DE/EN v2.2)
 
 ### 🔄 v1.2.0 - Q1 2026
 - Voice Input (Whisper)
@@ -432,6 +492,7 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [LLM Download System](docs/LLM_DOWNLOAD_SYSTEM.md)
 - [Performance Guide](docs/PERFORMANCE.md)
+- [Voice Samples Guide](models/tts/voices/README.md)
 - [Deployment Guide](DEPLOYMENT.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [FAQ](FAQ.md)

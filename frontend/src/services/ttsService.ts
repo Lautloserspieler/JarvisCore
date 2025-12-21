@@ -1,9 +1,16 @@
 import { apiService } from './api';
-import { settingsService } from './settingsService';
+
+interface TTSStatus {
+  available: boolean;
+  enabled?: boolean;
+  volume?: number;
+  language?: string;
+}
 
 class TTSService {
   private audioQueue: HTMLAudioElement[] = [];
   private isPlaying = false;
+  private cachedStatus: TTSStatus | null = null;
 
   /**
    * Play TTS audio for given text
@@ -12,20 +19,21 @@ class TTSService {
   async speak(text: string): Promise<void> {
     try {
       // Check if TTS is enabled
-      const settings = await settingsService.getSettings();
-      if (!settings.tts?.enabled) {
-        return; // TTS disabled, skip
+      const status = await this.getStatus();
+      if (!status.available) {
+        console.log('TTS not available');
+        return;
       }
 
       // Request TTS from backend
-      const response = await fetch('http://localhost:8000/api/tts/synthesize', {
+      const response = await fetch('http://localhost:5050/api/tts/synthesize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           text,
-          language: settings.tts?.language || 'de',
+          language: status.language || 'de',
         }),
       });
 
@@ -41,8 +49,8 @@ class TTSService {
       // Create audio element
       const audio = new Audio(audioUrl);
       
-      // Apply volume from settings
-      audio.volume = (settings.tts?.volume ?? 100) / 100;
+      // Apply volume from settings (default 100%)
+      audio.volume = (status.volume ?? 100) / 100;
 
       // Add to queue
       this.audioQueue.push(audio);
@@ -99,15 +107,30 @@ class TTSService {
   }
 
   /**
+   * Get TTS status
+   */
+  async getStatus(): Promise<TTSStatus> {
+    try {
+      // Use cached status for 5 seconds to avoid excessive API calls
+      if (this.cachedStatus && Date.now() - (this.cachedStatus as any)._timestamp < 5000) {
+        return this.cachedStatus;
+      }
+
+      const status = await apiService.get<TTSStatus>('/api/tts/status');
+      this.cachedStatus = { ...status, _timestamp: Date.now() } as any;
+      return status;
+    } catch (error) {
+      console.error('Failed to get TTS status:', error);
+      return { available: false };
+    }
+  }
+
+  /**
    * Check if TTS is available
    */
   async isAvailable(): Promise<boolean> {
-    try {
-      const response = await apiService.get<{ available: boolean }>('/api/tts/status');
-      return response.available;
-    } catch {
-      return false;
-    }
+    const status = await this.getStatus();
+    return status.available;
   }
 }
 

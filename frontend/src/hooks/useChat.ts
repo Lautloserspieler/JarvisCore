@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import chatService, { Message, ChatSession } from '@/services/chatService';
+import { ttsService } from '@/services/ttsService';
 import { useWebSocket } from './useWebSocket';
 
 export const useChat = (sessionId?: string) => {
@@ -12,7 +13,7 @@ export const useChat = (sessionId?: string) => {
   const { send, isConnected } = useWebSocket({
     onMessage: (data) => {
       if (data.type === 'chat_response') {
-        setMessages(prev => [...prev, {
+        const assistantMessage: Message = {
           id: data.messageId,
           text: data.response,
           isUser: false,
@@ -20,8 +21,13 @@ export const useChat = (sessionId?: string) => {
           // Add token statistics if available
           tokens: data.tokens,
           tokensPerSecond: data.tokensPerSecond,
-        }]);
+        };
+        
+        setMessages(prev => [...prev, assistantMessage]);
         setIsTyping(false);
+        
+        // Play TTS for assistant response
+        ttsService.speak(data.response);
       } else if (data.type === 'typing') {
         setIsTyping(data.isTyping);
       }
@@ -63,15 +69,20 @@ export const useChat = (sessionId?: string) => {
       }
     },
     onSuccess: (data) => {
-      if (!isConnected()) {
+      if (!isConnected() && data.response) {
         // Add response if not using WebSocket
-        setMessages(prev => [...prev, {
+        const assistantMessage: Message = {
           id: data.messageId,
           text: data.response,
           isUser: false,
           timestamp: new Date().toISOString(),
-        }]);
+        };
+        
+        setMessages(prev => [...prev, assistantMessage]);
         setIsTyping(false);
+        
+        // Play TTS for assistant response
+        ttsService.speak(data.response);
       }
       queryClient.invalidateQueries({ queryKey: ['chatMessages', sessionId] });
     },

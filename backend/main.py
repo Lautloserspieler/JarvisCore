@@ -47,6 +47,23 @@ except Exception as e:
     settings_router = None
     current_settings = None
 
+# Import TTS router and initialize service
+try:
+    from backend.api.tts_endpoints import router as tts_router
+    from backend.core.tts_service import init_tts_service
+    
+    print("[BACKEND] Initializing TTS service...")
+    tts_service = init_tts_service()
+    if tts_service and tts_service.is_available():
+        status = tts_service.get_status()
+        print(f"[BACKEND] ✅ TTS service ready: {status['engine']} on {status['device']}")
+    else:
+        print("[BACKEND] ⚠️  TTS service initialized with fallback or unavailable")
+except Exception as e:
+    print(f"[WARNING] TTS service unavailable: {e}")
+    tts_router = None
+    tts_service = None
+
 # Load JARVIS System Prompts
 def load_system_prompt_file(filename: str) -> str:
     """Load a system prompt from config file"""
@@ -95,7 +112,7 @@ def get_system_prompt(model_name: str) -> str:
         print(f"[INFO] Using FULL prompt for {model_name} (large model)")
         return JARVIS_PROMPT_FULL if JARVIS_PROMPT_FULL else JARVIS_PROMPT_FALLBACK
 
-app = FastAPI(title="JARVIS Core API", version="1.1.0")
+app = FastAPI(title="JARVIS Core API", version="1.2.0")
 
 # CORS Configuration
 app.add_middleware(
@@ -110,6 +127,10 @@ app.add_middleware(
 if settings_router:
     app.include_router(settings_router)
     print("[BACKEND] Settings router mounted")
+
+if tts_router:
+    app.include_router(tts_router)
+    print("[BACKEND] TTS router mounted")
 
 # In-memory storage
 sessions_db = {}
@@ -483,6 +504,11 @@ async def get_system_info():
             "enabled": len([p for p in plugins if p['enabled']])
         }
         
+        # Add TTS status
+        tts_status = None
+        if tts_service:
+            tts_status = tts_service.get_status()
+        
         return {
             "cpu": {"usage": cpu_percent, "count": cpu_count},
             "memory": {"total": round(mem_total, 2), "used": round(mem_used, 2), "percent": mem_percent},
@@ -490,6 +516,7 @@ async def get_system_info():
             "system": system_info,
             "llama": llama_status,
             "plugins": plugin_stats,
+            "tts": tts_status,
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
@@ -500,12 +527,15 @@ async def get_system_info():
 @app.get("/api/health")
 async def health_check():
     enabled_plugins = plugin_manager.get_enabled_plugins() if plugin_manager else []
+    tts_available = tts_service.is_available() if tts_service else False
+    
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "version": "1.1.0",
+        "version": "1.2.0",
         "llama_cpp": llama_runtime.get_status(),
-        "plugins": len(enabled_plugins)
+        "plugins": len(enabled_plugins),
+        "tts": tts_available
     }
 
 # HuggingFace Token API
@@ -679,11 +709,14 @@ async def get_chat_sessions():
 @app.get("/")
 async def root():
     plugins_count = len(plugin_manager.get_all_plugins()) if plugin_manager else 0
+    tts_available = tts_service.is_available() if tts_service else False
+    
     return {
-        "message": "JARVIS Core API v1.1.0",
+        "message": "JARVIS Core API v1.2.0",
         "status": "online",
         "llama_cpp": llama_runtime.get_status(),
         "plugins": plugins_count,
+        "tts": tts_available,
         "endpoints": {
             "websocket": "/ws",
             "docs": "/docs",
@@ -694,7 +727,8 @@ async def root():
             "logs": "/api/logs",
             "plugins": "/api/plugins",
             "settings": "/api/settings",
-            "hf_token": "/api/hf-token"
+            "hf_token": "/api/hf-token",
+            "tts": "/api/tts"
         }
     }
 
@@ -703,14 +737,16 @@ if __name__ == "__main__":
     
     print("""
     ╔══════════════════════════════════════════════════════╗
-    ║          JARVIS Core Backend v1.1.0                  ║
+    ║          JARVIS Core Backend v1.2.0                  ║
     ║         Just A Rather Very Intelligent System        ║
-    ║         with llama.cpp local inference               ║
+    ║         with llama.cpp + TTS voice synthesis         ║
     ╚══════════════════════════════════════════════════════╝
     """)
     
     print("[INFO] Starting JARVIS Core API...")
     print(f"[INFO] llama.cpp available: {llama_runtime.get_status()['available']}")
     print(f"[INFO] Device: {llama_runtime.device}")
+    if tts_service:
+        print(f"[INFO] TTS available: {tts_service.is_available()}")
     
     uvicorn.run(app, host="0.0.0.0", port=5050)

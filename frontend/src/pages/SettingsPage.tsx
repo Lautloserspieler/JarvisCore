@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Download, Upload, RotateCcw, Save, Settings2, Zap, Shield, Database, Plug, Globe } from 'lucide-react';
+import { Download, Upload, RotateCcw, Save, Settings2, Zap, Shield, Database, Plug, Globe, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
+import TTSSettingsPanel from '@/components/TTSSettingsPanel';
 
 interface LlamaSettings {
   temperature: number;
@@ -320,7 +321,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="llama" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="llama">
             <Zap className="w-4 h-4 mr-2" />
             {t('tabs.llm').replace('🧠 ', '')}
@@ -328,6 +329,10 @@ const SettingsPage: React.FC = () => {
           <TabsTrigger value="plugins">
             <Plug className="w-4 h-4 mr-2" />
             {t('tabs.plugins').replace('🔌 ', '')}
+          </TabsTrigger>
+          <TabsTrigger value="tts">
+            <Volume2 className="w-4 h-4 mr-2" />
+            Sprachausgabe
           </TabsTrigger>
           <TabsTrigger value="ui">
             <Settings2 className="w-4 h-4 mr-2" />
@@ -472,6 +477,11 @@ const SettingsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* TTS Settings Tab */}
+        <TabsContent value="tts" className="space-y-4">
+          <TTSSettingsPanel />
         </TabsContent>
 
         {/* UI Settings Tab */}

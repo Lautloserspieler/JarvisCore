@@ -6,7 +6,7 @@
 
 [![CI/CD](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/ci.yml/badge.svg)](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/ci.yml)
 [![Release](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/release.yml/badge.svg)](https://github.com/Lautloserspieler/JarvisCore/actions/workflows/release.yml)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://python.org)
 [![Go](https://img.shields.io/badge/Go-1.21+-cyan.svg)](https://golang.org)
 [![Vue](https://img.shields.io/badge/Vue-3.5+-green.svg)](https://vuejs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)

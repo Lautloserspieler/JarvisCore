@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 import json
 import logging
+import re
 from typing import Optional
 
 try:
@@ -33,6 +34,38 @@ tts_settings = {
 }
 
 
+def clean_text_for_tts(text: str) -> str:
+    """
+    Clean text for TTS by removing LLM tokens and control characters
+    
+    Args:
+        text: Raw text from LLM
+        
+    Returns:
+        Cleaned text suitable for TTS
+    """
+    # Remove LLM special tokens
+    text = re.sub(r'<\|.*?\|>', '', text)  # <|endoftext|>, <|im_start|>, etc.
+    text = re.sub(r'</?s>', '', text)  # <s>, </s>
+    text = re.sub(r'\[INST\]|\[/INST\]', '', text)  # Llama instruction tokens
+    text = re.sub(r'<<SYS>>|<</SYS>>', '', text)  # System tokens
+    
+    # Remove markdown code blocks (they sound terrible)
+    text = re.sub(r'```[\s\S]*?```', '', text)
+    text = re.sub(r'`[^`]+`', '', text)
+    
+    # Remove URLs (they sound terrible when spoken)
+    text = re.sub(r'https?://\S+', 'Link', text)
+    
+    # Clean up excessive whitespace
+    text = re.sub(r'\s+', ' ', text)
+    
+    # Remove leading/trailing whitespace
+    text = text.strip()
+    
+    return text
+
+
 @router.post("/synthesize")
 async def synthesize_speech(data: dict = Body(...)):
     """
@@ -55,6 +88,12 @@ async def synthesize_speech(data: dict = Body(...)):
     text = data.get("text", "").strip()
     if not text:
         return {"success": False, "message": "Empty text provided"}
+    
+    # Clean text for TTS
+    text = clean_text_for_tts(text)
+    
+    if not text:
+        return {"success": False, "message": "Text became empty after cleaning"}
     
     # Get language from request or settings
     lang_str = data.get("language", tts_settings["language"])

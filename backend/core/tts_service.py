@@ -1,4 +1,4 @@
-"""
+""" 
 TTS Service Module for JarvisCore
 Handles text-to-speech synthesis with XTTS v2 and language support
 """
@@ -74,7 +74,8 @@ class TTSService:
         
         try:
             logger.info("Initializing XTTS v2 engine...")
-            self.tts_engine = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2", verbose=False)
+            # Note: verbose parameter removed in newer TTS versions
+            self.tts_engine = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2")
             
             if self.use_gpu:
                 self.tts_engine = self.tts_engine.to("cuda")

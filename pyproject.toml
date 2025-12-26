@@ -1,64 +1,262 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "jarviscore"
-version = "0.1.0"
-description = "Lokaler deutscher KI-Assistent mit Sprach- und Weboberfläche."
+version = "1.2.0-dev"
+description = "J.A.R.V.I.S. Core - Lokaler deutscher KI-Assistent mit LLM, Voice Control & Plugin System"
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [{ name = "JarvisCore Contributors" }]
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "JarvisCore Contributors", email = "emeyer@fn.de" }
+]
+keywords = [
+    "ai", "assistant", "llm", "voice-control", "local-ai",
+    "german", "privacy", "offline", "jarvis"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# === CORE RUNTIME DEPENDENCIES ===
 dependencies = [
+    # Web Framework
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.27.0",
+    "websockets>=12.0",
+    "python-multipart>=0.0.18",
+    
+    # Core Libraries
+    "pydantic>=2.7,<3",
+    "python-dotenv>=1.0.0",
     "requests>=2.31.0",
     "aiohttp>=3.9",
-    "python-dotenv>=1.0.0",
-    "pydantic>=2.7,<3",
-    "llama-cpp-python>=0.2.90",
-    "nltk>=3.8.1",
-    "transformers>=4.30.0,<5.0.0",
-    "sentence-transformers>=2.2.2",
-    "sentencepiece>=0.1.99",
-    "huggingface_hub>=0.20.0",
-    "wikipedia-api>=0.6.0",
-    "isbnlib>=3.10.0",
-    "SPARQLWrapper>=2.0.0",
-    "reportlab>=3.6.13",
-    "pillow>=10.0.0",
-    "faster-whisper>=1.0.1",
-    "ctranslate2>=3.19",
-    "pyaudio>=0.2.13",
-    "pyttsx3>=2.90",
-    "sounddevice>=0.4.6",
-    "soundfile>=0.12.1",
-    "tts>=0.21.3",
-    "simpleaudio>=1.0.4",
-    "ttkbootstrap>=1.10.1",
-    "torch>=2.1.0",
-    "torchaudio>=2.1.0",
+    
+    # Data Processing (NumPy <2.0 for compatibility)
     "numpy>=1.24.3,<2.0",
     "pandas>=1.5.3,<2.0",
     "scikit-learn>=1.3.0,<1.6",
     "scipy>=1.10.0,<2.0",
+    
+    # LLM Core
+    "llama-cpp-python>=0.2.90",
+    "transformers>=4.36.0,<5.0.0",
+    "sentence-transformers>=2.2.2",
+    "sentencepiece>=0.1.99",
+    "huggingface-hub>=0.20.0",
+    "accelerate>=0.25.0",
+    "safetensors>=0.4.0",
+    "protobuf>=4.25.0",
+    
+    # NLP & Language
+    "nltk>=3.8.1",
+    "langdetect>=1.0.9",
+    
+    # Knowledge Sources
+    "wikipedia-api>=0.6.0",
+    "isbnlib>=3.10.0",
+    "SPARQLWrapper>=2.0.0",
     "beautifulsoup4>=4.12.0",
     "lxml>=4.9.0",
-    "urllib3>=2.0.0",
-    "websockets>=11.0.0",
+    
+    # Document Processing
+    "reportlab>=3.6.13",
+    "pillow>=10.0.0",
+    
+    # System & Utilities
     "psutil>=5.9.0",
-    "pywin32>=306",
-    "speedtest-cli>=2.1.3",
-    "gputil>=1.4.0",
-    "py-cpuinfo>=9.0.0",
-    "pystray>=0.19.5",
-    "pytest>=7.3.1",
-    "pytest-cov>=4.0.0",
-    "python-json-logger>=2.0.7",
-    "tqdm>=4.65.0",
+    "tqdm>=4.66.0",
     "colorama>=0.4.6",
     "python-dateutil>=2.8.2",
     "pytz>=2023.3",
     "pyyaml>=6.0.0",
+    "python-json-logger>=2.0.7",
+    
+    # Security & Auth
     "pyjwt>=2.7.0",
-    "python-multipart>=0.0.6",
     "pyotp>=2.9.0",
+    "qrcode[pil]>=7.4",
+    "cryptography>=41.0.0",
+    
+    # Networking
+    "urllib3>=2.0.0",
+    "speedtest-cli>=2.1.3",
 ]
+
+# === OPTIONAL DEPENDENCIES ===
+[project.optional-dependencies]
+
+# Development Tools
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.3.0",
+]
+
+# CI/CD Dependencies
+ci = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "bandit>=1.7.5",
+    "safety>=2.3.0",
+    "coverage[toml]>=7.3.0",
+]
+
+# Text-to-Speech & Voice
+tts = [
+    "TTS>=0.22.0",  # Coqui TTS (XTTS v2)
+    "pyttsx3>=2.90",  # Fallback TTS
+    "faster-whisper>=1.0.1",  # Speech recognition
+    "ctranslate2>=3.19",
+    "pyaudio>=0.2.13",
+    "sounddevice>=0.4.6",
+    "soundfile>=0.12.1",
+    "simpleaudio>=1.0.4",
+]
+
+# CUDA Support (GPU acceleration)
+cuda = [
+    "torch>=2.1.0",
+    "torchaudio>=2.1.0",
+    "torchvision>=0.16.1",
+]
+
+# CPU-only PyTorch (lighter install)
+cpu = [
+    "torch>=2.1.0",
+    "torchaudio>=2.1.0",
+    "torchvision>=0.16.1",
+]
+
+# Desktop UI
+desktop = [
+    "ttkbootstrap>=1.10.1",
+    "pywebview>=4.4.1",
+    "dearpygui>=1.10.0",
+    "pystray>=0.19.5",
+]
+
+# System Monitoring
+monitoring = [
+    "gputil>=1.4.0",
+    "py-cpuinfo>=9.0.0",
+]
+
+# Windows-specific
+windows = [
+    "pywin32>=306; sys_platform == 'win32'",
+    "win10toast>=0.9; sys_platform == 'win32'",
+]
+
+# Cross-platform notifications
+notifications = [
+    "plyer>=2.1.0",
+    "win10toast>=0.9; sys_platform == 'win32'",
+]
+
+# Full installation (everything)
+all = [
+    "jarviscore[dev,ci,tts,cuda,desktop,monitoring,windows,notifications]",
+]
+
+# === CLI ENTRY POINTS ===
+[project.scripts]
+jarviscore = "jarviscore.cli:main"
+jarvis = "jarviscore.cli:main"
 
 [project.urls]
 homepage = "https://github.com/Lautloserspieler/JarvisCore"
-source = "https://github.com/Lautloserspieler/JarvisCore"
+repository = "https://github.com/Lautloserspieler/JarvisCore"
+issues = "https://github.com/Lautloserspieler/JarvisCore/issues"
+documentation = "https://github.com/Lautloserspieler/JarvisCore/blob/main/README.md"
+changelog = "https://github.com/Lautloserspieler/JarvisCore/blob/main/CHANGELOG.md"
+
+# === TOOL CONFIGURATION ===
+
+[tool.setuptools]
+packages = ["jarviscore", "backend", "plugins"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = """
+    --verbose
+    --cov=backend
+    --cov-report=term-missing
+    --cov-report=html
+    --cov-fail-under=70
+"""
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+  | node_modules
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Set to true when ready
+
+[tool.coverage.run]
+source = ["backend"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

@@ -67,7 +67,7 @@ JarvisCore enthält **vorgeklonte JARVIS-Voice-Samples**, die keine langwierige 
 ### ✨ Vorteile der Vorgeklonten Stimmen
 
 | Feature | Vorteil |
-|---------|---------|
+|---------|----------|
 | ⚡ **Zeitersparnis** | 5-7 Minuten schneller beim ersten Start |
 | 💻 **Schwache PCs** | Funktioniert auch auf alten/schwachen Computern |
 | 🎯 **Sofort einsatzbereit** | Einfach klonen und starten - keine Wartezeit |
@@ -120,82 +120,118 @@ Erster Start:
 
 ## 🚀 Installation & Start
 
-### Schritt 1: Repository klonen
+### 🆕 Neue Installation Method (v1.2.0-dev) - EMPFOHLEN
+
+**Vorteil:** Einfacher, schneller, cleaner - nur notwendige Dependencies
+
+#### Methode 1: Minimal Installation (Nur Backend)
 
 ```bash
+# Repository klonen
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
+
+# Installiere JarvisCore mit essentiellen Features
+pip install -e ".[tts]"
+
+# Starte JARVIS
+jarviscore web
 ```
 
-### Schritt 2: Basis-Dependencies installieren
+#### Methode 2: Vollständige Installation (Empfohlen)
 
 ```bash
+# Mit allen optionalen Features
+pip install -e ".[dev,tts,cuda]"
+
+# Starte JARVIS
+jarviscore web
+```
+
+#### Methode 3: Development Setup (Für Contributors)
+
+```bash
+# Mit Testing und Dokumentation Tools
+pip install -e ".[dev,ci,tts,cuda]"
+
+# Testing
+pytest
+
+# Start
+jarviscore web
+```
+
+### ✅ Alte Installation Method (v1.1.0 - Noch unterstützt)
+
+```bash
+# Repository klonen
+git clone https://github.com/Lautloserspieler/JarvisCore.git
+cd JarvisCore
+
+# Alte Methode (funktioniert noch!)
 pip install -r requirements.txt
-```
-
-### Schritt 3: llama.cpp Setup (🆕 Automatisch!)
-
-**NEU:** Automatische GPU-Erkennung und optimale Installation!
-
-```bash
-cd backend
-python setup_llama.py
-```
-
-**Das Script erkennt automatisch:**
-- ✅ NVIDIA GPU → Installiert mit CUDA Support (30-50 tok/s)
-- ✅ AMD GPU → Empfiehlt CPU-Version (siehe unten)
-- ✅ Keine GPU → Installiert CPU-Version (5-10 tok/s)
-
-**Ausgabe-Beispiel:**
-```
-╭──────────────────────────────────────────────────────╮
-│   JARVIS Core - llama.cpp Setup Script              │
-│      Automatic GPU Detection & Install               │
-╰──────────────────────────────────────────────────────╯
-
-[INFO] System: Windows AMD64
-[INFO] Python: 3.11.5
-[INFO] Detecting GPU...
-[INFO] NVIDIA GPU detected!
-
-Installing llama-cpp-python with NVIDIA CUDA support
-
-✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅
-
-[SUCCESS] llama-cpp-python installed successfully!
-[INFO] GPU Mode: NVIDIA CUDA
-[INFO] You can now run: python main.py
-```
-
-### Schritt 4: Frontend Dependencies
-
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-### Schritt 5: JARVIS starten
-
-```bash
+cd backend && python setup_llama.py && cd ..
+cd frontend && npm install && cd ..
 python main.py
 ```
 
-**Das war's!** Das `main.py` Script:
-- ✅ Startet automatisch Backend & Frontend
-- ✅ Öffnet Browser bei http://localhost:5000
-- ✅ Backend läuft auf http://localhost:5050
+> 💡 **Tipp:** Neue Methode ist kürzer und übersichtlicher!
 
 ---
 
-## 🎮 Quick Start Alternative
-
-### One-Liner Installation (Empfohlen)
+## 🔄 CLI Commands (NEU in v1.2.0-dev)
 
 ```bash
-git clone https://github.com/Lautloserspieler/JarvisCore.git && cd JarvisCore && pip install -r requirements.txt && cd backend && python setup_llama.py && cd ../frontend && npm install && cd .. && python main.py
+# Web Mode (Development) - EMPFOHLEN
+jarviscore web
+# Öffnet automatisch http://localhost:5000
+
+# Desktop Mode (geplant - wird bald verfügbar)
+jarviscore desktop
+
+# Production Mode (geplant)
+jarviscore prod
+
+# Hilfe anzeigen
+jarviscore --help
 ```
+
+---
+
+## 📦 Dependency Management (Neu in v1.2.0-dev)
+
+### Old Way ❌
+```bash
+pip install -r requirements.txt
+# Problem: Alle Dependencies, auch wenn nicht nötig
+```
+
+### New Way ✅
+```bash
+# Wähle genau, was du brauchst!
+pip install -e "."              # Minimal
+pip install -e ".[tts]"         # + Text-to-Speech
+pip install -e ".[cuda]"        # + GPU Support (NVIDIA)
+pip install -e ".[dev]"         # + Development Tools
+pip install -e ".[all]"         # Alles zusammen
+
+# Kombinationen möglich
+pip install -e ".[dev,tts,cuda]"
+```
+
+### Verfügbare Extras
+
+| Extra | Inhalt | Größe |
+|-------|--------|-------|
+| `tts` | XTTS v2 Voice Synthesis | ~500 MB |
+| `cuda` | PyTorch with CUDA (NVIDIA) | ~2 GB |
+| `dev` | Testing, Linting, Documentation | ~300 MB |
+| `ci` | CI/CD Tools | ~100 MB |
+| `all` | Alles zusammen | ~3 GB |
+
+### 📚 Mehr Infos
+
+Siehe [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) für vollständige v1.1 → v1.2 Migration
 
 ---
 
@@ -240,7 +276,7 @@ Nach dem Start erreichst du:
 
 **👉 Empfehlung: Nutze die CPU-Version!**
 ```bash
-python setup_llama.py
+cd backend && python setup_llama.py
 # Wähle Option 3: CPU-Version
 ```
 
@@ -314,7 +350,7 @@ JARVIS Core nutzt ein **Ollama-inspiriertes Download-System**:
 
 ### Models verwalten
 
-1. **JARVIS starten**: `python main.py`
+1. **JARVIS starten**: `jarviscore web` oder `python main.py`
 2. **Web-UI öffnen**: http://localhost:5000
 3. **Models-Tab**: Navigation zur Model-Verwaltung
 4. **Model downloaden**: Klick "Download" → Wähle Quantization
@@ -352,8 +388,12 @@ Weitere Infos: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
 
 ```
 JarvisCore/
+├── pyproject.toml          # 🆕 Centralized Configuration
 ├── main.py                 # 🚀 Unified Launcher
-├── requirements.txt        # 📦 Python Dependencies
+├── requirements.txt        # 📦 Legacy (deprecated)
+├── jarviscore/             # 🆕 CLI Package
+│   ├── __init__.py
+│   └── cli.py
 ├── core/                   # 🧠 Core Python Modules
 │   ├── llama_inference.py # llama.cpp Engine
 │   ├── model_downloader.py
@@ -411,6 +451,10 @@ lsof -i :5050
 ### Problem: Module nicht gefunden
 
 ```bash
+# Neue Methode
+pip install -e ".[tts]"
+
+# Oder alte Methode
 pip install -r requirements.txt
 cd frontend && npm install
 ```
@@ -424,7 +468,7 @@ python setup_llama.py
 # Wähle Option 3
 ```
 
-Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTING.md)
+Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTING.md) | [📋 Migration Guide](./MIGRATION_GUIDE.md)
 
 ---
 
@@ -438,12 +482,15 @@ Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTI
 - ✅ Model Download System
 - ✅ Vorgeklonte Voice Samples (DE/EN v2.2)
 
-### 🔄 v1.2.0 - Q1 2026
-- Voice Input (Whisper)
-- Voice Output (XTTS v2)
-- Desktop App (Wails)
-- Enhanced Memory System
-- Docker Support
+### 🔄 v1.2.0 (Q1 2026) - NEW!
+- ✅ **Consolidated Dependency Management** (pyproject.toml)
+- ✅ **CLI Entry Points** (jarviscore web/desktop/prod)
+- ✅ **Enhanced Configuration** (50+ settings in .env.example)
+- 🔄 Voice Input (Whisper)
+- 🔄 Voice Output (XTTS v2)
+- 🔄 Desktop App (Wails)
+- 🔄 Enhanced Memory System
+- 🔄 Docker Support
 
 ### 📋 v2.0.0 - Q2 2026
 - RAG Implementation
@@ -467,6 +514,19 @@ Beiträge sind willkommen! Bitte lies [CONTRIBUTING.md](CONTRIBUTING.md) für De
 4. Push zum Branch (`git push origin feature/amazing-feature`)
 5. Erstelle einen Pull Request
 
+**Neuer Development Setup:**
+```bash
+# Installation mit allen Dev-Tools
+pip install -e ".[dev,ci,tts,cuda]"
+
+# Tests ausführen
+pytest
+
+# Code formatieren
+black .
+ruff check .
+```
+
 ---
 
 ## 📄 Lizenz
@@ -488,6 +548,8 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 
 ## 📚 Weitere Dokumentation
 
+- [📋 Migration Guide v1.1 → v1.2](MIGRATION_GUIDE.md) - NEW!
+- [🏗️ Architecture Refactor Plan](ARCHITECTURE_REFACTOR.md) - NEW!
 - [Quick Start Guide](docs/README_QUICKSTART.md)
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [LLM Download System](docs/LLM_DOWNLOAD_SYSTEM.md)
@@ -506,7 +568,7 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 
 *"Manchmal muss man rennen, bevor man gehen kann."* - Tony Stark
 
-**Version:** 1.1.0 | **Release:** 02. Januar 2026
+**Version:** 1.1.0 | **v1.2.0-dev Phase 1 ✅** | **Release:** 02. Januar 2026
 
 [⭐ Star us on GitHub](https://github.com/Lautloserspieler/JarvisCore) | [🐛 Report Bug](https://github.com/Lautloserspieler/JarvisCore/issues) | [💡 Request Feature](https://github.com/Lautloserspieler/JarvisCore/issues)
 

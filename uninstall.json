@@ -3,19 +3,19 @@
     {
       "method": "fs.rm",
       "params": {
-        "path": "app"
+        "path": "venv"
       }
     },
     {
       "method": "fs.rm",
       "params": {
-        "path": "venv"
+        "path": "frontend/node_modules"
       }
     },
     {
       "method": "notify",
       "params": {
-        "html": "Uninstalled successfully."
+        "html": "JarvisCore wurde erfolgreich deinstalliert."
       }
     }
   ]

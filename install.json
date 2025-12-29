@@ -12,16 +12,21 @@
             "title": "Beschleunigung",
             "options": [
               { "title": "CPU", "value": "cpu" },
-              { "title": "NVIDIA CUDA (RTX/GTX)", "value": "cuda" },
-              { "title": "AMD ROCm (Linux)", "value": "rocm" },
-              { "title": "Apple Metal (macOS)", "value": "metal" }
+              { "title": "NVIDIA CUDA", "value": "cuda" },
+              { "title": "AMD ROCm", "value": "rocm" },
+              { "title": "Apple Metal", "value": "metal" }
             ],
             "default": "cuda"
           }
         ]
       }
     },
-    { "method": "local.set", "params": { "gpu": "{{input.gpu}}" } },
+    {
+      "method": "local.set",
+      "params": {
+        "gpu": "{{input.gpu}}"
+      }
+    },
     {
       "method": "shell.run",
       "params": { "message": "python -m venv venv" }

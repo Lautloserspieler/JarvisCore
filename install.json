@@ -9,15 +9,13 @@
     {
       "method": "shell.run",
       "params": {
-        "venv": "jarviscore",
-        "message": "python -m pip install -U pip setuptools wheel"
+        "message": "conda activate jarviscore && python -m pip install -U pip setuptools wheel"
       }
     },
     {
       "method": "shell.run",
       "params": {
-        "venv": "jarviscore",
-        "message": "pip install -e \".[tts]\""
+        "message": "conda activate jarviscore && pip install -e \".[tts]\""
       }
     },
     {
@@ -62,14 +60,13 @@
     {
       "method": "shell.run",
       "params": {
-        "venv": "jarviscore",
-        "message": "pip install -U --no-cache-dir llama-cpp-python"
+        "message": "conda activate jarviscore && pip install -U --no-cache-dir llama-cpp-python"
       }
     },
     {
       "method": "notify",
       "params": {
-        "html": "Installation abgeschlossen!<br><br><b>Python:</b> 3.11.9<br><b>GPU:</b> {{input}}<br><br>Klicke 'Start' zum Starten."
+        "html": "Installation abgeschlossen!<br><br><b>Python:</b> 3.11.9 (Conda)<br><b>GPU:</b> {{input}}<br><br>Klicke 'Start' zum Starten."
       }
     }
   ]

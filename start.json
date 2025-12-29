@@ -3,8 +3,9 @@
     {
       "method": "shell.run",
       "params": {
+        "venv": "venv",
         "daemon": true,
-        "message": "conda activate jarviscore && jarviscore web",
+        "message": "jarviscore web",
         "on": [
           {
             "event": "/http:\\/\\/localhost:5000/",

@@ -3,7 +3,7 @@
     {
       "method": "shell.run",
       "params": {
-        "message": "conda install python=3.11.9 -y"
+        "message": "conda install python=3.11.9 git -y"
       }
     },
     {

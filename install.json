@@ -23,7 +23,7 @@
       "method": "shell.run",
       "params": {
         "venv": "venv",
-        "message": "pip install numpy cython"
+        "message": "pip install numpy==1.26.4 cython"
       }
     },
     {

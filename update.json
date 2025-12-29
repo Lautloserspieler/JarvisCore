@@ -1,0 +1,32 @@
+{
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "path": "app",
+        "message": "git pull"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "path": "app",
+        "venv": "venv",
+        "message": "pip install -e \".[tts]\""
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "path": "app/frontend",
+        "message": "npm install"
+      }
+    },
+    {
+      "method": "notify",
+      "params": {
+        "html": "Update complete!"
+      }
+    }
+  ]
+}

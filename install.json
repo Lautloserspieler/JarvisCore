@@ -1,0 +1,31 @@
+{
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "git clone https://github.com/Lautloserspieler/JarvisCore app"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "path": "app",
+        "venv": "venv",
+        "message": "pip install -e \".[tts]\""
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "path": "app/frontend",
+        "message": "npm install"
+      }
+    },
+    {
+      "method": "notify",
+      "params": {
+        "html": "Installation complete! Click 'Start' to launch JARVIS."
+      }
+    }
+  ]
+}

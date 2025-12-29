@@ -12,6 +12,7 @@ import sys
 import subprocess
 import time
 import socket
+import signal
 from pathlib import Path
 
 # Color codes for terminal output
@@ -31,10 +32,24 @@ class JarvisLauncher:
         self.backend_dir = self.root / "backend"
         self.frontend_dir = self.root / "frontend"
         self.processes = []
+        self.running = True
         
         # Load ports from environment or use defaults
         self.backend_port = int(os.getenv('JARVIS_BACKEND_PORT', '5050'))
         self.frontend_port = int(os.getenv('JARVIS_FRONTEND_PORT', '5000'))
+        
+        # Register signal handlers for graceful shutdown
+        signal.signal(signal.SIGTERM, self._signal_handler)
+        signal.signal(signal.SIGINT, self._signal_handler)
+        if sys.platform == "win32":
+            signal.signal(signal.SIGBREAK, self._signal_handler)
+    
+    def _signal_handler(self, sig, frame):
+        """Handle SIGTERM, SIGINT, SIGBREAK for graceful shutdown"""
+        print(f"\n{Colors.YELLOW}● Received signal {sig}, shutting down gracefully...{Colors.END}")
+        self.running = False
+        self.shutdown()
+        sys.exit(0)
         
     def print_banner(self):
         """Print JARVIS banner"""
@@ -286,20 +301,30 @@ class JarvisLauncher:
         print(f"\n{Colors.CYAN}📝 Note: Backend and frontend output will be displayed directly below{Colors.END}\n")
     
     def shutdown(self):
-        """Shutdown all processes"""
+        """Shutdown all processes gracefully"""
+        if not self.running:
+            return  # Prevent multiple shutdown attempts
+        
+        self.running = False
         print(f"\n\n{Colors.YELLOW}● Shutting down JARVIS...{Colors.END}")
         
         for process in self.processes:
             try:
                 if sys.platform == "win32":
                     # On Windows, send CTRL_BREAK_EVENT to process group
-                    import signal
                     process.send_signal(signal.CTRL_BREAK_EVENT)
-                    process.wait(timeout=5)
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
                 else:
+                    # On Unix, send SIGTERM then SIGKILL if needed
                     process.terminate()
-                    process.wait(timeout=5)
-            except Exception:
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+            except Exception as e:
                 try:
                     process.kill()
                 except Exception:
@@ -326,10 +351,11 @@ class JarvisLauncher:
             self.print_info()
             
             # Monitor processes without capturing output
-            while True:
+            while self.running:
                 time.sleep(1)
                 if backend.poll() is not None:
                     print(f"\n{Colors.RED}❌ Backend crashed!{Colors.END}")
+                    self.running = False
                     break
                 
         except KeyboardInterrupt:

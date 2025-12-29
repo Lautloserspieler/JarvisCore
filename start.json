@@ -1,0 +1,21 @@
+{
+  "daemon": true,
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "path": "app",
+        "venv": "venv",
+        "env": { },
+        "message": "jarviscore web",
+        "on": [{ "event": "/http:\\/\\/localhost:5000/", "done": true }]
+      }
+    },
+    {
+      "method": "local.set",
+      "params": {
+        "url": "{{input.event[0]}}"
+      }
+    }
+  ]
+}

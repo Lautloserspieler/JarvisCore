@@ -1,16 +1,9 @@
 {
   "run": [
     {
-      "method": "script",
+      "method": "shell.run",
       "params": {
-        "run": [
-          {
-            "method": "fs.rm",
-            "params": {
-              "path": "app"
-            }
-          }
-        ]
+        "message": "{{platform === 'win32' ? 'if exist app rmdir /s /q app' : 'rm -rf app'}}"
       }
     },
     {

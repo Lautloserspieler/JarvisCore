@@ -18,6 +18,9 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+# Import GPU Manager
+from src.jarviscore.api.gpu_settings import gpu_manager
+
 app = FastAPI(
     title="J.A.R.V.I.S. API",
     description="RESTful API für den J.A.R.V.I.S. Sprachassistenten",
@@ -128,6 +131,9 @@ class ModelDownloadRequest(BaseModel):
 class ModelDeleteRequest(BaseModel):
     model_key: str
 
+class GPUInstallRequest(BaseModel):
+    gpu_type: str  # cuda, rocm, metal, cpu
+
 # WebSocket Manager
 class ConnectionManager:
     def __init__(self):
@@ -149,6 +155,55 @@ class ConnectionManager:
                 pass
 
 manager = ConnectionManager()
+
+# ============================================================================
+# GPU SETTINGS API ENDPOINTS
+# ============================================================================
+
+@app.get("/api/settings/gpu")
+async def get_gpu_info():
+    """Get GPU information and availability"""
+    try:
+        return gpu_manager.get_gpu_info()
+    except Exception as e:
+        print(f"[API] GPU info error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/settings/gpu/install")
+async def install_gpu_support(request: GPUInstallRequest):
+    """Install GPU support for specified backend"""
+    try:
+        gpu_type = request.gpu_type.lower()
+        
+        if gpu_type not in ['cpu', 'cuda', 'rocm', 'metal']:
+            raise HTTPException(status_code=400, detail=f"Invalid GPU type: {gpu_type}")
+        
+        # Run installation in background
+        def background_install():
+            try:
+                print(f"[GPU] Starting {gpu_type.upper()} installation...")
+                result = asyncio.run(gpu_manager.install_gpu_support(gpu_type))
+                print(f"[GPU] Installation result: {result}")
+                return result
+            except Exception as e:
+                print(f"[GPU] Installation error: {e}")
+                return {
+                    'status': 'error',
+                    'message': f'Installation error: {str(e)}'
+                }
+        
+        # Start installation in thread
+        install_thread = threading.Thread(target=background_install, daemon=True)
+        install_thread.start()
+        
+        return {
+            'status': 'processing',
+            'message': f'{gpu_type.upper()} installation started',
+            'gpu_type': gpu_type
+        }
+    except Exception as e:
+        print(f"[API] GPU install error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
 # MODEL DOWNLOAD API ENDPOINTS

@@ -23,6 +23,13 @@
       "method": "shell.run",
       "params": {
         "venv": "venv",
+        "message": "pip install numpy cython"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
         "message": "pip install -e \".[tts]\""
       }
     },

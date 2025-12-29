@@ -7,6 +7,34 @@
       }
     },
     {
+      "method": "input",
+      "params": {
+        "title": "GPU Acceleration",
+        "description": "Wähle deine GPU-Beschleunigung für llama.cpp:",
+        "type": "select",
+        "options": [
+          {
+            "value": "cuda",
+            "text": "🟢 NVIDIA GPU (CUDA) - Empfohlen für NVIDIA RTX/GTX Karten"
+          },
+          {
+            "value": "rocm",
+            "text": "🟠 AMD GPU (ROCm) - Für AMD Radeon RX 5000+/7000+ (Experimentell)"
+          },
+          {
+            "value": "cpu",
+            "text": "🔵 CPU Only - Keine GPU (Funktioniert auf allen Computern)"
+          }
+        ]
+      }
+    },
+    {
+      "method": "local.set",
+      "params": {
+        "gpu_type": "{{input}}"
+      }
+    },
+    {
       "method": "shell.run",
       "params": {
         "path": "app",
@@ -22,9 +50,35 @@
       }
     },
     {
+      "method": "script",
+      "params": {
+        "run": [{
+          "method": "{{local.gpu_type === 'cuda' ? 'shell.run' : 'process.return'}}",
+          "params": {
+            "path": "app",
+            "venv": "venv",
+            "message": "pip uninstall llama-cpp-python -y && set CMAKE_ARGS=-DLLAMA_CUDA=on && pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python"
+          }
+        }]
+      }
+    },
+    {
+      "method": "script",
+      "params": {
+        "run": [{
+          "method": "{{local.gpu_type === 'rocm' ? 'shell.run' : 'process.return'}}",
+          "params": {
+            "path": "app",
+            "venv": "venv",
+            "message": "pip uninstall llama-cpp-python -y && set CMAKE_ARGS=-DLLAMA_HIPBLAS=on && pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python"
+          }
+        }]
+      }
+    },
+    {
       "method": "notify",
       "params": {
-        "html": "Installation complete! Click 'Start' to launch JARVIS."
+        "html": "Installation complete!<br><br><b>GPU Type:</b> {{local.gpu_type === 'cuda' ? 'NVIDIA CUDA 🟢' : local.gpu_type === 'rocm' ? 'AMD ROCm 🟠' : 'CPU Only 🔵'}}<br><br>Click 'Start' to launch JARVIS."
       }
     }
   ]

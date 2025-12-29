@@ -1,0 +1,22 @@
+{
+  "run": [
+    {
+      "method": "fs.rm",
+      "params": {
+        "path": "app"
+      }
+    },
+    {
+      "method": "fs.rm",
+      "params": {
+        "path": "venv"
+      }
+    },
+    {
+      "method": "notify",
+      "params": {
+        "html": "Uninstalled successfully."
+      }
+    }
+  ]
+}

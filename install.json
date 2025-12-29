@@ -1,68 +1,40 @@
 {
   "run": [
     {
-      "method": "shell.run",
-      "params": {
-        "message": "conda install python=3.11.9 git -y"
-      }
-    },
-    {
-      "method": "shell.run",
-      "params": {
-        "message": "python -m venv venv"
-      }
-    },
-    {
-      "method": "shell.run",
-      "params": {
-        "venv": "venv",
-        "message": "python -m pip install -U pip setuptools wheel"
-      }
-    },
-    {
-      "method": "shell.run",
-      "params": {
-        "venv": "venv",
-        "message": "pip install numpy==1.26.4 cython"
-      }
-    },
-    {
-      "method": "shell.run",
-      "params": {
-        "venv": "venv",
-        "message": "pip install -e \".[tts]\""
-      }
-    },
-    {
       "method": "input",
       "params": {
         "title": "GPU Backend",
         "description": "Wähle deinen GPU-Typ:",
-        "type": "select",
-        "options": [
+        "fields": [
           {
-            "title": "🔵 CPU (alle Computer)",
-            "value": "cpu"
-          },
-          {
-            "title": "🟢 NVIDIA CUDA (RTX/GTX)",
-            "value": "cuda"
-          },
-          {
-            "title": "🟠 AMD ROCm (Linux)",
-            "value": "rocm"
-          },
-          {
-            "title": "🍎 Apple Metal (macOS)",
-            "value": "metal"
+            "key": "gpu",
+            "type": "select",
+            "title": "Beschleunigung",
+            "options": [
+              { "title": "CPU", "value": "cpu" },
+              { "title": "NVIDIA CUDA (RTX/GTX)", "value": "cuda" },
+              { "title": "AMD ROCm (Linux)", "value": "rocm" },
+              { "title": "Apple Metal (macOS)", "value": "metal" }
+            ],
+            "default": "cuda"
           }
         ]
       }
     },
+    { "method": "local.set", "params": { "gpu": "{{input.gpu}}" } },
     {
-      "method": "local.set",
+      "method": "shell.run",
+      "params": { "message": "python -m venv venv" }
+    },
+    {
+      "method": "shell.run",
       "params": {
-        "gpu": "{{input}}"
+        "venv": "venv",
+        "message": [
+          "python -m pip install -U pip setuptools wheel",
+          "pip install numpy==1.26.4 cython",
+          "pip install -e \".[tts]\""
+        ]
       }
     },
     {
@@ -78,11 +50,12 @@
       "method": "shell.run",
       "params": {
         "venv": "venv",
-        "env": {
-          "FORCE_CMAKE": "1",
-          "CMAKE_ARGS": "-DGGML_CUDA=on"
-        },
-        "message": "pip uninstall -y llama-cpp-python && pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
+        "build": true,
+        "env": { "FORCE_CMAKE": "1", "CMAKE_ARGS": "-DGGML_CUDA=on" },
+        "message": [
+          "pip uninstall -y llama-cpp-python",
+          "pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
+        ]
       }
     },
     {
@@ -90,11 +63,11 @@
       "method": "shell.run",
       "params": {
         "venv": "venv",
-        "env": {
-          "FORCE_CMAKE": "1",
-          "CMAKE_ARGS": "-DGGML_HIPBLAS=on"
-        },
-        "message": "pip uninstall -y llama-cpp-python && pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
+        "env": { "FORCE_CMAKE": "1", "CMAKE_ARGS": "-DGGML_HIPBLAS=on" },
+        "message": [
+          "pip uninstall -y llama-cpp-python",
+          "pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
+        ]
       }
     },
     {
@@ -102,24 +75,27 @@
       "method": "shell.run",
       "params": {
         "venv": "venv",
-        "env": {
-          "FORCE_CMAKE": "1",
-          "CMAKE_ARGS": "-DGGML_METAL=on"
-        },
-        "message": "pip uninstall -y llama-cpp-python && pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
+        "env": { "FORCE_CMAKE": "1", "CMAKE_ARGS": "-DGGML_METAL=on" },
+        "message": [
+          "pip uninstall -y llama-cpp-python",
+          "pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
+        ]
       }
     },
     {
       "method": "shell.run",
       "params": {
         "path": "frontend",
-        "message": "npm install"
+        "message": [
+          "npm install",
+          "npm run build"
+        ]
       }
     },
     {
       "method": "notify",
       "params": {
-        "html": "Installation abgeschlossen!<br><br><b>Python:</b> 3.11.9<br><b>GPU:</b> {{input}}<br><br>Klicke 'Start' zum Starten."
+        "html": "Installation abgeschlossen.<br><b>GPU:</b> {{local.gpu}}<br>Klicke 'Start' zum Starten."
       }
     }
   ]

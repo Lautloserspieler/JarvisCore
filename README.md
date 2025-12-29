@@ -11,9 +11,9 @@
 [![Vue](https://img.shields.io/badge/Vue-3.5+-green.svg)](https://vuejs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
 [![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-orange.svg)](https://github.com/ggerganov/llama.cpp)
+[![Pinokio](https://img.shields.io/badge/Pinokio-Supported-blueviolet.svg)](https://pinokio.computer)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/Lautloserspieler/JarvisCore?style=social)](https://github.com/Lautloserspieler/JarvisCore)
-
 
 Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llama.cpp Inferenz**
 
@@ -83,34 +83,17 @@ JarvisCore enthält **vorgeklonte JARVIS-Voice-Samples**, die keine langwierige 
 
 Siehe [models/tts/voices/README.md](./models/tts/voices/README.md) für technische Details.
 
-### ⏱️ Zeitersparnis im Vergleich
-
-**Vor (ohne vorgeklonte Samples):**
-```
-Erster Start:
-├─ XTTS Model laden:        ~10s
-├─ German Voice Cloning:     ~2-3 Min ⏳
-├─ English Voice Cloning:    ~2-3 Min ⏳
-└─ Total:                    ~5-7 Minuten
-
-⚠️ Auf schwachen PCs: Crash oder 10-15 Minuten!
-```
-
-**Jetzt (mit vorgeklonten Samples):**
-```
-Erster Start:
-├─ XTTS Model laden:     ~10s
-├─ German Latents:       ~2s ⚡
-├─ English Latents:      ~2s ⚡
-└─ Total:                ~15 Sekunden
-
-✅ Funktioniert auf allen Computern!
-```
-
 ---
 
 ## 💻 Voraussetzungen
 
+Zur Nutzung benötigst du **eine der folgenden Optionen**:
+
+### Option A: Pinokio (Empfohlen - Keine Installation nötig) ⭐
+- ✅ **[Pinokio Browser](https://pinokio.computer)** installieren
+- ✅ Das war's! Pinokio kümmert sich um alles Weitere.
+
+### Option B: Manuelle Installation
 - **Python 3.11+** - [python.org](https://python.org)
 - **Node.js 18+** - [nodejs.org](https://nodejs.org)
 - **Git** - [git-scm.com](https://git-scm.com)
@@ -120,11 +103,53 @@ Erster Start:
 
 ## 🚀 Installation & Start
 
-### 🆕 Neue Installation Method (v1.2.0-dev) - EMPFOHLEN
+### 🎯 Methode 1: Pinokio (One-Click - EMPFOHLEN) ⭐⭐⭐
 
-**Vorteil:** Einfacher, schneller, cleaner - nur notwendige Dependencies
+**Dies ist die einfachste und am meisten empfohlene Methode!**
 
-#### Methode 1: Minimal Installation (Nur Backend)
+#### Schritt-für-Schritt:
+
+1. **Pinokio installieren**
+   - Gehe zu [pinokio.computer](https://pinokio.computer)
+   - Lade Pinokio herunter und installiere es
+
+2. **JARVIS in Pinokio hinzufügen**
+   - Öffne den Pinokio Browser
+   - Klicke auf "Download from URL" / "Repo hinzufügen"
+   - Gib ein: `https://github.com/Lautloserspieler/JarvisCore`
+   - Klicke auf **Install**
+
+3. **Warten und starten**
+   - Pinokio installiert automatisch alle Dependencies:
+     - Python virtual environment (venv)
+     - Python Packages (pip install)
+     - Node.js dependencies (npm install)
+   - Nach der Installation klickst du **Start**
+   - JARVIS lädt automatisch im Browser (http://localhost:5000)
+
+#### ✨ Vorteile der Pinokio-Installation:
+
+| Vorteil | Details |
+|---------|----------|
+| 🖱️ **One-Click** | Nur 2 Klicks - fertig! |
+| 🔄 **Automatisch** | Alle Dependencies werden installiert |
+| 🛡️ **Sicher** | Isolierte venv, keine System-Pollution |
+| 🚀 **Schnell** | Parallel-Installation, optimiert |
+| 📱 **Benutzerfreundlich** | Visuelles UI, keine Terminals nötig |
+| ⚙️ **Verwaltbar** | Einfache Update/Uninstall-Knöpfe |
+| 💾 **Speicherplatz** | ~3.5 GB (mit TTS + Frontend) |
+
+#### 📊 Installationsprozess:
+
+```
+Pinokio → Download Git Repo → Create venv → Install Python deps → Install Node deps → Ready! ✓
+```
+
+---
+
+### 📦 Methode 2: Manuelle Installation (Für Entwickler)
+
+#### Option A: Neue Methode (v1.2.0-dev) - Empfohlen
 
 ```bash
 # Repository klonen
@@ -134,48 +159,61 @@ cd JarvisCore
 # Installiere JarvisCore mit essentiellen Features
 pip install -e ".[tts]"
 
+# Installiere Frontend Dependencies
+cd frontend
+npm install
+cd ..
+
 # Starte JARVIS
 jarviscore web
 ```
 
-#### Methode 2: Vollständige Installation (Empfohlen)
+Danach öffnet sich automatisch: **http://localhost:5000**
+
+#### Option B: Mit GPU Support (NVIDIA CUDA)
 
 ```bash
-# Mit allen optionalen Features
+git clone https://github.com/Lautloserspieler/JarvisCore.git
+cd JarvisCore
+
+# Mit CUDA Support
+pip install -e ".[tts,cuda]"
+
+cd frontend && npm install && cd ..
+jarviscore web
+```
+
+#### Option C: Development Setup (Mit Testing Tools)
+
+```bash
+git clone https://github.com/Lautloserspieler/JarvisCore.git
+cd JarvisCore
+
+# Mit allen Dev-Tools
 pip install -e ".[dev,tts,cuda]"
 
-# Starte JARVIS
-jarviscore web
-```
+cd frontend && npm install && cd ..
 
-#### Methode 3: Development Setup (Für Contributors)
-
-```bash
-# Mit Testing und Dokumentation Tools
-pip install -e ".[dev,ci,tts,cuda]"
-
-# Testing
+# Tests
 pytest
 
 # Start
 jarviscore web
 ```
 
-### ✅ Alte Installation Method (v1.1.0 - Noch unterstützt)
+#### Option D: Alte Methode (v1.1.0 - Noch unterstützt)
 
 ```bash
-# Repository klonen
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 
-# Alte Methode (funktioniert noch!)
 pip install -r requirements.txt
 cd backend && python setup_llama.py && cd ..
 cd frontend && npm install && cd ..
 python main.py
 ```
 
-> 💡 **Tipp:** Neue Methode ist kürzer und übersichtlicher!
+> 💡 **Tipp:** Neue Methoden sind kürzer und übersichtlicher!
 
 ---
 
@@ -388,36 +426,41 @@ Weitere Infos: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
 
 ```
 JarvisCore/
-├── pyproject.toml          # 🆕 Centralized Configuration
-├── main.py                 # 🚀 Unified Launcher
-├── requirements.txt        # 📦 Legacy (deprecated)
-├── jarviscore/             # 🆕 CLI Package
+├── pinokio.js              # 🎯 Pinokio Configuration
+├── install.json            # 🎯 Pinokio Install Script
+├── start.json              # 🎯 Pinokio Start Script
+├── update.json             # 🎯 Pinokio Update Script
+├── uninstall.json          # 🎯 Pinokio Uninstall Script
+├── pyproject.toml          # Centralized Configuration
+├── main.py                 # Unified Launcher
+├── requirements.txt        # Legacy (deprecated)
+├── jarviscore/             # CLI Package
 │   ├── __init__.py
 │   └── cli.py
-├── core/                   # 🧠 Core Python Modules
+├── core/                   # Core Python Modules
 │   ├── llama_inference.py # llama.cpp Engine
 │   ├── model_downloader.py
 │   └── ...
-├── backend/                # 🔧 Python/FastAPI Backend
+├── backend/                # Python/FastAPI Backend
 │   ├── main.py
-│   ├── setup_llama.py     # 🆕 Auto GPU Setup
+│   ├── setup_llama.py     # Auto GPU Setup
 │   ├── plugin_manager.py
 │   └── requirements.txt
-├── frontend/               # 🎨 Vue 3 Frontend
+├── frontend/               # Vue 3 Frontend
 │   ├── src/
 │   ├── package.json
 │   └── vite.config.ts
-├── plugins/                # 🔌 Plugin System
+├── plugins/                # Plugin System
 │   ├── weather_plugin.py
 │   ├── timer_plugin.py
 │   └── ...
-├── models/                 # 📦 Models
+├── models/                 # Models
 │   ├── llm/               # GGUF LLM Models
-│   └── tts/               # 🎙️ Voice Samples
+│   └── tts/               # Voice Samples
 │       └── voices/        # Pre-cloned JARVIS voices
-├── config/                 # ⚙️ Configuration
-├── data/                   # 🗄️ User Data
-├── docs/                   # 📚 Documentation
+├── config/                 # Configuration
+├── data/                   # User Data
+├── docs/                   # Documentation
 └── README.md
 ```
 
@@ -468,6 +511,10 @@ python setup_llama.py
 # Wähle Option 3
 ```
 
+### Problem: Pinokio zeigt "Application not found"
+
+**Lösung:** Stelle sicher, dass du die neueste Version von Pinokio hast und versuche es erneut.
+
 Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTING.md) | [📋 Migration Guide](./MIGRATION_GUIDE.md)
 
 ---
@@ -486,6 +533,7 @@ Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTI
 - ✅ **Consolidated Dependency Management** (pyproject.toml)
 - ✅ **CLI Entry Points** (jarviscore web/desktop/prod)
 - ✅ **Enhanced Configuration** (50+ settings in .env.example)
+- ✅ **Pinokio Support** (One-Click Installation)
 - 🔄 Voice Input (Whisper)
 - 🔄 Voice Output (XTTS v2)
 - 🔄 Desktop App (Wails)
@@ -543,13 +591,15 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 - Gebaut mit [Vue 3](https://vuejs.org/)
 - Backend mit [FastAPI](https://fastapi.tiangolo.com/)
 - Lokale Inferenz mit [llama.cpp](https://github.com/ggerganov/llama.cpp)
+- Installation mit [Pinokio](https://pinokio.computer)
 
 ---
 
 ## 📚 Weitere Dokumentation
 
-- [📋 Migration Guide v1.1 → v1.2](MIGRATION_GUIDE.md) - NEW!
-- [🏗️ Architecture Refactor Plan](ARCHITECTURE_REFACTOR.md) - NEW!
+- [🎯 Pinokio Installation Guide](./docs/PINOKIO_GUIDE.md) - NEW!
+- [📋 Migration Guide v1.1 → v1.2](MIGRATION_GUIDE.md)
+- [🏗️ Architecture Refactor Plan](ARCHITECTURE_REFACTOR.md)
 - [Quick Start Guide](docs/README_QUICKSTART.md)
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [LLM Download System](docs/LLM_DOWNLOAD_SYSTEM.md)

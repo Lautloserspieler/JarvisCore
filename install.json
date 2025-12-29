@@ -1,29 +1,22 @@
 {
   "run": [
     {
-      "method": "shell.run",
-      "params": {
-        "message": "{{platform === 'win32' ? '(if exist app rmdir /s /q app) && git clone https://github.com/Lautloserspieler/JarvisCore app' : 'rm -rf app && git clone https://github.com/Lautloserspieler/JarvisCore app'}}"
-      }
-    },
-    {
       "method": "input",
       "params": {
-        "title": "GPU Acceleration",
-        "description": "Wähle deine GPU-Beschleunigung für llama.cpp:",
-        "type": "select",
-        "options": [
+        "title": "GPU Backend",
+        "description": "Wähle den Backend-Typ für llama-cpp-python.",
+        "fields": [
           {
-            "value": "cuda",
-            "text": "🟢 NVIDIA GPU (CUDA) - Empfohlen für NVIDIA RTX/GTX Karten"
-          },
-          {
-            "value": "rocm",
-            "text": "🟠 AMD GPU (ROCm) - Für AMD Radeon RX 5000+/7000+ (Experimentell)"
-          },
-          {
-            "value": "cpu",
-            "text": "🔵 CPU Only - Keine GPU (Funktioniert auf allen Computern)"
+            "key": "gpu_type",
+            "type": "select",
+            "title": "GPU-Beschleunigung",
+            "options": [
+              { "title": "🔵 CPU", "value": "cpu" },
+              { "title": "🟢 NVIDIA CUDA", "value": "cuda" },
+              { "title": "🟠 AMD ROCm (Linux)", "value": "rocm" },
+              { "title": "🍎 Apple Metal (macOS)", "value": "metal" }
+            ],
+            "default": "cpu"
           }
         ]
       }
@@ -31,36 +24,87 @@
     {
       "method": "local.set",
       "params": {
-        "gpu_type": "{{input}}"
+        "gpu_type": "{{input.gpu_type}}"
       }
     },
     {
       "method": "shell.run",
       "params": {
-        "path": "app",
         "venv": "venv",
-        "message": "pip install -e \".[tts]\""
+        "message": [
+          "python -m pip install -U pip setuptools wheel",
+          "pip install -e \".[tts]\""
+        ]
+      }
+    },
+    {
+      "when": "{{local.gpu_type === 'cpu'}}",
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "message": "pip install -U --no-cache-dir llama-cpp-python"
+      }
+    },
+    {
+      "when": "{{local.gpu_type === 'cuda' && platform === 'win32'}}",
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "build": true,
+        "env": {
+          "CMAKE_ARGS": "-DGGML_CUDA=on",
+          "FORCE_CMAKE": "1"
+        },
+        "message": "pip install -U --no-cache-dir llama-cpp-python"
+      }
+    },
+    {
+      "when": "{{local.gpu_type === 'cuda' && platform !== 'win32'}}",
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "env": {
+          "CMAKE_ARGS": "-DGGML_CUDA=on",
+          "FORCE_CMAKE": "1"
+        },
+        "message": "pip install -U --no-cache-dir llama-cpp-python"
+      }
+    },
+    {
+      "when": "{{local.gpu_type === 'rocm' && platform === 'linux'}}",
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "env": {
+          "CMAKE_ARGS": "-DGGML_HIPBLAS=on",
+          "FORCE_CMAKE": "1"
+        },
+        "message": "pip install -U --no-cache-dir llama-cpp-python"
+      }
+    },
+    {
+      "when": "{{local.gpu_type === 'metal' && platform === 'darwin'}}",
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "env": {
+          "CMAKE_ARGS": "-DGGML_METAL=on",
+          "FORCE_CMAKE": "1"
+        },
+        "message": "pip install -U --no-cache-dir llama-cpp-python"
       }
     },
     {
       "method": "shell.run",
       "params": {
-        "path": "app/frontend",
+        "path": "frontend",
         "message": "npm install"
-      }
-    },
-    {
-      "method": "shell.run",
-      "params": {
-        "path": "app",
-        "venv": "venv",
-        "message": "{{local.gpu_type === 'cuda' ? 'pip uninstall llama-cpp-python -y && set CMAKE_ARGS=-DLLAMA_CUDA=on && pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python' : (local.gpu_type === 'rocm' ? 'pip uninstall llama-cpp-python -y && set CMAKE_ARGS=-DLLAMA_HIPBLAS=on && pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python' : 'pip install llama-cpp-python')}}"
       }
     },
     {
       "method": "notify",
       "params": {
-        "html": "Installation complete!<br><br><b>GPU Type:</b> {{local.gpu_type === 'cuda' ? 'NVIDIA CUDA 🟢' : local.gpu_type === 'rocm' ? 'AMD ROCm 🟠' : 'CPU Only 🔵'}}<br><br>Click 'Start' to launch JARVIS."
+        "html": "Installation abgeschlossen!<br><br><b>GPU-Typ:</b> {{local.gpu_type === 'cuda' ? 'NVIDIA CUDA 🟢' : local.gpu_type === 'rocm' ? 'AMD ROCm 🟠' : local.gpu_type === 'metal' ? 'Apple Metal 🍎' : 'CPU 🔵'}}<br><br>Klicke 'Start', um JARVIS zu starten."
       }
     }
   ]

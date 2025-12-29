@@ -3,13 +3,7 @@
     {
       "method": "shell.run",
       "params": {
-        "message": "{{platform === 'win32' ? 'if exist app rmdir /s /q app' : 'rm -rf app'}}"
-      }
-    },
-    {
-      "method": "shell.run",
-      "params": {
-        "message": "git clone https://github.com/Lautloserspieler/JarvisCore app"
+        "message": "{{platform === 'win32' ? '(if exist app rmdir /s /q app) && git clone https://github.com/Lautloserspieler/JarvisCore app' : 'rm -rf app && git clone https://github.com/Lautloserspieler/JarvisCore app'}}"
       }
     },
     {

@@ -10,10 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Download, Upload, RotateCcw, Save, Settings2, Zap, Shield, Database, Plug, Globe, Volume2 } from 'lucide-react';
+import { Download, Upload, RotateCcw, Save, Settings2, Zap, Shield, Database, Plug, Globe, Volume2, Cpu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import TTSSettingsPanel from '@/components/TTSSettingsPanel';
+import GPUSettingsPanel from '@/components/GPUSettingsPanel';
 
 interface LlamaSettings {
   temperature: number;
@@ -320,8 +321,12 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="llama" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs defaultValue="gpu" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="gpu">
+            <Cpu className="w-4 h-4 mr-2" />
+            GPU
+          </TabsTrigger>
           <TabsTrigger value="llama">
             <Zap className="w-4 h-4 mr-2" />
             {t('tabs.llm').replace('🧠 ', '')}
@@ -347,6 +352,11 @@ const SettingsPage: React.FC = () => {
             {t('tabs.advanced').replace('⚙️ ', '')}
           </TabsTrigger>
         </TabsList>
+
+        {/* GPU Settings Tab */}
+        <TabsContent value="gpu" className="space-y-4">
+          <GPUSettingsPanel />
+        </TabsContent>
 
         {/* LLM Parameters Tab */}
         <TabsContent value="llama" className="space-y-4">
@@ -494,7 +504,8 @@ const SettingsPage: React.FC = () => {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>{t('ui.theme')}</Label>
-                <Select value={uiSettings.theme} onValueChange={(val: any) => setUISettings({ ...uiSettings, theme: val }))}>
+                <Select value={uiSettings.theme} onValueChange={(val: any) => setUISettings({ ...uiSettings, theme: val }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -508,7 +519,8 @@ const SettingsPage: React.FC = () => {
 
               <div className="space-y-2">
                 <Label>{t('ui.fontSize')}</Label>
-                <Select value={uiSettings.fontSize} onValueChange={(val: any) => setUISettings({ ...uiSettings, fontSize: val }))}>
+                <Select value={uiSettings.fontSize} onValueChange={(val: any) => setUISettings({ ...uiSettings, fontSize: val }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

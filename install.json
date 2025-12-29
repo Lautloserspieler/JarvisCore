@@ -5,26 +5,19 @@
       "params": {
         "title": "GPU Backend",
         "description": "Wähle den Backend-Typ für llama-cpp-python.",
-        "fields": [
-          {
-            "key": "gpu_type",
-            "type": "select",
-            "title": "GPU-Beschleunigung",
-            "options": [
-              { "title": "🔵 CPU", "value": "cpu" },
-              { "title": "🟢 NVIDIA CUDA", "value": "cuda" },
-              { "title": "🟠 AMD ROCm (Linux)", "value": "rocm" },
-              { "title": "🍎 Apple Metal (macOS)", "value": "metal" }
-            ],
-            "default": "cpu"
-          }
+        "type": "select",
+        "options": [
+          { "title": "🔵 CPU", "value": "cpu" },
+          { "title": "🟢 NVIDIA CUDA", "value": "cuda" },
+          { "title": "🟠 AMD ROCm (Linux)", "value": "rocm" },
+          { "title": "🍎 Apple Metal (macOS)", "value": "metal" }
         ]
       }
     },
     {
       "method": "local.set",
       "params": {
-        "gpu_type": "{{input.gpu_type}}"
+        "gpu_type": "{{input}}"
       }
     },
     {

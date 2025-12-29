@@ -66,10 +66,47 @@
       }
     },
     {
+      "when": "{{local.gpu === 'cpu'}}",
       "method": "shell.run",
       "params": {
         "venv": "venv",
         "message": "pip install -U --no-cache-dir llama-cpp-python"
+      }
+    },
+    {
+      "when": "{{local.gpu === 'cuda'}}",
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "env": {
+          "FORCE_CMAKE": "1",
+          "CMAKE_ARGS": "-DGGML_CUDA=on"
+        },
+        "message": "pip uninstall -y llama-cpp-python && pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
+      }
+    },
+    {
+      "when": "{{local.gpu === 'rocm'}}",
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "env": {
+          "FORCE_CMAKE": "1",
+          "CMAKE_ARGS": "-DGGML_HIPBLAS=on"
+        },
+        "message": "pip uninstall -y llama-cpp-python && pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
+      }
+    },
+    {
+      "when": "{{local.gpu === 'metal'}}",
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "env": {
+          "FORCE_CMAKE": "1",
+          "CMAKE_ARGS": "-DGGML_METAL=on"
+        },
+        "message": "pip uninstall -y llama-cpp-python && pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
       }
     },
     {

@@ -119,11 +119,20 @@ Zur Nutzung benötigst du **eine der folgenden Optionen**:
    - Gib ein: `https://github.com/Lautloserspieler/JarvisCore`
    - Klicke auf **Install**
 
-3. **Warten und starten**
+3. **GPU-Beschleunigung wählen** 🆕
+   - Während der Installation erscheint ein Dialog
+   - Wähle deine GPU-Option:
+     - 🟢 **NVIDIA CUDA** - Für RTX/GTX Karten (30-50 tok/s)
+     - 🟠 **AMD ROCm** - Für AMD RX 5000+/7000+ (Experimentell)
+     - 🔵 **CPU Only** - Keine GPU (5-10 tok/s, funktioniert immer)
+   - Siehe [GPU Selection Guide](./docs/GPU_SELECTION.md) für Details
+
+4. **Warten und starten**
    - Pinokio installiert automatisch alle Dependencies:
      - Python virtual environment (venv)
      - Python Packages (pip install)
      - Node.js dependencies (npm install)
+     - GPU-optimiertes llama.cpp (basierend auf Auswahl)
    - Nach der Installation klickst du **Start**
    - JARVIS lädt automatisch im Browser (http://localhost:5000)
 
@@ -133,6 +142,7 @@ Zur Nutzung benötigst du **eine der folgenden Optionen**:
 |---------|----------|
 | 🖱️ **One-Click** | Nur 2 Klicks - fertig! |
 | 🔄 **Automatisch** | Alle Dependencies werden installiert |
+| 🎮 **GPU-Auswahl** | Wähle NVIDIA CUDA, AMD ROCm oder CPU |
 | 🛡️ **Sicher** | Isolierte venv, keine System-Pollution |
 | 🚀 **Schnell** | Parallel-Installation, optimiert |
 | 📱 **Benutzerfreundlich** | Visuelles UI, keine Terminals nötig |
@@ -142,7 +152,7 @@ Zur Nutzung benötigst du **eine der folgenden Optionen**:
 #### 📊 Installationsprozess:
 
 ```
-Pinokio → Download Git Repo → Create venv → Install Python deps → Install Node deps → Ready! ✓
+Pinokio → Git Clone → GPU-Auswahl → Python venv → pip install → GPU-Optimierung → npm install → Ready! ✓
 ```
 
 ---
@@ -427,7 +437,7 @@ Weitere Infos: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
 ```
 JarvisCore/
 ├── pinokio.js              # 🎯 Pinokio Configuration
-├── install.json            # 🎯 Pinokio Install Script
+├── install.json            # 🎯 Pinokio Install Script (+ GPU Selection)
 ├── start.json              # 🎯 Pinokio Start Script
 ├── update.json             # 🎯 Pinokio Update Script
 ├── uninstall.json          # 🎯 Pinokio Uninstall Script
@@ -534,6 +544,7 @@ Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTI
 - ✅ **CLI Entry Points** (jarviscore web/desktop/prod)
 - ✅ **Enhanced Configuration** (50+ settings in .env.example)
 - ✅ **Pinokio Support** (One-Click Installation)
+- ✅ **GPU Selection** (NVIDIA CUDA / AMD ROCm / CPU)
 - 🔄 Voice Input (Whisper)
 - 🔄 Voice Output (XTTS v2)
 - 🔄 Desktop App (Wails)
@@ -597,7 +608,8 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 
 ## 📚 Weitere Dokumentation
 
-- [🎯 Pinokio Installation Guide](./docs/PINOKIO_GUIDE.md) - NEW!
+- [🎮 GPU Selection Guide](./docs/GPU_SELECTION.md) - NEW!
+- [🎯 Pinokio Installation Guide](./PINOKIO.md)
 - [📋 Migration Guide v1.1 → v1.2](MIGRATION_GUIDE.md)
 - [🏗️ Architecture Refactor Plan](ARCHITECTURE_REFACTOR.md)
 - [Quick Start Guide](docs/README_QUICKSTART.md)

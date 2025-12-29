@@ -68,15 +68,15 @@
     {
       "method": "shell.run",
       "params": {
-        "path": "frontend",
-        "message": "npm install"
+        "venv": "venv",
+        "message": "pip install -U --no-cache-dir llama-cpp-python"
       }
     },
     {
       "method": "shell.run",
       "params": {
-        "venv": "venv",
-        "message": "pip install -U --no-cache-dir llama-cpp-python"
+        "path": "frontend",
+        "message": "npm install"
       }
     },
     {

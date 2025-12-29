@@ -7,7 +7,7 @@ name = "jarviscore"
 version = "1.2.0-dev"
 description = "J.A.R.V.I.S. Core - Lokaler deutscher KI-Assistent mit LLM, Voice Control & Plugin System"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [
     { name = "JarvisCore Contributors", email = "emeyer@fn.de" }
@@ -20,6 +20,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
@@ -203,8 +204,8 @@ addopts = """
 
 [tool.black]
 line-length = 100
-target-version = ["py311", "py312"]
-include = '\.pyi?$'
+target-version = ["py310", "py311", "py312"]
+include = '\. pyi?$'
 exclude = '''
 /(
     \.git
@@ -217,7 +218,7 @@ exclude = '''
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py310"
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
@@ -237,7 +238,7 @@ ignore = [
 "__init__.py" = ["F401"]  # Allow unused imports in __init__.py
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false  # Set to true when ready

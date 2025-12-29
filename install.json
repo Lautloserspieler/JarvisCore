@@ -1,30 +1,9 @@
 {
   "run": [
     {
-      "method": "input",
+      "method": "notify",
       "params": {
-        "title": "GPU Backend",
-        "description": "Wähle deinen GPU-Typ:",
-        "fields": [
-          {
-            "key": "gpu",
-            "type": "select",
-            "title": "Beschleunigung",
-            "options": [
-              { "title": "CPU", "value": "cpu" },
-              { "title": "NVIDIA CUDA", "value": "cuda" },
-              { "title": "AMD ROCm", "value": "rocm" },
-              { "title": "Apple Metal", "value": "metal" }
-            ],
-            "default": "cuda"
-          }
-        ]
-      }
-    },
-    {
-      "method": "local.set",
-      "params": {
-        "gpu": "{{input.gpu}}"
+        "html": "<b>GPU Setup</b><br><br>JarvisCore wird mit CPU-Support installiert.<br><br>Für GPU-Support nach der Installation:<br><br><code>cd C:\\pinokio\\api\\JarvisCore.git</code><br><code>venv\\Scripts\\activate</code><br><br><b>Für NVIDIA CUDA:</b><br><code>set FORCE_CMAKE=1 & set CMAKE_ARGS=-DGGML_CUDA=on & pip install --force-reinstall --no-binary llama-cpp-python llama-cpp-python</code><br><br><b>Klicke OK zum Weitermachen.</b>"
       }
     },
     {
@@ -43,48 +22,10 @@
       }
     },
     {
-      "when": "{{local.gpu === 'cpu'}}",
       "method": "shell.run",
       "params": {
         "venv": "venv",
         "message": "pip install -U --no-cache-dir llama-cpp-python"
-      }
-    },
-    {
-      "when": "{{local.gpu === 'cuda'}}",
-      "method": "shell.run",
-      "params": {
-        "venv": "venv",
-        "build": true,
-        "env": { "FORCE_CMAKE": "1", "CMAKE_ARGS": "-DGGML_CUDA=on" },
-        "message": [
-          "pip uninstall -y llama-cpp-python",
-          "pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
-        ]
-      }
-    },
-    {
-      "when": "{{local.gpu === 'rocm'}}",
-      "method": "shell.run",
-      "params": {
-        "venv": "venv",
-        "env": { "FORCE_CMAKE": "1", "CMAKE_ARGS": "-DGGML_HIPBLAS=on" },
-        "message": [
-          "pip uninstall -y llama-cpp-python",
-          "pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
-        ]
-      }
-    },
-    {
-      "when": "{{local.gpu === 'metal'}}",
-      "method": "shell.run",
-      "params": {
-        "venv": "venv",
-        "env": { "FORCE_CMAKE": "1", "CMAKE_ARGS": "-DGGML_METAL=on" },
-        "message": [
-          "pip uninstall -y llama-cpp-python",
-          "pip install --no-cache-dir --force-reinstall --no-binary llama-cpp-python llama-cpp-python"
-        ]
       }
     },
     {
@@ -100,7 +41,7 @@
     {
       "method": "notify",
       "params": {
-        "html": "Installation abgeschlossen.<br><b>GPU:</b> {{local.gpu}}<br>Klicke 'Start' zum Starten."
+        "html": "<b>Installation abgeschlossen!</b><br><br>JarvisCore 1.2.0 ist bereit.<br><br>Klicke 'Start' um zu starten."
       }
     }
   ]

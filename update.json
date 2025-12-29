@@ -3,14 +3,12 @@
     {
       "method": "shell.run",
       "params": {
-        "path": "app",
         "message": "git pull"
       }
     },
     {
       "method": "shell.run",
       "params": {
-        "path": "app",
         "venv": "venv",
         "message": "pip install -e \".[tts]\""
       }
@@ -18,14 +16,14 @@
     {
       "method": "shell.run",
       "params": {
-        "path": "app/frontend",
+        "path": "frontend",
         "message": "npm install"
       }
     },
     {
       "method": "notify",
       "params": {
-        "html": "Update complete!"
+        "html": "Update abgeschlossen!<br><br>Klicke 'Start' um die neue Version zu starten."
       }
     }
   ]

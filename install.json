@@ -50,29 +50,11 @@
       }
     },
     {
-      "method": "script",
+      "method": "shell.run",
       "params": {
-        "run": [{
-          "method": "{{local.gpu_type === 'cuda' ? 'shell.run' : 'process.return'}}",
-          "params": {
-            "path": "app",
-            "venv": "venv",
-            "message": "pip uninstall llama-cpp-python -y && set CMAKE_ARGS=-DLLAMA_CUDA=on && pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python"
-          }
-        }]
-      }
-    },
-    {
-      "method": "script",
-      "params": {
-        "run": [{
-          "method": "{{local.gpu_type === 'rocm' ? 'shell.run' : 'process.return'}}",
-          "params": {
-            "path": "app",
-            "venv": "venv",
-            "message": "pip uninstall llama-cpp-python -y && set CMAKE_ARGS=-DLLAMA_HIPBLAS=on && pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python"
-          }
-        }]
+        "path": "app",
+        "venv": "venv",
+        "message": "{{local.gpu_type === 'cuda' ? 'pip uninstall llama-cpp-python -y && set CMAKE_ARGS=-DLLAMA_CUDA=on && pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python' : (local.gpu_type === 'rocm' ? 'pip uninstall llama-cpp-python -y && set CMAKE_ARGS=-DLLAMA_HIPBLAS=on && pip install llama-cpp-python --force-reinstall --no-cache-dir --no-binary llama-cpp-python' : 'pip install llama-cpp-python')}}"
       }
     },
     {

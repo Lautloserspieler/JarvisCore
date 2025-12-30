@@ -57,6 +57,12 @@
       "params": {
         "html": "<b>✅ Installation erfolgreich!</b><br><br>JarvisCore 1.2.0 ist bereit.<br><br><b>GPU-Support (optional):</b><br>Öffne Settings → GPU Tab nach dem Start, um CUDA/ROCm/Metal zu installieren.<br><br>Klicke 'Start' um zu starten."
       }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "echo Installation complete"
+      }
     }
   ]
 }

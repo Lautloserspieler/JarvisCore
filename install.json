@@ -3,22 +3,36 @@
     {
       "method": "notify",
       "params": {
-        "html": "<b>GPU Setup</b><br><br>JarvisCore wird mit CPU-Support installiert.<br><br>Für GPU-Support nach der Installation:<br><br><code>cd C:\\pinokio\\api\\JarvisCore.git</code><br><code>venv\\Scripts\\activate</code><br><br><b>Für NVIDIA CUDA:</b><br><code>set FORCE_CMAKE=1 & set CMAKE_ARGS=-DGGML_CUDA=on & pip install --force-reinstall --no-binary llama-cpp-python llama-cpp-python</code><br><br><b>Klicke OK zum Weitermachen.</b>"
+        "html": "<b>🤖 J.A.R.V.I.S. Core Installation</b><br><br>Installiere JarvisCore mit CPU-Support (GPU optional nach Installation).<br><br><b>Dies kann 10-20 Minuten dauern.</b><br><br>Klicke OK zum Weitermachen."
       }
     },
     {
       "method": "shell.run",
-      "params": { "message": "python -m venv venv" }
+      "params": {
+        "message": "python --version"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "python -m venv venv"
+      }
     },
     {
       "method": "shell.run",
       "params": {
         "venv": "venv",
         "message": [
-          "python -m pip install -U pip setuptools wheel",
-          "pip install numpy==1.26.4 cython",
-          "pip install -e \".[tts]\""
+          "python -m pip install --upgrade pip setuptools wheel",
+          "pip install numpy==1.26.4 cython"
         ]
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "message": "pip install -e ."
       }
     },
     {
@@ -41,7 +55,7 @@
     {
       "method": "notify",
       "params": {
-        "html": "<b>Installation abgeschlossen!</b><br><br>JarvisCore 1.2.0 ist bereit.<br><br>Klicke 'Start' um zu starten."
+        "html": "<b>✅ Installation erfolgreich!</b><br><br>JarvisCore 1.2.0 ist bereit.<br><br><b>GPU-Support (optional):</b><br>Öffne Settings → GPU Tab nach dem Start, um CUDA/ROCm/Metal zu installieren.<br><br>Klicke 'Start' um zu starten."
       }
     }
   ]

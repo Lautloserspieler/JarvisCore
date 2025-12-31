@@ -83,8 +83,9 @@ Installiert alle Dependencies und richtet GPU ein:
    - `npm run build`
 
 4. **GPU-spezifische Compiler-Flags** (conditional)
-   - CUDA: `-DLLAMA_CUDA=1 -DCUDA_ARCHITECTURES=native`
-   - Metal: `-DLLAMA_METAL=1`
+   - CUDA: `-DGGML_CUDA=on -DCUDA_ARCHITECTURES=native`
+   - ROCm: `-DGGML_HIPBLAS=on`
+   - Metal: `-DGGML_METAL=on`
    - CPU: Standard llama-cpp-python
 
 ### start.json
@@ -200,7 +201,7 @@ In `install.json` unter `env`:
 
 ```json
 "env": {
-  "CMAKE_ARGS": "-DLLAMA_CUDA=1",
+  "CMAKE_ARGS": "-DGGML_CUDA=on",
   "FORCE_CMAKE": "1",
   "CUDA_VISIBLE_DEVICES": "0"
 }

@@ -114,10 +114,10 @@ def get_system_prompt(model_name: str) -> str:
 
 app = FastAPI(title="JARVIS Core API", version="1.2.0")
 
-# CORS Configuration
+# CORS Configuration - Pinokio Port 5050
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5000", "http://localhost:5173"],
+    allow_origins=["http://localhost:5050", "http://127.0.0.1:5050"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -749,4 +749,4 @@ if __name__ == "__main__":
     if tts_service:
         print(f"[INFO] TTS available: {tts_service.is_available()}")
     
-    uvicorn.run(app, host="0.0.0.0", port=5050)
+    uvicorn.run(app, host="127.0.0.1", port=5050)

@@ -8,7 +8,8 @@ module.exports = {
     const running = info.running;
     const installed = info.installed;
     const locals = kernel.script.local(__dirname, "start.json") || {};
-    const url = locals.url || "http://localhost:5000";
+    // Port konsolidiert auf 5050 (Backend + Pinokio)
+    const url = locals.url || "http://localhost:5050";
 
     if (!installed) {
       return [

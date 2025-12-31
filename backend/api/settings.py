@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
+SETTINGS_VERSION = 1
 
 # Settings Models
 class LlamaSettings(BaseModel):
@@ -47,20 +48,45 @@ class AllSettings(BaseModel):
     api: APISettings
     plugin_api_keys: PluginAPIKeys
     system_prompt: str = "Du bist JARVIS, ein hilfreicher deutscher KI-Assistent."
+    settings_version: int = SETTINGS_VERSION
 
 # Global settings storage
 CONFIG_DIR = Path("config")
 CONFIG_DIR.mkdir(exist_ok=True)
 SETTINGS_FILE = CONFIG_DIR / "settings.json"
 
+def _default_settings() -> AllSettings:
+    return AllSettings(
+        llama=LlamaSettings(),
+        ui=UISettings(),
+        api=APISettings(),
+        plugin_api_keys=PluginAPIKeys(),
+        system_prompt="Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte präzise und freundlich.",
+        settings_version=SETTINGS_VERSION,
+    )
+
+
+def _merge_settings(defaults: Dict, incoming: Dict) -> Dict:
+    merged = dict(defaults)
+    for key, value in incoming.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _merge_settings(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def _migrate_settings(data: Dict) -> Dict:
+    defaults = _default_settings().dict()
+    if not isinstance(data, dict):
+        return defaults
+    if "settings_version" not in data:
+        data["settings_version"] = SETTINGS_VERSION
+    return _merge_settings(defaults, data)
+
+
 # Current settings
-current_settings = AllSettings(
-    llama=LlamaSettings(),
-    ui=UISettings(),
-    api=APISettings(),
-    plugin_api_keys=PluginAPIKeys(),
-    system_prompt="Du bist JARVIS, ein hilfreicher deutscher KI-Assistent. Antworte präzise und freundlich."
-)
+current_settings = _default_settings()
 
 def load_settings():
     """Load settings from disk"""
@@ -69,7 +95,8 @@ def load_settings():
         try:
             with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                current_settings = AllSettings(**data)
+                migrated = _migrate_settings(data)
+                current_settings = AllSettings(**migrated)
                 print(f"[INFO] Settings loaded from {SETTINGS_FILE}")
         except Exception as e:
             print(f"[ERROR] Failed to load settings: {e}")
@@ -141,7 +168,7 @@ async def get_llama_info():
         "context_window": llama_runtime.n_ctx,
         "device": llama_runtime.device,
         "gpu_layers": llama_runtime.n_gpu_layers,
-        "max_layers": 32  # TODO: Get from model metadata
+        "max_layers": llama_runtime.get_max_layers()
     }
 
 @router.get("/ui")

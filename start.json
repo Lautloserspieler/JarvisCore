@@ -1,4 +1,14 @@
 {
+  "daemon": true,
+  "on": [
+    {
+      "event": "http://localhost:5050",
+      "done": true
+    }
+  ],
+  "locals": {
+    "url": "http://localhost:5050"
+  },
   "run": [
     {
       "method": "notify",
@@ -10,24 +20,7 @@
       "method": "shell.run",
       "params": {
         "venv": "venv",
-        "message": "uvicorn backend.main:app --host 127.0.0.1 --port 5050 --reload",
-        "daemon": true,
-        "on": [
-          {
-            "event": "http",
-            "port": 5050,
-            "handler": async (result) => {
-              // Ready-Event: Server ist verfügbar
-              return true;
-            }
-          }
-        ]
-      }
-    },
-    {
-      "method": "script.local",
-      "params": {
-        "url": "http://localhost:5050"
+        "message": "uvicorn backend.main:app --host 127.0.0.1 --port 5050 --reload"
       }
     },
     {

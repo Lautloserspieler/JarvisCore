@@ -1,36 +1,18 @@
 {
+  "daemon": true,
+  "message": "uvicorn backend.main:app --host 127.0.0.1 --port 5050 --reload",
+  "on": [
+    {
+      "event": "http://localhost:5050",
+      "done": true
+    }
+  ],
+  "locals": {
+    "url": "http://localhost:5050"
+  },
   "run": [
     {
       "method": "notify",
       "params": {
         "html": "<b>🚀 J.A.R.V.I.S. Core wird gestartet...</b><br><br>Server startet auf Port 5050<br><br>Nach dem Start öffnet sich automatisch die Web-UI.<br><br>Falls nicht: <b>http://localhost:5050</b>"
       }
-    },
-    {
-      "method": "shell.run",
-      "params": {
-        "venv": "venv",
-        "message": "uvicorn backend.main:app --host 127.0.0.1 --port 5050 --reload",
-        "daemon": true,
-        "on": [
-          {
-            "event": "http://localhost:5050",
-            "done": true
-          }
-        ]
-      }
-    },
-    {
-      "method": "script.local",
-      "params": {
-        "url": "http://localhost:5050"
-      }
-    },
-    {
-      "method": "notify",
-      "params": {
-        "html": "<b>✅ J.A.R.V.I.S. Core ist online!</b><br><br>🌐 Web UI: <a href='http://localhost:5050' target='_blank'>http://localhost:5050</a><br><br>📄 API Docs: <a href='http://localhost:5050/docs' target='_blank'>http://localhost:5050/docs</a>"
-      }
-    }
-  ]
-}

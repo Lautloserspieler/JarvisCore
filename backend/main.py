@@ -49,9 +49,9 @@ try:
     tts_service = init_tts_service()
     if tts_service and tts_service.is_available():
         status = tts_service.get_status()
-        print(f"[BACKEND] ✅ TTS service ready: {status['engine']} on {status['device']}")
+        print(f"[BACKEND] \u2705 TTS service ready: {status['engine']} on {status['device']}")
     else:
-        print("[BACKEND] ⚠️  TTS service initialized with fallback or unavailable")
+        print("[BACKEND] \u26a0\ufe0f  TTS service initialized with fallback or unavailable")
 except Exception as e:
     print(f"[WARNING] TTS service unavailable: {e}")
     tts_router = None
@@ -85,7 +85,7 @@ def get_system_prompt(model_name: str) -> str:
     """
     Select appropriate system prompt based on model size.
     
-    Small models (≤3B): Use compact prompt for better performance
+    Small models (≤ 3B): Use compact prompt for better performance
     Large models (7B+): Use full detailed prompt for richer personality
     """
     # Define small models that need compact prompt
@@ -107,10 +107,15 @@ def get_system_prompt(model_name: str) -> str:
 
 app = FastAPI(title="JARVIS Core API", version="1.2.0")
 
-# CORS Configuration - Pinokio Port 5050
+# CORS Configuration - Allow Frontend (Port 5000) + Backend (Port 5050)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5050", "http://127.0.0.1:5050"],
+    allow_origins=[
+        "http://localhost:5000",  # Vite dev server
+        "http://127.0.0.1:5000",
+        "http://localhost:5050",  # Backend (for compatibility)
+        "http://127.0.0.1:5050"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -181,7 +186,7 @@ async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool
     if plugin_manager:
         plugin_response = plugin_manager.process_message(message, {"session_id": session_id})
         if plugin_response:
-            print(f"[DEBUG] ✅ Plugin handled message")
+            print(f"[DEBUG] \u2705 Plugin handled message")
             print(f"[DEBUG] Plugin response: {plugin_response[:100]}...")
             logs_db.append({
                 "id": str(uuid.uuid4()),
@@ -192,7 +197,7 @@ async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool
             })
             return plugin_response, True, None, None  # Plugins don't have token stats
     
-    print(f"[DEBUG] ⚠️ No plugin handled message, using LLM")
+    print(f"[DEBUG] \u26a0\ufe0f No plugin handled message, using LLM")
     
     # STEP 2: No plugin handled it -> use LLM
     if not llama_runtime.is_loaded:
@@ -214,14 +219,14 @@ async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool
                 
                 # Skip plugin responses
                 if is_plugin:
-                    print(f"[DEBUG]   → SKIPPED (plugin response)")
+                    print(f"[DEBUG]   \u2192 SKIPPED (plugin response)")
                     continue
                     
                 history.append({
                     'role': 'user' if is_user else 'assistant',
                     'content': msg['text']
                 })
-                print(f"[DEBUG]   → ADDED to history")
+                print(f"[DEBUG]   \u2192 ADDED to history")
         
         print(f"[DEBUG] Final history length: {len(history)} messages")
         
@@ -284,9 +289,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_message = message.get('message', '')
                 session_id = message.get('sessionId', 'default')
                 
-                print(f"\n[INFO] ═════════════════════════════════════════════════════")
+                print(f"\n[INFO] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")
                 print(f"[INFO] Chat message received: {user_message[:50]}...")
-                print(f"[INFO] ═════════════════════════════════════════════════════")
+                print(f"[INFO] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")
                 
                 if session_id not in messages_db:
                     messages_db[session_id] = []
@@ -332,7 +337,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 messages_db[session_id].append(stored_message)
                 
                 print(f"[DEBUG] Stored response with isPlugin={is_plugin}, tokens={tokens}")
-                print(f"[INFO] ═════════════════════════════════════════════════════\n")
+                print(f"[INFO] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n")
                 
                 # Build WebSocket response with token stats
                 ws_response = {
@@ -749,11 +754,11 @@ if __name__ == "__main__":
     import uvicorn
     
     print("""
-    ╔══════════════════════════════════════════════════════╗
-    ║          JARVIS Core Backend v1.2.0                  ║
-    ║         Just A Rather Very Intelligent System        ║
-    ║         with llama.cpp + TTS voice synthesis         ║
-    ╚══════════════════════════════════════════════════════╝
+    \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
+    \u2551          JARVIS Core Backend v1.2.0                  \u2551
+    \u2551         Just A Rather Very Intelligent System        \u2551
+    \u2551         with llama.cpp + TTS voice synthesis         \u2551
+    \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d
     """)
     
     print("[INFO] Starting JARVIS Core API...")

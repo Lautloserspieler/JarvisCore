@@ -3,14 +3,14 @@
     {
       "method": "notify",
       "params": {
-        "html": "<b>🚀 J.A.R.V.I.S. Core wird gestartet...</b><br><br>Dies kann 30-60 Sekunden dauern.<br><br>Nach dem Start öffnet sich automatisch die Web-UI.<br><br>Falls nicht, öffne: <b>http://localhost:5050</b>"
+        "html": "<b>🚀 J.A.R.V.I.S. Core wird gestartet...</b><br><br>Server startet auf Port 5050<br><br>Nach dem Start öffnet sich automatisch die Web-UI.<br><br>Falls nicht: <b>http://localhost:5050</b>"
       }
     },
     {
       "method": "shell.run",
       "params": {
         "venv": "venv",
-        "message": "python api/jarvis_api.py"
+        "message": "uvicorn backend.main:app --host 127.0.0.1 --port 5050 --reload"
       }
     }
   ]

@@ -1,15 +1,28 @@
-# ============================================================
-# DEPRECATION NOTICE
-# ============================================================
-# This file is DEPRECATED as of v1.2.0
-# 
-# Please use pyproject.toml instead:
-#   pip install -e ".[tts]"       # Standard install with TTS
-#   pip install -e ".[dev,tts]"  # Development setup
-#   pip install -e ".[all]"      # Full installation
-#
-# See: https://github.com/Lautloserspieler/JarvisCore/blob/main/pyproject.toml
-# ============================================================
+# Core Dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+pydantic==2.6.0
+pydantic-settings==2.1.0
 
-# Legacy compatibility: Install from pyproject.toml
--e .
+# AI & ML
+numpy==1.26.4
+torch==2.1.2
+transformers==4.36.2
+llama-cpp-python==0.2.65
+
+# Audio/TTS
+silero-tts==0.2.0
+librosa==0.10.0
+scipy==1.12.0
+
+# Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+requests==2.31.0
+pillow==10.1.0
+
+# Development
+black==23.12.0
+flake8==6.1.0
+pytest==7.4.4

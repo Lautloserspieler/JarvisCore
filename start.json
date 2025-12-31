@@ -14,12 +14,8 @@
         "daemon": true,
         "on": [
           {
-            "event": "http",
-            "port": 5050,
-            "handler": async (result) => {
-              // Ready-Event: Server ist verfügbar
-              return true;
-            }
+            "event": "http://localhost:5050",
+            "done": true
           }
         ]
       }

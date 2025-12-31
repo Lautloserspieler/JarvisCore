@@ -96,9 +96,8 @@ Startet den Backend-Daemon und öffnet die Web-UI:
   "daemon": true,              // Läuft im Hintergrund
   "message": "uvicorn ...",    // Kommando (Port 5050)
   "on": [{
-    "event": "http",
-    "port": 5050,              // ← WICHTIG: Port 5050!
-    "handler": async () => true // HTTP-Ready Event
+    "event": "http://localhost:5050",
+    "done": true               // HTTP-Ready Event
   }],
   "locals": {
     "url": "http://localhost:5050"  // Für Menü-Anzeige
@@ -219,7 +218,7 @@ if __name__ == "__main__":
 Dann in `start.json` + `pinokio.js` anpassen:
 
 ```json
-"port": 5050,  // start.json
+"event": "http://localhost:5050",  // start.json
 ```
 
 ```javascript

@@ -13,6 +13,7 @@ import json
 import asyncio
 from pathlib import Path
 from datetime import datetime
+import requests
 
 
 class PluginInterface(ABC):
@@ -207,7 +208,7 @@ Liste alle gefundenen Probleme auf.""",
 
 
 class WebSearchPlugin(PluginInterface):
-    """Plugin for web search integration (mock for now)"""
+    """Plugin for web search integration via DuckDuckGo"""
     
     def __init__(self):
         super().__init__()
@@ -228,36 +229,64 @@ class WebSearchPlugin(PluginInterface):
             
             if not query:
                 return {"success": False, "error": "No query provided"}
-            
-            # TODO: Implement real web scraping
-            # For now, use LLM to generate plausible results
-            from core.llama_inference import llama_runtime
-            
-            if not llama_runtime.is_loaded:
-                return {"success": False, "error": "No model loaded"}
-            
-            result = llama_runtime.generate(
-                prompt=f"""Gib mir die Top 5 relevante Informationen zu: {query}
+            try:
+                response = requests.get(
+                    "https://api.duckduckgo.com/",
+                    params={
+                        "q": query,
+                        "format": "json",
+                        "no_html": 1,
+                        "skip_disambig": 1
+                    },
+                    timeout=10
+                )
+                response.raise_for_status()
+                payload = response.json()
+            except Exception as exc:
+                return {"success": False, "error": f"Websuche fehlgeschlagen: {exc}"}
 
-Format:
-1. [Title] - [Summary]
-   Quelle: [Source]
+            results: List[Dict[str, str]] = []
+            abstract = payload.get("AbstractText")
+            abstract_source = payload.get("AbstractSource")
+            abstract_url = payload.get("AbstractURL")
+            if abstract:
+                results.append({
+                    "title": payload.get("Heading") or query,
+                    "summary": abstract,
+                    "source": abstract_source or "DuckDuckGo",
+                    "url": abstract_url or ""
+                })
 
-Sei präzise und faktisch.""",
-                max_tokens=512
-            )
-            
-            if result['success']:
-                return {
-                    "success": True,
-                    "result": {
-                        "query": query,
-                        "results": result['text'],
-                        "source": "AI-generated (mock)"
-                    }
+            for topic in payload.get("RelatedTopics", []):
+                if isinstance(topic, dict) and "Text" in topic:
+                    results.append({
+                        "title": topic.get("Text", "").split(" - ")[0],
+                        "summary": topic.get("Text", ""),
+                        "source": "DuckDuckGo",
+                        "url": topic.get("FirstURL", "")
+                    })
+                elif isinstance(topic, dict) and "Topics" in topic:
+                    for subtopic in topic.get("Topics", []):
+                        if "Text" in subtopic:
+                            results.append({
+                                "title": subtopic.get("Text", "").split(" - ")[0],
+                                "summary": subtopic.get("Text", ""),
+                                "source": "DuckDuckGo",
+                                "url": subtopic.get("FirstURL", "")
+                            })
+
+            results = results[: self.config.get("max_results", 5)]
+            if not results:
+                return {"success": False, "error": "Keine Suchergebnisse gefunden"}
+
+            return {
+                "success": True,
+                "result": {
+                    "query": query,
+                    "results": results,
+                    "source": "DuckDuckGo Instant Answer API"
                 }
-            else:
-                return {"success": False, "error": result.get('error')}
+            }
         
         return {"success": False, "error": f"Unknown command: {command}"}
     

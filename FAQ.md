@@ -257,7 +257,7 @@ Siehe: [Model List](./docs/MODEL_LIST.md)
 **Via UI (empfohlen):**
 
 1. JARVIS starten: `python main.py`
-2. Browser: http://localhost:5000
+2. Browser: http://localhost:5050
 3. **Models Tab** öffnen
 4. Modell wählen → **Download** klicken
 5. Quantization wählen (Q4_K_M empfohlen)
@@ -514,11 +514,11 @@ cd frontend && npm install
 3. **Ports frei?**
 ```bash
 # Windows
-netstat -ano | findstr :5000
+netstat -ano | findstr :5050
 netstat -ano | findstr :5050
 
 # Linux/Mac
-lsof -i :5000
+lsof -i :5050
 lsof -i :5050
 ```
 
@@ -541,11 +541,11 @@ python main.py
 
 ```bash
 # Windows
-netstat -ano | findstr :5000
+netstat -ano | findstr :5050
 taskkill /PID <PID> /F
 
 # Linux/Mac
-lsof -i :5000
+lsof -i :5050
 kill -9 <PID>
 ```
 
@@ -722,7 +722,7 @@ grep -r "tracking" .
 
 **Network Activity:**
 - Nach Installation: 0 Requests an externe Server
-- Nur lokal: localhost:5000 und localhost:5050
+- Nur lokal: localhost:5050
 
 ---
 

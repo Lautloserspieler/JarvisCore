@@ -83,8 +83,9 @@ Installiert alle Dependencies und richtet GPU ein:
    - `npm run build`
 
 4. **GPU-spezifische Compiler-Flags** (conditional)
-   - CUDA: `-DLLAMA_CUDA=1 -DCUDA_ARCHITECTURES=native`
-   - Metal: `-DLLAMA_METAL=1`
+   - CUDA: `-DGGML_CUDA=on -DCUDA_ARCHITECTURES=native`
+   - ROCm: `-DGGML_HIPBLAS=on`
+   - Metal: `-DGGML_METAL=on`
    - CPU: Standard llama-cpp-python
 
 ### start.json
@@ -96,9 +97,8 @@ Startet den Backend-Daemon und öffnet die Web-UI:
   "daemon": true,              // Läuft im Hintergrund
   "message": "uvicorn ...",    // Kommando (Port 5050)
   "on": [{
-    "event": "http",
-    "port": 5050,              // ← WICHTIG: Port 5050!
-    "handler": async () => true // HTTP-Ready Event
+    "event": "http://localhost:5050",
+    "done": true               // HTTP-Ready Event
   }],
   "locals": {
     "url": "http://localhost:5050"  // Für Menü-Anzeige
@@ -201,7 +201,7 @@ In `install.json` unter `env`:
 
 ```json
 "env": {
-  "CMAKE_ARGS": "-DLLAMA_CUDA=1",
+  "CMAKE_ARGS": "-DGGML_CUDA=on",
   "FORCE_CMAKE": "1",
   "CUDA_VISIBLE_DEVICES": "0"
 }
@@ -219,7 +219,7 @@ if __name__ == "__main__":
 Dann in `start.json` + `pinokio.js` anpassen:
 
 ```json
-"port": 5050,  // start.json
+"event": "http://localhost:5050",  // start.json
 ```
 
 ```javascript

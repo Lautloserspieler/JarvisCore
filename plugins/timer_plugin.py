@@ -369,3 +369,12 @@ def get_plugin_instance():
     if _plugin_instance is None:
         _plugin_instance = TimerPlugin()
     return _plugin_instance
+
+
+def health_check() -> Dict[str, Any]:
+    """Health-Check für das Timer-Plugin."""
+    return {
+        "status": "ok",
+        "missing_keys": [],
+        "errors": []
+    }

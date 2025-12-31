@@ -3,9 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Puzzle, Key } from "lucide-react";
+import { Puzzle, Key, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ApiKeyModal from "@/components/ApiKeyModal";
+
+interface PluginHealth {
+  status: 'ok' | 'warning' | 'error';
+  missing_keys: string[];
+  errors: string[];
+}
 
 interface Plugin {
   id: string;
@@ -22,6 +28,7 @@ interface Plugin {
     api_key_url: string;
     api_key_description: string;
   };
+  health: PluginHealth;
 }
 
 const PluginsTab = () => {
@@ -42,7 +49,7 @@ const PluginsTab = () => {
 
   const loadPlugins = async () => {
     try {
-      const response = await fetch('http://localhost:5050/api/plugins');
+      const response = await fetch('http://localhost:5050/api/plugins/status');
       if (response.ok) {
         const data = await response.json();
         const filtered = data.filter((p: Plugin) => 
@@ -125,6 +132,53 @@ const PluginsTab = () => {
 
   const enabledPlugins = plugins.filter(p => p.enabled);
   const disabledPlugins = plugins.filter(p => !p.enabled);
+  const getHealthBadge = (health: PluginHealth) => {
+    const label = health.status === 'ok' ? 'OK' : health.status === 'warning' ? 'Warnung' : 'Fehler';
+    const variant = health.status === 'ok' ? 'default' : health.status === 'warning' ? 'secondary' : 'destructive';
+    return <Badge variant={variant} className="text-xs">{label}</Badge>;
+  };
+
+  const renderHealthDetails = (plugin: Plugin) => {
+    const missingKeys = plugin.health?.missing_keys || [];
+    const errors = plugin.health?.errors || [];
+
+    if (!missingKeys.length && !errors.length) {
+      return null;
+    }
+
+    return (
+      <div className="space-y-2 text-xs">
+        {missingKeys.length > 0 && (
+          <div className="flex items-start gap-2 text-amber-600">
+            <Key className="h-3 w-3 mt-0.5" />
+            <div>
+              <p className="font-medium">Fehlende Keys:</p>
+              <ul className="list-disc list-inside">
+                {missingKeys.map((key) => (
+                  <li key={key}>
+                    {plugin.api_key_info?.api_key_label || key}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+        {errors.length > 0 && (
+          <div className="flex items-start gap-2 text-red-500">
+            <AlertTriangle className="h-3 w-3 mt-0.5" />
+            <div>
+              <p className="font-medium">Fehler:</p>
+              <ul className="list-disc list-inside">
+                {errors.map((error, index) => (
+                  <li key={`${plugin.id}-error-${index}`}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -168,9 +222,13 @@ const PluginsTab = () => {
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">{t('pluginsTab.status')}:</span>
-                        <Badge variant="outline" className="text-xs">{plugin.status}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{plugin.status}</Badge>
+                          {getHealthBadge(plugin.health)}
+                        </div>
                       </div>
                     </div>
+                    {renderHealthDetails(plugin)}
                     <Button 
                       onClick={() => togglePlugin(plugin.id, false)}
                       disabled={toggling[plugin.id]}
@@ -208,6 +266,13 @@ const PluginsTab = () => {
                         <span className="text-muted-foreground">{t('pluginsTab.author')}:</span>
                         <span>{plugin.author}</span>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">{t('pluginsTab.status')}:</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{plugin.status}</Badge>
+                          {getHealthBadge(plugin.health)}
+                        </div>
+                      </div>
                       {plugin.requires_api_key && (
                         <div className="flex items-center gap-2 text-amber-600">
                           <Key className="h-3 w-3" />
@@ -215,9 +280,10 @@ const PluginsTab = () => {
                         </div>
                       )}
                     </div>
+                    {renderHealthDetails(plugin)}
                     <Button 
                       onClick={() => togglePlugin(plugin.id, true)}
-                      disabled={toggling[plugin.id] || plugin.status !== 'available'}
+                      disabled={toggling[plugin.id] || plugin.health?.status === 'error'}
                       variant="default"
                       className="w-full"
                     >

@@ -200,3 +200,12 @@ class MemoryPlugin(ConversationPlugin):
             self.session_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception as exc:
             self.logger.debug(f"Konnte Session-Datei nicht speichern: {exc}")
+
+
+def health_check() -> Dict[str, Any]:
+    """Health-Check für das Memory-Plugin."""
+    return {
+        "status": "ok",
+        "missing_keys": [],
+        "errors": []
+    }

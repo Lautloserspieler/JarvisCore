@@ -202,3 +202,12 @@ def process(command: str, context: Dict[str, Any]) -> Optional[str]:
     """Entry point für JARVIS Plugin System"""
     plugin = NewsPlugin()
     return plugin.process(command, context)
+
+
+def health_check() -> Dict[str, Any]:
+    """Health-Check für das Nachrichten-Plugin."""
+    return {
+        "status": "ok",
+        "missing_keys": [],
+        "errors": []
+    }

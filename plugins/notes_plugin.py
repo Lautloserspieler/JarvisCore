@@ -309,3 +309,12 @@ def process(command: str, context: Dict[str, Any]) -> Optional[str]:
     if _plugin_instance is None:
         _plugin_instance = NotesPlugin()
     return _plugin_instance.process(command, context)
+
+
+def health_check() -> Dict[str, Any]:
+    """Health-Check für das Notizen-Plugin."""
+    return {
+        "status": "ok",
+        "missing_keys": [],
+        "errors": []
+    }

@@ -18,7 +18,7 @@ class WeatherPlugin:
     
     def __init__(self):
         self.api_key = os.getenv("OPENWEATHER_API_KEY", "")
-        self.base_url = "http://api.openweathermap.org/data/2.5"
+        self.base_url = "https://api.openweathermap.org/data/2.5"
         self.default_city = "Berlin"
         self.default_units = "metric"  # Celsius
         
@@ -234,3 +234,17 @@ def process(command: str, context: Dict[str, Any]) -> Optional[str]:
     """Entry point für JARVIS Plugin System"""
     plugin = WeatherPlugin()
     return plugin.process(command, context)
+
+
+def health_check() -> Dict[str, Any]:
+    """Health-Check für das Wetter-Plugin."""
+    missing_keys = []
+    if not os.getenv("OPENWEATHER_API_KEY"):
+        missing_keys.append("openweather_api_key")
+
+    status = "ok" if not missing_keys else "warning"
+    return {
+        "status": status,
+        "missing_keys": missing_keys,
+        "errors": []
+    }

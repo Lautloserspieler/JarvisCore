@@ -1,3 +1,6 @@
+# Legacy requirements file.
+# Bitte nutze stattdessen: pip install -e ".[dev]" (oder dev+ci).
+# Wird schrittweise entfernt.
 # Development dependencies for testing
 pytest==7.4.3
 pytest-asyncio==0.21.1

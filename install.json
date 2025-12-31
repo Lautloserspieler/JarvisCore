@@ -3,7 +3,22 @@
     {
       "method": "notify",
       "params": {
-        "html": "<b>🤖 J.A.R.V.I.S. Core - Installation</b><br><br>Dies kann 15-20 Minuten dauern.<br><br><b>Schritt 1: Python Environment</b><br><b>Schritt 2: Backend Dependencies</b><br><b>Schritt 3: Frontend Build</b><br><br>Bitte nicht unterbrechen!"
+        "html": "<b>🤖 J.A.R.V.I.S. Core - Installation</b><br><br>Dies kann 15-20 Minuten dauern.<br><br><b>Schritt 1: GPU-Auswahl</b><br><b>Schritt 2: Python Environment</b><br><b>Schritt 3: Backend Dependencies</b><br><b>Schritt 4: Frontend Build</b><br><br>Bitte nicht unterbrechen!"
+      }
+    },
+    {
+      "method": "input",
+      "params": {
+        "type": "select",
+        "title": "GPU-Unterstützung",
+        "description": "Wähle deine GPU für optimierte Performance:",
+        "options": [
+          { "text": "🚀 NVIDIA GPU (CUDA 12.1)", "value": "nvidia" },
+          { "text": "🍎 Apple Silicon (Metal)", "value": "apple" },
+          { "text": "🖥️ CPU only (default)", "value": "cpu" }
+        ],
+        "default": "cpu",
+        "key": "gpu_type"
       }
     },
     {
@@ -23,9 +38,38 @@
       "params": {
         "venv": "venv",
         "message": [
-          "python -m pip install --upgrade pip setuptools wheel",
-          "pip install -r requirements.txt"
+          "python -m pip install --upgrade pip setuptools wheel"
         ]
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "message": "pip install -r requirements.txt",
+        "env": {
+          "CMAKE_ARGS": "-DLLAMA_CUDA=1 -DCUDA_ARCHITECTURES=native"
+        },
+        "when": "{{input.gpu_type === 'nvidia'}}"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "message": "pip install -r requirements.txt",
+        "env": {
+          "CMAKE_ARGS": "-DLLAMA_METAL=1"
+        },
+        "when": "{{input.gpu_type === 'apple'}}"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "message": "pip install -r requirements.txt",
+        "when": "{{input.gpu_type === 'cpu'}}"
       }
     },
     {
@@ -41,7 +85,7 @@
     {
       "method": "notify",
       "params": {
-        "html": "<b>✅ Installation erfolgreich!</b><br><br>JarvisCore 1.2.0 ist bereit.<br><br><b>Server läuft auf:</b><br><code>http://localhost:5050</code><br><br>Klicke 'Start' um zu starten."
+        "html": "<b>✅ Installation erfolgreich!</b><br><br>JarvisCore 1.2.0 ist bereit.<br><br><b>GPU-Modus:</b> {{input.gpu_type}}<br><b>Server läuft auf:</b><br><code>http://localhost:5050</code><br><br>Klicke 'Start' um zu starten."
       }
     }
   ]

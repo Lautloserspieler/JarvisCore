@@ -155,11 +155,23 @@ DELETE /api/models/delete          // Modell löschen
 
 **Status:** ⚠️ **GEPLANT** (v1.2.0)
 
-**Plan:**
-- 🔄 Whisper STT Integration
-- 🔄 XTTS v2 TTS Integration
-- 🔄 Voice-Visualisierung im Frontend
-- 🔄 Push-to-Talk Button
+**Delivery-Etappen & Akzeptanzkriterien:**
+- **Etappe 1: STT (Whisper)**
+  - ✅ Transkription von 30s Audio < 1.5x Echtzeit (GPU) bzw. < 3x (CPU)
+  - ✅ Speicher: < 4 GB VRAM (GPU) bzw. < 8 GB RAM (CPU) für "small"
+  - ✅ API liefert Confidence-Score + erkannte Sprache
+- **Etappe 2: TTS (XTTS v2)**
+  - ✅ Antwortstart (TTFB) < 2.0s bei 200 Zeichen Text (GPU)
+  - ✅ Sprachqualität: verständlich ohne Artefakte in DE/EN Tests
+  - ✅ Streaming-Audio im Backend verfügbar
+- **Etappe 3: Frontend-Visualisierung**
+  - ✅ Waveform/Audio-Statusanzeige synchron zum Playback
+  - ✅ UI-Flow: Play/Pause/Stop inkl. Status-Feedback
+  - ✅ Fehlermeldungen für fehlendes Audio oder Service-Down
+- **Etappe 4: Push-to-Talk**
+  - ✅ Gedrückt halten startet Aufnahme, Loslassen beendet & sendet
+  - ✅ Visueller Recording-State + Timeout nach 60s
+  - ✅ Abbruch-Flow löscht lokale Aufnahme ohne Upload
 
 ---
 
@@ -167,11 +179,23 @@ DELETE /api/models/delete          // Modell löschen
 
 **Status:** 📋 **ZUKUNFT** (v2.0.0)
 
-**Plan:**
-- 📋 Vector-Database (ChromaDB/FAISS)
-- 📋 Embedding-Models (Sentence-BERT)
-- 📋 Document-Ingestion
-- 📋 Semantic Search
+**Delivery-Etappen & Akzeptanzkriterien:**
+- **Etappe 1: Vektor-DB (Chroma/FAISS)**
+  - ✅ Persistenz: Index bleibt über Neustarts erhalten
+  - ✅ Abfrage-Latenz p95 < 300ms bei 100k Dokumenten (lokal)
+  - ✅ Speicher: < 2 GB zusätzlicher RAM-Overhead für 100k Embeddings
+- **Etappe 2: Embeddings**
+  - ✅ Einheitliche Embedding-Dimension + Versionierung im Metadata-Schema
+  - ✅ Durchsatz: > 20 Dokumente/s (CPU, 512 Token)
+  - ✅ Sprache: DE/EN Relevanzprüfung mit Recall@5 ≥ 0.7 (Sample-Set)
+- **Etappe 3: Ingestion-Pipeline**
+  - ✅ Unterstützt PDF/MD/TXT mit Chunking + Dedup
+  - ✅ Fortschrittsstatus über API (queued/running/failed)
+  - ✅ Fehlerhafte Dokumente blockieren nicht die Pipeline
+- **Etappe 4: Such-API**
+  - ✅ GET/POST Endpoint liefert Top-K + Scores
+  - ✅ Filter (Quelle, Zeit, Tags) im Query möglich
+  - ✅ Antwort-Latenz p95 < 500ms inkl. Retrieval (ohne LLM)
 
 ---
 

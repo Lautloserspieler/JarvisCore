@@ -33,6 +33,30 @@ JarvisCore v1.1.0 verfügt über eine Microservices-Architektur mit:
 
 ---
 
+## 🧭 Start-Modi (Web/Desk/Prod)
+
+**Welche Variante ist richtig?**
+
+- **Web**: Backend + Frontend (Vite). Ideal für lokale Entwicklung mit Browser-UI.
+- **Desktop**: Backend + Wails Dev Mode. Für Desktop-UI-Entwicklung.
+- **Prod**: Backend + Desktop-Binary. Für lokale Demo/Produktion ohne Dev-Tools.
+
+**Beispiele:**
+
+```bash
+# CLI (empfohlen)
+jarviscore web
+jarviscore desktop
+jarviscore prod
+
+# Skripte (direkt)
+python scripts/start_web.py
+python scripts/start_desktop.py
+python scripts/start_production.py
+```
+
+---
+
 ## ⚙️ Voraussetzungen
 
 ### Erforderlich

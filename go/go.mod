@@ -1,11 +1,13 @@
 module jarviscore/go
 
-go 1.21
+go 1.24.0
+
+toolchain go1.24.3
 
 require (
-	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/shirou/gopsutil/v4 v4.24.7 // indirect
-	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.1
+	github.com/lib/pq v1.10.9
+	golang.org/x/time v0.14.0
 )

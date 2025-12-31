@@ -217,13 +217,13 @@ pytest
 jarviscore web
 ```
 
-#### Option D: Alte Methode (v1.1.0 - Noch unterstützt)
+#### Option D: Alte Methode (v1.1.0 - Legacy, wird entfernt)
 
 ```bash
 git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 
-pip install -r requirements.txt
+pip install -r requirements.txt  # Legacy
 cd backend && python setup_llama.py && cd ..
 cd frontend && npm install && cd ..
 python main.py
@@ -254,10 +254,11 @@ jarviscore --help
 
 ## 📦 Dependency Management (Neu in v1.2.0-dev)
 
-### Old Way ❌
+### Old Way ❌ (Legacy, wird entfernt)
 ```bash
 pip install -r requirements.txt
 # Problem: Alle Dependencies, auch wenn nicht nötig
+# Hinweis: requirements*.txt sind Legacy und werden schrittweise entfernt.
 ```
 
 ### New Way ✅
@@ -267,6 +268,7 @@ pip install -e "."              # Minimal
 pip install -e ".[tts]"         # + Text-to-Speech
 pip install -e ".[cuda]"        # + GPU Support (NVIDIA)
 pip install -e ".[dev]"         # + Development Tools
+pip install -e ".[ci]"          # + CI/CD Tools
 pip install -e ".[all]"         # Alles zusammen
 
 # Kombinationen möglich
@@ -449,7 +451,7 @@ JarvisCore/
 ├── uninstall.json          # 🎯 Pinokio Uninstall Script
 ├── pyproject.toml          # Centralized Configuration
 ├── main.py                 # Unified Launcher
-├── requirements.txt        # Legacy (deprecated)
+├── requirements.txt        # Legacy (deprecated, wird entfernt)
 ├── jarviscore/             # CLI Package
 │   ├── __init__.py
 │   └── cli.py
@@ -461,7 +463,7 @@ JarvisCore/
 │   ├── main.py
 │   ├── setup_llama.py     # Auto GPU Setup
 │   ├── plugin_manager.py
-│   └── requirements.txt
+│   └── requirements*.txt  # Legacy (deprecated, wird entfernt)
 ├── frontend/               # Vue 3 Frontend
 │   ├── src/
 │   ├── package.json
@@ -513,7 +515,7 @@ lsof -i :5050
 # Neue Methode
 pip install -e ".[tts]"
 
-# Oder alte Methode
+# Oder alte Methode (Legacy)
 pip install -r requirements.txt
 cd frontend && npm install
 ```

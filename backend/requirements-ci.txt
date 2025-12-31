@@ -1,3 +1,6 @@
+# Legacy requirements file.
+# Bitte nutze stattdessen: pip install -e ".[ci]" (oder dev+ci).
+# Wird schrittweise entfernt.
 # Minimal requirements for CI/CD testing
 # Skips heavy ML libraries (torch, transformers, accelerate)
 

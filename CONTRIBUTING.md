@@ -109,8 +109,13 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # Unter Windows: venv\Scripts\activate
 
-# Abhängigkeiten installieren
-pip install -r requirements.txt
+# Abhängigkeiten installieren (empfohlen)
+cd ..
+pip install -e ".[dev,ci]"
+cd backend
+
+# Legacy (wird entfernt)
+# pip install -r requirements.txt
 
 # Backend starten
 python main.py

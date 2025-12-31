@@ -1,6 +1,5 @@
 {
   "daemon": true,
-  "message": "uvicorn backend.main:app --host 127.0.0.1 --port 5050 --reload",
   "on": [
     {
       "event": "http://localhost:5050",
@@ -16,3 +15,13 @@
       "params": {
         "html": "<b>🚀 J.A.R.V.I.S. Core wird gestartet...</b><br><br>Server startet auf Port 5050<br><br>Nach dem Start öffnet sich automatisch die Web-UI.<br><br>Falls nicht: <b>http://localhost:5050</b>"
       }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "venv": "venv",
+        "message": "python -m uvicorn backend.main:app --host 127.0.0.1 --port 5050 --reload"
+      }
+    }
+  ]
+}

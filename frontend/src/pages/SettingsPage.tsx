@@ -504,7 +504,7 @@ const SettingsPage: React.FC = () => {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>{t('ui.theme')}</Label>
-                <Select value={uiSettings.theme} onValueChange={(val: any) => setUISettings({ ...uiSettings, theme: val }))}
+                <Select value={uiSettings.theme} onValueChange={(val: any) => setUISettings({ ...uiSettings, theme: val })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -519,7 +519,7 @@ const SettingsPage: React.FC = () => {
 
               <div className="space-y-2">
                 <Label>{t('ui.fontSize')}</Label>
-                <Select value={uiSettings.fontSize} onValueChange={(val: any) => setUISettings({ ...uiSettings, fontSize: val }))}
+                <Select value={uiSettings.fontSize} onValueChange={(val: any) => setUISettings({ ...uiSettings, fontSize: val })}
                 >
                   <SelectTrigger>
                     <SelectValue />

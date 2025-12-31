@@ -70,8 +70,7 @@ POSTGRES_PASSWORD=jarvis
 POSTGRES_DB=jarviscore
 
 # Authentifizierung
-JARVIS_AUTH_SECRET=your-secret-key-change-in-production
-JARVIS_AUTH_KEYS='[{"key":"your-api-key","rate_limit":60,"burst":10,"enabled":true,"created_at":"2024-01-01T00:00:00Z"}]'
+SECRET_KEY=your-secret-key-change-in-production
 
 # Frontend
 VITE_BACKEND_URL=http://localhost:5050
@@ -464,7 +463,7 @@ services:
 ### Sicherheits-Checkliste
 
 - [ ] Standardpasswörter in `.env` ändern
-- [ ] Starkes `JARVIS_AUTH_SECRET` generieren
+- [ ] Starkes `SECRET_KEY` generieren
 - [ ] HTTPS aktivieren (Nginx Reverse Proxy verwenden)
 - [ ] Firewall-Regeln konfigurieren
 - [ ] Rate Limiting auf allen Services aktivieren

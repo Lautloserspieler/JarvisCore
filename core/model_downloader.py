@@ -21,11 +21,6 @@ except ImportError:
 from utils.logger import Logger
 
 
-class DownloadCancelled(Exception):
-    """Raised when a download is cancelled."""
-
-
-
 @dataclass
 class DownloadProgress:
     """Download progress information"""
@@ -104,7 +99,6 @@ class ModelDownloader:
         # Active downloads tracking
         self.active_downloads: Dict[str, DownloadProgress] = {}
         self.download_locks: Dict[str, threading.Lock] = {}
-        self.cancel_flags: Dict[str, threading.Event] = {}
         
         # Configuration
         self.chunk_size = 4 * 1024 * 1024  # 4 MB chunks
@@ -168,7 +162,6 @@ class ModelDownloader:
         # Initialize progress tracking
         progress = DownloadProgress(model_key=model_key, status="downloading")
         self.active_downloads[model_key] = progress
-        self.cancel_flags[model_key] = threading.Event()
         
         # Get or create lock for this model
         if model_key not in self.download_locks:
@@ -180,8 +173,7 @@ class ModelDownloader:
                     url=url,
                     target_path=temp_path,
                     progress=progress,
-                    progress_callback=progress_callback,
-                    cancel_event=self.cancel_flags[model_key]
+                    progress_callback=progress_callback
                 )
                 
                 # Verify if hash provided
@@ -206,14 +198,6 @@ class ModelDownloader:
                 self.logger.info(f"✅ Download abgeschlossen: {filename} ({self._format_bytes(progress.total_bytes)})")
                 return target_path
                 
-            except DownloadCancelled as exc:
-                progress.status = "cancelled"
-                progress.error = str(exc)
-                self._emit_progress(progress, progress_callback, force=True)
-                with contextlib.suppress(Exception):
-                    if temp_path.exists():
-                        temp_path.unlink()
-                raise RuntimeError(f"Download abgebrochen für {model_key}") from exc
             except Exception as exc:
                 progress.status = "failed"
                 progress.error = str(exc)
@@ -229,15 +213,13 @@ class ModelDownloader:
             finally:
                 # Cleanup
                 self.active_downloads.pop(model_key, None)
-                self.cancel_flags.pop(model_key, None)
     
     def _download_with_resume(
         self,
         url: str,
         target_path: Path,
         progress: DownloadProgress,
-        progress_callback: Optional[Callable[[DownloadProgress], None]],
-        cancel_event: threading.Event
+        progress_callback: Optional[Callable[[DownloadProgress], None]]
     ) -> None:
         """Download with resume support (HTTP Range)"""
         # Check existing partial download
@@ -290,10 +272,6 @@ class ModelDownloader:
                 
                 with open(target_path, mode) as f:
                     for chunk in response.iter_content(chunk_size=self.chunk_size):
-                        if cancel_event.is_set():
-                            progress.status = "cancelled"
-                            self._emit_progress(progress, progress_callback, force=True)
-                            raise DownloadCancelled("Download wurde abgebrochen")
                         if not chunk:
                             continue
                         
@@ -372,12 +350,10 @@ class ModelDownloader:
         }
     
     def cancel_download(self, model_key: str) -> bool:
-        """Cancel an active download"""
+        """Cancel an active download (not yet implemented)"""
+        # TODO: Implement cancellation mechanism
         if model_key in self.active_downloads:
             self.active_downloads[model_key].status = "cancelled"
-            cancel_event = self.cancel_flags.get(model_key)
-            if cancel_event:
-                cancel_event.set()
             return True
         return False
     

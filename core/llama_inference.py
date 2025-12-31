@@ -28,7 +28,6 @@ class LlamaInference:
         self.device: str = "cpu"
         self.n_gpu_layers: int = -1  # -1 = all layers on GPU
         self.n_ctx: int = 4096  # Context window
-        self.max_layers: Optional[int] = None
         self.lock = threading.RLock()
         
         # Generation defaults
@@ -108,14 +107,11 @@ class LlamaInference:
                 self.model_path = model_path
                 self.model_name = model_name
                 self.n_ctx = n_ctx
-                self.max_layers = getattr(self.model, "n_layers", None)
                 self.is_loaded = True
                 
                 print(f"[SUCCESS] Model loaded in {load_time:.2f}s")
                 print(f"[INFO] Context window: {n_ctx} tokens")
                 print(f"[INFO] GPU layers: {gpu_layers}")
-                if self.max_layers is not None:
-                    print(f"[INFO] Model layers: {self.max_layers}")
                 
                 return True
                 
@@ -123,7 +119,6 @@ class LlamaInference:
                 print(f"[ERROR] Failed to load model: {e}")
                 self.model = None
                 self.is_loaded = False
-                self.max_layers = None
                 return False
     
     def unload_model(self) -> bool:
@@ -143,7 +138,6 @@ class LlamaInference:
                 self.model_path = None
                 self.model_name = None
                 self.is_loaded = False
-                self.max_layers = None
                 
                 # Force garbage collection
                 import gc
@@ -155,12 +149,6 @@ class LlamaInference:
             except Exception as e:
                 print(f"[ERROR] Failed to unload model: {e}")
                 return False
-
-    def get_max_layers(self) -> Optional[int]:
-        """Get maximum layer count from loaded model metadata."""
-        if not self.is_loaded or self.model is None:
-            return None
-        return getattr(self.model, "n_layers", None)
     
     def generate(
         self,

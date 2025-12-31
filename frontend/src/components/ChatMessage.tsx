@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Bot, User, Zap } from "lucide-react";
@@ -18,7 +17,6 @@ interface ChatMessageProps {
 }
 
 const ChatMessage = ({ message }: ChatMessageProps) => {
-  const { t } = useTranslation();
   // Format timestamp
   const formattedTime = useMemo(() => {
     if (!message.timestamp) return '';
@@ -38,9 +36,9 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
   const tokenStats = useMemo(() => {
     if (!message.tokens || message.isUser) return null;
     
-    const tokensText = `${message.tokens} ${t('chat.tokens').toLowerCase()}`;
+    const tokensText = `${message.tokens} tokens`;
     const speedText = message.tokensPerSecond 
-      ? ` • ${message.tokensPerSecond.toFixed(1)} ${t('chat.tokensPerSecond')}`
+      ? ` • ${message.tokensPerSecond.toFixed(1)} tok/s`
       : '';
     
     return tokensText + speedText;

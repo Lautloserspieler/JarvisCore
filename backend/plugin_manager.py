@@ -48,8 +48,6 @@ class PluginManager:
         self.plugins: Dict[str, Dict[str, Any]] = {}
         self.enabled_plugins: Dict[str, bool] = {}
         self.config_file = self.root / "config" / "plugins.json"
-        self.registry_file = self.plugins_dir / "registry.json"
-        self.registry: Dict[str, Dict[str, Any]] = {}
         
         # Callbacks for plugin notifications
         self.websocket_callback: Optional[Callable] = None
@@ -61,7 +59,6 @@ class PluginManager:
         
         # Load plugin states
         self._load_config()
-        self._load_registry()
         
         # Discover plugins
         self.discover_plugins()
@@ -152,23 +149,6 @@ class PluginManager:
                 json.dump({'enabled': self.enabled_plugins}, f, indent=2)
         except Exception as e:
             print(f"[PLUGINS] Failed to save config: {e}")
-
-    def _load_registry(self):
-        """Load plugin registry metadata if available."""
-        if not self.registry_file.exists():
-            self.registry = {}
-            return
-        try:
-            with open(self.registry_file, 'r', encoding='utf-8') as f:
-                payload = json.load(f)
-                if isinstance(payload, dict):
-                    self.registry = payload.get("plugins", {})
-                else:
-                    self.registry = {}
-            print(f"[PLUGINS] Loaded plugin registry metadata")
-        except Exception as e:
-            print(f"[PLUGINS] Failed to load registry: {e}")
-            self.registry = {}
     
     def discover_plugins(self):
         """Discover all available plugins in plugins directory"""
@@ -215,14 +195,12 @@ class PluginManager:
         description = getattr(module, 'PLUGIN_DESCRIPTION', 'No description available')
         version = getattr(module, 'PLUGIN_VERSION', '1.0.0')
         author = getattr(module, 'PLUGIN_AUTHOR', 'Lautloserspieler')
-        module_metadata = getattr(module, 'PLUGIN_METADATA', {})
-        registry_metadata = self.registry.get(plugin_id, {})
-
+        
         # Check if plugin requires API key
         api_requirements = self.PLUGIN_API_REQUIREMENTS.get(plugin_id, {})
         requires_api_key = api_requirements.get('requires_api_key', False)
         
-        base_info = {
+        return {
             'id': plugin_id,
             'name': name,
             'description': description,
@@ -232,16 +210,8 @@ class PluginManager:
             'status': 'available',
             'requires_api_key': requires_api_key,
             'api_key_info': api_requirements if requires_api_key else None,
-            'module': module,
-            'metadata': {}
+            'module': module
         }
-        merged_metadata = {}
-        if isinstance(registry_metadata, dict):
-            merged_metadata.update(registry_metadata)
-        if isinstance(module_metadata, dict):
-            merged_metadata.update(module_metadata)
-        base_info['metadata'] = merged_metadata
-        return base_info
     
     def get_all_plugins(self) -> List[Dict[str, Any]]:
         """Get list of all discovered plugins"""
@@ -255,8 +225,7 @@ class PluginManager:
                 'enabled': p['enabled'],
                 'status': p['status'],
                 'requires_api_key': p.get('requires_api_key', False),
-                'api_key_info': p.get('api_key_info'),
-                'metadata': p.get('metadata', {})
+                'api_key_info': p.get('api_key_info')
             }
             for p in self.plugins.values()
         ]

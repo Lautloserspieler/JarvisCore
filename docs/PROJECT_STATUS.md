@@ -192,7 +192,7 @@ jarviscore web           # Direct CLI
 ```bash
 # Container method (planned)
 docker compose up -d
-# Access http://localhost:5050
+# Access http://localhost:5000
 
 # Steps: 1
 # Time: 2-3 minutes

@@ -23,12 +23,6 @@ A modern AI assistant with holographic UI and **fully local llama.cpp inference*
 
 ---
 
-## 🚀 Quickstart
-
-- **Pinokio (recommended)**: [PINOKIO.md](./PINOKIO.md)
-- **Manual quickstart**: [README_QUICKSTART.md](./README_QUICKSTART.md)
-- **Troubleshooting**: [FAQ](./FAQ.md)
-
 ## ✨ Features
 
 ### 🧠 AI Engine
@@ -134,7 +128,7 @@ python main.py
 
 **That's it!** The `main.py` script:
 - ✅ Automatically starts backend & frontend
-- ✅ Opens browser at http://localhost:5050
+- ✅ Opens browser at http://localhost:5000
 - ✅ Backend runs on http://localhost:5050
 
 ---
@@ -153,7 +147,7 @@ git clone https://github.com/Lautloserspieler/JarvisCore.git && cd JarvisCore &&
 
 After starting, you can access:
 
-- 🎨 **Frontend UI**: http://localhost:5050
+- 🎨 **Frontend UI**: http://localhost:5000
 - 🔧 **Backend API**: http://localhost:5050
 - 📚 **API Documentation**: http://localhost:5050/docs
 - 🔌 **WebSocket**: ws://localhost:5050/ws
@@ -265,7 +259,7 @@ JARVIS Core uses an **Ollama-inspired download system**:
 ### Managing Models
 
 1. **Start JARVIS**: `python main.py`
-2. **Open Web UI**: http://localhost:5050
+2. **Open Web UI**: http://localhost:5000
 3. **Models Tab**: Navigate to model management
 4. **Download Model**: Click "Download" → Select quantization
 5. **Load Model**: Click "Load" on downloaded model
@@ -347,11 +341,11 @@ python setup_llama.py
 
 ```bash
 # Windows
-netstat -ano | findstr :5050
+netstat -ano | findstr :5000
 netstat -ano | findstr :5050
 
 # Linux/Mac
-lsof -i :5050
+lsof -i :5000
 lsof -i :5050
 ```
 

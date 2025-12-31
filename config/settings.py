@@ -207,7 +207,7 @@ class Settings:
                 "enabled": False,
                 "host": "127.0.0.1",
                 "port": 8765,
-                "token": "",
+                "token": "12345678",
                 "broadcast_conversation": True,
                 "allow_status_queries": True,
                 "command_timeout_seconds": 45.0
@@ -218,7 +218,7 @@ class Settings:
                 "enabled": True,
                 "host": "127.0.0.1",
                 "port": 5050,
-                "token": "",
+                "token": "12345678",
                 "allow_guest_commands": False,
                 "command_timeout_seconds": 45.0,
                 "auto_open_browser": True,

@@ -14,7 +14,6 @@
         "description": "Wähle deine GPU für optimierte Performance:",
         "options": [
           { "text": "🚀 NVIDIA GPU (CUDA 12.1)", "value": "nvidia" },
-          { "text": "🟠 AMD GPU (ROCm)", "value": "amd" },
           { "text": "🍎 Apple Silicon (Metal)", "value": "apple" },
           { "text": "🖥️ CPU only (default)", "value": "cpu" }
         ],
@@ -49,7 +48,7 @@
         "venv": "venv",
         "message": "pip install -r requirements.txt",
         "env": {
-          "CMAKE_ARGS": "-DGGML_CUDA=on -DCUDA_ARCHITECTURES=native"
+          "CMAKE_ARGS": "-DLLAMA_CUDA=1 -DCUDA_ARCHITECTURES=native"
         },
         "when": "{{input.gpu_type === 'nvidia'}}"
       }
@@ -60,18 +59,7 @@
         "venv": "venv",
         "message": "pip install -r requirements.txt",
         "env": {
-          "CMAKE_ARGS": "-DGGML_HIPBLAS=on"
-        },
-        "when": "{{input.gpu_type === 'amd'}}"
-      }
-    },
-    {
-      "method": "shell.run",
-      "params": {
-        "venv": "venv",
-        "message": "pip install -r requirements.txt",
-        "env": {
-          "CMAKE_ARGS": "-DGGML_METAL=on"
+          "CMAKE_ARGS": "-DLLAMA_METAL=1"
         },
         "when": "{{input.gpu_type === 'apple'}}"
       }

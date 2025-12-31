@@ -180,7 +180,7 @@ cd frontend
 npm install
 cd ..
 
-# Starte JARVIS
+# Starte JARVIS (Web-Modus)
 jarviscore web
 ```
 
@@ -213,7 +213,7 @@ cd frontend && npm install && cd ..
 # Tests
 pytest
 
-# Start
+# Start (Web-Modus)
 jarviscore web
 ```
 
@@ -226,12 +226,41 @@ cd JarvisCore
 pip install -r requirements.txt
 cd backend && python setup_llama.py && cd ..
 cd frontend && npm install && cd ..
-python main.py
+python scripts/start_web.py
 ```
 
 > 💡 **Tipp:** Neue Methoden sind kürzer und übersichtlicher!
 
 ---
+
+## 🔄 Start-Modi (Web/Desk/Prod)
+
+**Welche Variante ist richtig?**
+
+- **Web**: Backend + Frontend (Vite). Ideal für Entwicklung/Testing im Browser.
+- **Desktop**: Backend + Wails Dev Mode. Für UI-Entwicklung am Desktop.
+- **Prod**: Backend + Desktop-Binary. Für lokale Produktion/Demo ohne Dev-Tools.
+
+**Kurzbeispiele:**
+
+```bash
+# Web UI im Browser
+jarviscore web
+
+# Desktop UI (Dev)
+jarviscore desktop
+
+# Desktop UI (Production Binary)
+jarviscore prod
+```
+
+Alternativ kannst du die Skripte direkt nutzen:
+
+```bash
+python scripts/start_web.py
+python scripts/start_desktop.py
+python scripts/start_production.py
+```
 
 ## 🔄 CLI Commands (NEU in v1.2.0-dev)
 
@@ -240,10 +269,10 @@ python main.py
 jarviscore web
 # Öffnet automatisch http://localhost:5050
 
-# Desktop Mode (geplant - wird bald verfügbar)
+# Desktop Mode (Wails Dev)
 jarviscore desktop
 
-# Production Mode (geplant)
+# Production Mode (Desktop Binary)
 jarviscore prod
 
 # Hilfe anzeigen
@@ -404,7 +433,7 @@ JARVIS Core nutzt ein **Ollama-inspiriertes Download-System**:
 
 ### Models verwalten
 
-1. **JARVIS starten**: `jarviscore web` oder `python main.py`
+1. **JARVIS starten**: `jarviscore web` oder `python scripts/start_web.py` (main.py leitet weiter)
 2. **Web-UI öffnen**: http://localhost:5050
 3. **Models-Tab**: Navigation zur Model-Verwaltung
 4. **Model downloaden**: Klick "Download" → Wähle Quantization
@@ -448,11 +477,16 @@ JarvisCore/
 ├── update.json             # 🎯 Pinokio Update Script
 ├── uninstall.json          # 🎯 Pinokio Uninstall Script
 ├── pyproject.toml          # Centralized Configuration
-├── main.py                 # Unified Launcher
+├── main.py                 # Web-Launcher Wrapper
 ├── requirements.txt        # Legacy (deprecated)
 ├── jarviscore/             # CLI Package
 │   ├── __init__.py
 │   └── cli.py
+├── scripts/                # Launcher Scripts
+│   ├── start_web.py
+│   ├── start_desktop.py
+│   ├── start_production.py
+│   └── start_jarvis.py     # Legacy Wrapper
 ├── core/                   # Core Python Modules
 │   ├── llama_inference.py # llama.cpp Engine
 │   ├── model_downloader.py

@@ -130,3 +130,12 @@ class ClarificationPlugin(ConversationPlugin):
             base = original
         merged = f"{base} {clarification}".strip()
         return merged
+
+
+def health_check() -> Dict[str, Any]:
+    """Health-Check für das Clarification-Plugin."""
+    return {
+        "status": "ok",
+        "missing_keys": [],
+        "errors": []
+    }

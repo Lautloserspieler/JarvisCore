@@ -61,8 +61,8 @@ class WissensAPI:
         self.cache: Dict[str, Any] = {}
         
         # SPARQL-Endpunkte
-        self.dbpedia_endpoint = "http://dbpedia.org/sparql"
-        self.conceptnet_endpoint = "http://api.conceptnet.io"
+        self.dbpedia_endpoint = "https://dbpedia.org/sparql"
+        self.conceptnet_endpoint = "https://api.conceptnet.io"
         self.open_library_url = "https://openlibrary.org"
         self.benutzer_agent = "JarvisKI/1.0"
 
@@ -307,6 +307,15 @@ class WissensAPI:
             })
         
         return vorschlaege
+
+
+def health_check() -> Dict[str, Any]:
+    """Health-Check für die Wissens-API."""
+    return {
+        "status": "ok",
+        "missing_keys": [],
+        "errors": []
+    }
 
 # Beispielverwendung
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ import os
 import sys
 import importlib
 import inspect
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable
 import json
@@ -199,6 +200,10 @@ class PluginManager:
                 plugin_info = self._extract_plugin_info(plugin_id, module)
                 
                 if plugin_info:
+                    security_issues = self._scan_security_issues(file)
+                    plugin_info['security_issues'] = security_issues
+                    if security_issues:
+                        plugin_info['status'] = 'insecure'
                     self.plugins[plugin_id] = plugin_info
                     loaded_count += 1
                     print(f"[PLUGINS] ✓ {plugin_info['name']} (v{plugin_info['version']})")
@@ -207,6 +212,20 @@ class PluginManager:
                 print(f"[PLUGINS] ✗ Failed: {plugin_id} - {e}")
         
         print(f"[PLUGINS] Loaded {loaded_count}/{len(plugin_files)} plugins")
+
+    def _scan_security_issues(self, plugin_path: Path) -> List[str]:
+        """Run simple security checks against plugin source code."""
+        issues: List[str] = []
+        try:
+            content = plugin_path.read_text(encoding="utf-8")
+        except Exception as e:
+            return [f"Konnte Plugin-Datei nicht lesen: {e}"]
+
+        http_urls = sorted(set(re.findall(r"http://[^\s'\"\\)]+", content)))
+        for url in http_urls:
+            issues.append(f"Unsichere URL gefunden: {url}")
+
+        return issues
     
     def _extract_plugin_info(self, plugin_id: str, module) -> Optional[Dict[str, Any]]:
         """Extract plugin information from module"""
@@ -233,6 +252,7 @@ class PluginManager:
             'requires_api_key': requires_api_key,
             'api_key_info': api_requirements if requires_api_key else None,
             'module': module,
+            'security_issues': [],
             'metadata': {}
         }
         merged_metadata = {}
@@ -256,10 +276,82 @@ class PluginManager:
                 'status': p['status'],
                 'requires_api_key': p.get('requires_api_key', False),
                 'api_key_info': p.get('api_key_info'),
-                'metadata': p.get('metadata', {})
+                'metadata': p.get('metadata', {}),
+                'security_issues': p.get('security_issues', [])
             }
             for p in self.plugins.values()
         ]
+
+    def _resolve_plugin_health(self, plugin_id: str) -> Dict[str, Any]:
+        """Compute health status for a plugin."""
+        plugin = self.plugins.get(plugin_id)
+        if not plugin:
+            return {
+                "status": "error",
+                "missing_keys": [],
+                "errors": ["Plugin nicht gefunden"]
+            }
+
+        health = {
+            "status": "ok",
+            "missing_keys": [],
+            "errors": []
+        }
+
+        module = plugin.get("module")
+        if module and hasattr(module, "health_check"):
+            try:
+                module_health = module.health_check()
+                if isinstance(module_health, dict):
+                    health.update({
+                        "status": module_health.get("status", health["status"]),
+                        "missing_keys": list(module_health.get("missing_keys", [])),
+                        "errors": list(module_health.get("errors", []))
+                    })
+            except Exception as e:
+                health["status"] = "error"
+                health["errors"].append(f"Health-Check fehlgeschlagen: {e}")
+
+        if plugin.get("requires_api_key") and not self.check_api_key_available(plugin_id):
+            api_key_info = plugin.get("api_key_info", {})
+            key_name = api_key_info.get("api_key_name")
+            if key_name and key_name not in health["missing_keys"]:
+                health["missing_keys"].append(key_name)
+
+        security_issues = plugin.get("security_issues", [])
+        if security_issues:
+            health["errors"].extend(security_issues)
+
+        if health["missing_keys"] and health["status"] == "ok":
+            health["status"] = "warning"
+
+        if health["errors"] and health["status"] == "ok":
+            health["status"] = "warning"
+
+        if health["status"] not in {"ok", "warning", "error"}:
+            health["status"] = "warning"
+
+        return health
+
+    def get_plugin_statuses(self) -> List[Dict[str, Any]]:
+        """Get list of all plugins with health status."""
+        plugins = []
+        for plugin_id, plugin in self.plugins.items():
+            plugins.append({
+                'id': plugin['id'],
+                'name': plugin['name'],
+                'description': plugin['description'],
+                'version': plugin['version'],
+                'author': plugin['author'],
+                'enabled': plugin['enabled'],
+                'status': plugin['status'],
+                'requires_api_key': plugin.get('requires_api_key', False),
+                'api_key_info': plugin.get('api_key_info'),
+                'metadata': plugin.get('metadata', {}),
+                'security_issues': plugin.get('security_issues', []),
+                'health': self._resolve_plugin_health(plugin_id)
+            })
+        return plugins
     
     def get_plugin(self, plugin_id: str) -> Optional[Dict[str, Any]]:
         """Get specific plugin info"""
@@ -349,15 +441,13 @@ class PluginManager:
         self.plugins.clear()
         self.discover_plugins()
 
-# Create singleton instance
-plugin_manager = PluginManager()
-
 if __name__ == "__main__":
     # Test plugin discovery
     print("\n" + "="*50)
     print("Plugin Manager Test")
     print("="*50 + "\n")
-    
+
+    plugin_manager = PluginManager()
     plugins = plugin_manager.get_all_plugins()
     print(f"Found {len(plugins)} plugins:\n")
     

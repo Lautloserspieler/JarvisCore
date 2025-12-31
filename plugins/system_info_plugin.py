@@ -52,6 +52,15 @@ def process(message: str) -> dict:
         'response': None
     }
 
+
+def health_check() -> dict:
+    """Health-Check für das System-Info-Plugin."""
+    return {
+        "status": "ok",
+        "missing_keys": [],
+        "errors": []
+    }
+
 if __name__ == "__main__":
     # Test the plugin
     print(f"Testing {PLUGIN_NAME}...")

@@ -28,15 +28,8 @@ from core.llama_inference import llama_runtime
 # Import model downloader
 from backend.model_downloader import model_downloader, MODEL_URLS
 
-# Initialize plugin manager IMMEDIATELY at import time
-print("[BACKEND] Initializing plugin manager...")
-try:
-    from backend.plugin_manager import PluginManager
-    plugin_manager = PluginManager()
-    print(f"[BACKEND] Plugin manager ready: {len(plugin_manager.plugins)} plugins")
-except Exception as e:
-    print(f"[ERROR] Failed to init plugin manager: {e}")
-    plugin_manager = None
+# Plugin manager wird beim Startup initialisiert
+plugin_manager = None
 
 # Import settings router and current settings
 try:
@@ -131,6 +124,19 @@ if settings_router:
 if tts_router:
     app.include_router(tts_router)
     print("[BACKEND] TTS router mounted")
+
+
+@app.on_event("startup")
+async def startup_event():
+    global plugin_manager
+    print("[BACKEND] Initializing plugin manager on startup...")
+    try:
+        from backend.plugin_manager import PluginManager
+        plugin_manager = PluginManager()
+        print(f"[BACKEND] Plugin manager ready: {len(plugin_manager.plugins)} plugins")
+    except Exception as e:
+        print(f"[ERROR] Failed to init plugin manager: {e}")
+        plugin_manager = None
 
 # In-memory storage
 sessions_db = {}
@@ -387,6 +393,13 @@ async def get_plugins():
     if plugin_manager is None:
         return []
     return plugin_manager.get_all_plugins()
+
+
+@app.get("/api/plugins/status")
+async def get_plugins_status():
+    if plugin_manager is None:
+        return []
+    return plugin_manager.get_plugin_statuses()
 
 @app.post("/api/plugins/{plugin_id}/enable")
 async def enable_plugin(plugin_id: str):

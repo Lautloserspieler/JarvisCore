@@ -569,6 +569,14 @@ Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTI
 
 ---
 
+## ⚙️ Konfiguration (.env)
+
+Die vollständige Liste aller Umgebungsvariablen findest du in der Vorlage: [`.env.example`](./.env.example).
+Eine kurze Einordnung, welche Variablen wofür gedacht sind (LLM, TTS, Plugins, Feature-Flags), gibt es hier:
+[📘 Konfiguration & Env-Variablen](./docs/CONFIGURATION.md).
+
+---
+
 ## 🎯 Roadmap
 
 ### ✅ v1.1.0 (Current) - Dezember 2025
@@ -649,6 +657,7 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 ## 📚 Weitere Dokumentation
 
 - [🎮 GPU Selection Guide](./docs/GPU_SELECTION.md) - NEW!
+- [⚙️ Konfiguration (.env)](./docs/CONFIGURATION.md)
 - [🎯 Pinokio Installation Guide](./PINOKIO.md)
 - [📋 Migration Guide v1.1 → v1.2](MIGRATION_GUIDE.md)
 - [🏗️ Architecture Refactor Plan](ARCHITECTURE_REFACTOR.md)

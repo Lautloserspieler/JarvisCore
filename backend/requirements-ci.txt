@@ -21,5 +21,7 @@ httpx==0.25.2
 
 # Code Quality
 black==24.3.0
-flake8==6.1.0
+ruff==0.6.8
 mypy==1.7.1
+bandit==1.7.9
+safety==3.2.9

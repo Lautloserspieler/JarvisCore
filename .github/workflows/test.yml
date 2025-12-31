@@ -40,7 +40,7 @@ jobs:
         pip install fastapi uvicorn pydantic python-dotenv python-multipart websockets psutil requests
     
     - name: Install test framework
-      run: pip install pytest httpx
+      run: pip install pytest pytest-cov httpx
     
     - name: Run tests
       working-directory: ./backend
@@ -83,7 +83,7 @@ jobs:
         python-version: '3.11'
     
     - name: Install linters
-      run: pip install black flake8
+      run: pip install black ruff bandit safety
     
     - name: Check formatting
       working-directory: ./backend
@@ -91,7 +91,15 @@ jobs:
     
     - name: Check linting
       working-directory: ./backend
-      run: flake8 . --max-line-length=120
+      run: ruff check .
+
+    - name: Security scan (Bandit)
+      working-directory: ./backend
+      run: bandit -r . -lll
+
+    - name: Security scan (Safety)
+      working-directory: ./backend
+      run: safety check --full-report --severity critical
   
   summary:
     name: Test Summary

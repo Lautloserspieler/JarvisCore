@@ -16,6 +16,3 @@
       "params": {
         "html": "<b>🚀 J.A.R.V.I.S. Core wird gestartet...</b><br><br>Server startet auf Port 5050<br><br>Nach dem Start öffnet sich automatisch die Web-UI.<br><br>Falls nicht: <b>http://localhost:5050</b>"
       }
-    }
-  ]
-}

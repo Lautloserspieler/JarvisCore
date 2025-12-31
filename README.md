@@ -23,6 +23,12 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 
 ---
 
+## 🚀 Quickstart
+
+- **Pinokio (empfohlen)**: [PINOKIO.md](./PINOKIO.md)
+- **Schnellstart (manuell)**: [README_QUICKSTART.md](./README_QUICKSTART.md)
+- **Fehlerbehebung**: [FAQ](./FAQ.md)
+
 ## ✨ Features
 
 ### 🧠 KI-Engine
@@ -134,7 +140,7 @@ Zur Nutzung benötigst du **eine der folgenden Optionen**:
      - Node.js dependencies (npm install)
      - GPU-optimiertes llama.cpp (basierend auf Auswahl)
    - Nach der Installation klickst du **Start**
-   - JARVIS lädt automatisch im Browser (http://localhost:5000)
+   - JARVIS lädt automatisch im Browser (http://localhost:5050)
 
 #### ✨ Vorteile der Pinokio-Installation:
 
@@ -178,7 +184,7 @@ cd ..
 jarviscore web
 ```
 
-Danach öffnet sich automatisch: **http://localhost:5000**
+Danach öffnet sich automatisch: **http://localhost:5050**
 
 #### Option B: Mit GPU Support (NVIDIA CUDA)
 
@@ -232,7 +238,7 @@ python main.py
 ```bash
 # Web Mode (Development) - EMPFOHLEN
 jarviscore web
-# Öffnet automatisch http://localhost:5000
+# Öffnet automatisch http://localhost:5050
 
 # Desktop Mode (geplant - wird bald verfügbar)
 jarviscore desktop
@@ -287,7 +293,7 @@ Siehe [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) für vollständige v1.1 → v1.
 
 Nach dem Start erreichst du:
 
-- 🎨 **Frontend UI**: http://localhost:5000
+- 🎨 **Frontend UI**: http://localhost:5050
 - 🔧 **Backend API**: http://localhost:5050
 - 📚 **API-Dokumentation**: http://localhost:5050/docs
 - 🔌 **WebSocket**: ws://localhost:5050/ws
@@ -399,7 +405,7 @@ JARVIS Core nutzt ein **Ollama-inspiriertes Download-System**:
 ### Models verwalten
 
 1. **JARVIS starten**: `jarviscore web` oder `python main.py`
-2. **Web-UI öffnen**: http://localhost:5000
+2. **Web-UI öffnen**: http://localhost:5050
 3. **Models-Tab**: Navigation zur Model-Verwaltung
 4. **Model downloaden**: Klick "Download" → Wähle Quantization
 5. **Model laden**: Klick "Load" bei heruntergeladenem Modell
@@ -493,11 +499,11 @@ python setup_llama.py
 
 ```bash
 # Windows
-netstat -ano | findstr :5000
+netstat -ano | findstr :5050
 netstat -ano | findstr :5050
 
 # Linux/Mac
-lsof -i :5000
+lsof -i :5050
 lsof -i :5050
 ```
 

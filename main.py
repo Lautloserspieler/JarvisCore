@@ -14,6 +14,7 @@ import time
 import socket
 import signal
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Color codes for terminal output
 class Colors:
@@ -33,16 +34,153 @@ class JarvisLauncher:
         self.frontend_dir = self.root / "frontend"
         self.processes = []
         self.running = True
+
+        self.env_errors = []
+        self.env_warnings = []
+
+        load_dotenv(self.root / ".env")
         
         # Load ports from environment or use defaults
-        self.backend_port = int(os.getenv('JARVIS_BACKEND_PORT', '5050'))
-        self.frontend_port = int(os.getenv('JARVIS_FRONTEND_PORT', '5000'))
+        self.backend_port = self._get_env_int("JARVIS_BACKEND_PORT", 5050, min_value=1, max_value=65535)
+        self.frontend_port = self._get_env_int("JARVIS_FRONTEND_PORT", 5000, min_value=1, max_value=65535)
+
+        self._validate_environment()
+        self._report_environment_validation()
+        if self.env_errors:
+            sys.exit(1)
         
         # Register signal handlers for graceful shutdown
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
         if sys.platform == "win32":
             signal.signal(signal.SIGBREAK, self._signal_handler)
+
+    def _add_env_error(self, message):
+        self.env_errors.append(message)
+
+    def _add_env_warning(self, message):
+        self.env_warnings.append(message)
+
+    def _get_env_int(self, key, default, min_value=None, max_value=None):
+        raw_value = os.getenv(key)
+        if raw_value is None or raw_value == "":
+            return default
+        try:
+            value = int(raw_value)
+        except ValueError:
+            self._add_env_error(f"{key} muss eine ganze Zahl sein (aktuell: '{raw_value}').")
+            return default
+        if min_value is not None and value < min_value:
+            self._add_env_error(f"{key} muss mindestens {min_value} sein (aktuell: {value}).")
+        if max_value is not None and value > max_value:
+            self._add_env_error(f"{key} darf maximal {max_value} sein (aktuell: {value}).")
+        return value
+
+    def _validate_enum(self, key, allowed_values):
+        value = os.getenv(key)
+        if value is None or value == "":
+            return
+        if value not in allowed_values:
+            allowed = ", ".join(sorted(allowed_values))
+            self._add_env_error(f"{key} ist ungültig ('{value}'). Erlaubt: {allowed}.")
+
+    def _validate_bool(self, key):
+        value = os.getenv(key)
+        if value is None or value == "":
+            return
+        normalized = value.strip().lower()
+        if normalized not in {"true", "false", "1", "0", "yes", "no"}:
+            self._add_env_error(
+                f"{key} muss ein boolescher Wert sein (true/false/1/0). Aktuell: '{value}'."
+            )
+
+    def _validate_float_range(self, key, min_value=None, max_value=None):
+        value = os.getenv(key)
+        if value is None or value == "":
+            return
+        try:
+            numeric = float(value)
+        except ValueError:
+            self._add_env_error(f"{key} muss eine Zahl sein (aktuell: '{value}').")
+            return
+        if min_value is not None and numeric < min_value:
+            self._add_env_error(f"{key} muss mindestens {min_value} sein (aktuell: {numeric}).")
+        if max_value is not None and numeric > max_value:
+            self._add_env_error(f"{key} darf maximal {max_value} sein (aktuell: {numeric}).")
+
+    def _validate_int_range(self, key, min_value=None, max_value=None):
+        value = os.getenv(key)
+        if value is None or value == "":
+            return
+        try:
+            numeric = int(value)
+        except ValueError:
+            self._add_env_error(f"{key} muss eine ganze Zahl sein (aktuell: '{value}').")
+            return
+        if min_value is not None and numeric < min_value:
+            self._add_env_error(f"{key} muss mindestens {min_value} sein (aktuell: {numeric}).")
+        if max_value is not None and numeric > max_value:
+            self._add_env_error(f"{key} darf maximal {max_value} sein (aktuell: {numeric}).")
+
+    def _validate_environment(self):
+        self._validate_enum("JARVIS_MODE", {"development", "production", "desktop"})
+        self._validate_enum("JARVIS_LOG_LEVEL", {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
+        self._validate_enum("LLM_DEVICE", {"cuda", "cpu", "mps"})
+        self._validate_enum("TTS_ENGINE", {"xtts", "pyttsx3"})
+        self._validate_enum("TTS_DEVICE", {"cuda", "cpu"})
+        self._validate_enum("TTS_LANGUAGE", {"de", "en"})
+        self._validate_enum("STT_ENGINE", {"faster-whisper", "whisper"})
+        self._validate_enum("STT_MODEL", {"tiny", "base", "small", "medium", "large"})
+        self._validate_enum("STT_LANGUAGE", {"de", "en", "auto"})
+        self._validate_enum("STT_DEVICE", {"cuda", "cpu"})
+
+        self._validate_float_range("LLM_TEMPERATURE", 0.0, 2.0)
+        self._validate_float_range("TTS_VOLUME", 0.0, 1.0)
+
+        self._validate_int_range("LLM_CONTEXT_SIZE", 1)
+        self._validate_int_range("LLM_MAX_TOKENS", 1)
+        self._validate_int_range("LLM_MAX_CACHED_MODELS", 0)
+        self._validate_int_range("LLM_CACHE_TTL", 1)
+        self._validate_int_range("LLM_GPU_LAYERS", -1)
+
+        for key in [
+            "JARVIS_AUTO_INSTALL",
+            "TTS_ENABLED",
+            "ENABLE_VOICE_CONTROL",
+            "ENABLE_DESKTOP_NOTIFICATIONS",
+            "ENABLE_SYSTEM_TRAY",
+            "ENABLE_TELEMETRY",
+            "ENABLE_PLUGIN_HOTRELOAD",
+            "DEBUG",
+            "ENABLE_CORS",
+        ]:
+            self._validate_bool(key)
+
+        for key in [
+            "OPENWEATHER_API_KEY",
+            "NEWS_API_KEY",
+            "GOOGLE_API_KEY",
+            "DEEPL_API_KEY",
+        ]:
+            value = os.getenv(key)
+            if value and ("your_" in value or value.endswith("_here")):
+                self._add_env_warning(
+                    f"{key} scheint noch ein Platzhalter zu sein. Bitte echten API-Key setzen."
+                )
+
+    def _report_environment_validation(self):
+        if self.env_warnings:
+            print(f"{Colors.YELLOW}⚠️  Hinweis zur .env-Konfiguration:{Colors.END}")
+            for warning in self.env_warnings:
+                print(f"{Colors.YELLOW}   - {warning}{Colors.END}")
+
+        if self.env_errors:
+            print(f"{Colors.RED}❌ Fehler in der .env-Konfiguration:{Colors.END}")
+            for error in self.env_errors:
+                print(f"{Colors.RED}   - {error}{Colors.END}")
+            print(
+                f"{Colors.RED}Bitte korrigiere die Werte in deiner .env (siehe .env.example).{Colors.END}"
+            )
     
     def _signal_handler(self, sig, frame):
         """Handle SIGTERM, SIGINT, SIGBREAK for graceful shutdown"""

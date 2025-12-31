@@ -114,7 +114,7 @@ def get_system_prompt(model_name: str) -> str:
 
 app = FastAPI(title="JARVIS Core API", version="1.2.0")
 
-# CORS Configuration - Pinokio Port 5050
+# CORS Configuration - Port 5050
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5050", "http://127.0.0.1:5050"],

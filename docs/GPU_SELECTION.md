@@ -1,6 +1,6 @@
-# 🎮 GPU-Auswahl für JarvisCore + Pinokio
+# 🎮 GPU-Auswahl für JarvisCore
 
-> **Automatische GPU-Erkennung während der Pinokio-Installation**
+> **Automatische GPU-Erkennung während der Installation**
 
 ---
 
@@ -8,7 +8,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│           PINOKIO INSTALLATION MIT GPU-AUSWAHL              │
+│           INSTALLATION MIT GPU-AUSWAHL                           │
 └─────────────────────────────────────────────────────────────────┘
 
       USER KLICKT "INSTALL"
@@ -216,7 +216,7 @@ Result:
 3. "Install" klicken und andere Option wählen
 
 ### Q: Was wenn CUDA-Installation fehlschlägt?
-**A:** Pinokio fällt automatisch zurück auf CPU-Version. Die App funktioniert weiterhin!
+**A:** Setup fällt automatisch zurück auf CPU-Version. Die App funktioniert weiterhin!
 
 ### Q: Brauche ich ROCm SDK vorab?
 **A:** Nein, aber ROCm ist komplex. Falls du AMD hast, empfehle ich **CPU Only** für zuverlässige Installation.
@@ -262,7 +262,7 @@ GPU Type: NVIDIA CUDA 🟢
 ## 🔗 Links
 
 - 📚 [Haupt-README](../README.md)
-- 🎯 [Pinokio Documentation](../PINOKIO.md)
+- 🎯 [Setup Documentation](../INSTALLATION.md)
 - ❓ [FAQ](../FAQ.md)
 - 🐛 [Troubleshooting](./TROUBLESHOOTING.md)
 

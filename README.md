@@ -11,7 +11,6 @@
 [![Vue](https://img.shields.io/badge/Vue-3.5+-green.svg)](https://vuejs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
 [![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-orange.svg)](https://github.com/ggerganov/llama.cpp)
-[![Pinokio](https://img.shields.io/badge/Pinokio-Supported-blueviolet.svg)](https://pinokio.computer)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/Lautloserspieler/JarvisCore?style=social)](https://github.com/Lautloserspieler/JarvisCore)
 
@@ -87,13 +86,6 @@ Siehe [models/tts/voices/README.md](./models/tts/voices/README.md) für technisc
 
 ## 💻 Voraussetzungen
 
-Zur Nutzung benötigst du **eine der folgenden Optionen**:
-
-### Option A: Pinokio (Empfohlen - Keine Installation nötig) ⭐
-- ✅ **[Pinokio Browser](https://pinokio.computer)** installieren
-- ✅ Das war's! Pinokio kümmert sich um alles Weitere.
-
-### Option B: Manuelle Installation
 - **Python 3.11+** - [python.org](https://python.org)
 - **Node.js 18+** - [nodejs.org](https://nodejs.org)
 - **Git** - [git-scm.com](https://git-scm.com)
@@ -103,61 +95,9 @@ Zur Nutzung benötigst du **eine der folgenden Optionen**:
 
 ## 🚀 Installation & Start
 
-### 🎯 Methode 1: Pinokio (One-Click - EMPFOHLEN) ⭐⭐⭐
+**Schnellstart (manuell):** [README_QUICKSTART.md](./README_QUICKSTART.md)
 
-**Dies ist die einfachste und am meisten empfohlene Methode!**
-
-#### Schritt-für-Schritt:
-
-1. **Pinokio installieren**
-   - Gehe zu [pinokio.computer](https://pinokio.computer)
-   - Lade Pinokio herunter und installiere es
-
-2. **JARVIS in Pinokio hinzufügen**
-   - Öffne den Pinokio Browser
-   - Klicke auf "Download from URL" / "Repo hinzufügen"
-   - Gib ein: `https://github.com/Lautloserspieler/JarvisCore`
-   - Klicke auf **Install**
-
-3. **GPU-Beschleunigung wählen** 🆕
-   - Während der Installation erscheint ein Dialog
-   - Wähle deine GPU-Option:
-     - 🟢 **NVIDIA CUDA** - Für RTX/GTX Karten (30-50 tok/s)
-     - 🟠 **AMD ROCm** - Für AMD RX 5000+/7000+ (Experimentell)
-     - 🔵 **CPU Only** - Keine GPU (5-10 tok/s, funktioniert immer)
-   - Siehe [GPU Selection Guide](./docs/GPU_SELECTION.md) für Details
-
-4. **Warten und starten**
-   - Pinokio installiert automatisch alle Dependencies:
-     - Python virtual environment (venv)
-     - Python Packages (pip install)
-     - Node.js dependencies (npm install)
-     - GPU-optimiertes llama.cpp (basierend auf Auswahl)
-   - Nach der Installation klickst du **Start**
-   - JARVIS lädt automatisch im Browser (http://localhost:5000)
-
-#### ✨ Vorteile der Pinokio-Installation:
-
-| Vorteil | Details |
-|---------|----------|
-| 🖱️ **One-Click** | Nur 2 Klicks - fertig! |
-| 🔄 **Automatisch** | Alle Dependencies werden installiert |
-| 🎮 **GPU-Auswahl** | Wähle NVIDIA CUDA, AMD ROCm oder CPU |
-| 🛡️ **Sicher** | Isolierte venv, keine System-Pollution |
-| 🚀 **Schnell** | Parallel-Installation, optimiert |
-| 📱 **Benutzerfreundlich** | Visuelles UI, keine Terminals nötig |
-| ⚙️ **Verwaltbar** | Einfache Update/Uninstall-Knöpfe |
-| 💾 **Speicherplatz** | ~3.5 GB (mit TTS + Frontend) |
-
-#### 📊 Installationsprozess:
-
-```
-Pinokio → Git Clone → GPU-Auswahl → Python venv → pip install → GPU-Optimierung → npm install → Ready! ✓
-```
-
----
-
-### 📦 Methode 2: Manuelle Installation (Für Entwickler)
+### 📦 Manuelle Installation (Empfohlen)
 
 #### Option A: Neue Methode (v1.2.0-dev) - Empfohlen
 
@@ -178,7 +118,7 @@ cd ..
 jarviscore web
 ```
 
-Danach öffnet sich automatisch: **http://localhost:5000**
+Danach öffnet sich automatisch: **http://localhost:5050**
 
 #### Option B: Mit GPU Support (NVIDIA CUDA)
 
@@ -232,7 +172,7 @@ python main.py
 ```bash
 # Web Mode (Development) - EMPFOHLEN
 jarviscore web
-# Öffnet automatisch http://localhost:5000
+# Öffnet automatisch http://localhost:5050
 
 # Desktop Mode (geplant - wird bald verfügbar)
 jarviscore desktop
@@ -287,7 +227,7 @@ Siehe [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) für vollständige v1.1 → v1.
 
 Nach dem Start erreichst du:
 
-- 🎨 **Frontend UI**: http://localhost:5000
+- 🎨 **Frontend UI**: http://localhost:5050
 - 🔧 **Backend API**: http://localhost:5050
 - 📚 **API-Dokumentation**: http://localhost:5050/docs
 - 🔌 **WebSocket**: ws://localhost:5050/ws
@@ -399,7 +339,7 @@ JARVIS Core nutzt ein **Ollama-inspiriertes Download-System**:
 ### Models verwalten
 
 1. **JARVIS starten**: `jarviscore web` oder `python main.py`
-2. **Web-UI öffnen**: http://localhost:5000
+2. **Web-UI öffnen**: http://localhost:5050
 3. **Models-Tab**: Navigation zur Model-Verwaltung
 4. **Model downloaden**: Klick "Download" → Wähle Quantization
 5. **Model laden**: Klick "Load" bei heruntergeladenem Modell
@@ -436,11 +376,6 @@ Weitere Infos: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
 
 ```
 JarvisCore/
-├── pinokio.js              # 🎯 Pinokio Configuration
-├── install.json            # 🎯 Pinokio Install Script (+ GPU Selection)
-├── start.json              # 🎯 Pinokio Start Script
-├── update.json             # 🎯 Pinokio Update Script
-├── uninstall.json          # 🎯 Pinokio Uninstall Script
 ├── pyproject.toml          # Centralized Configuration
 ├── main.py                 # Unified Launcher
 ├── requirements.txt        # Legacy (deprecated)
@@ -492,12 +427,8 @@ python setup_llama.py
 ### Problem: Port bereits belegt
 
 ```bash
-# Windows
-netstat -ano | findstr :5000
 netstat -ano | findstr :5050
 
-# Linux/Mac
-lsof -i :5000
 lsof -i :5050
 ```
 
@@ -521,10 +452,6 @@ python setup_llama.py
 # Wähle Option 3
 ```
 
-### Problem: Pinokio zeigt "Application not found"
-
-**Lösung:** Stelle sicher, dass du die neueste Version von Pinokio hast und versuche es erneut.
-
 Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTING.md) | [📋 Migration Guide](./MIGRATION_GUIDE.md)
 
 ---
@@ -543,7 +470,6 @@ Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTI
 - ✅ **Consolidated Dependency Management** (pyproject.toml)
 - ✅ **CLI Entry Points** (jarviscore web/desktop/prod)
 - ✅ **Enhanced Configuration** (50+ settings in .env.example)
-- ✅ **Pinokio Support** (One-Click Installation)
 - ✅ **GPU Selection** (NVIDIA CUDA / AMD ROCm / CPU)
 - 🔄 Voice Input (Whisper)
 - 🔄 Voice Output (XTTS v2)
@@ -602,14 +528,12 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 - Gebaut mit [Vue 3](https://vuejs.org/)
 - Backend mit [FastAPI](https://fastapi.tiangolo.com/)
 - Lokale Inferenz mit [llama.cpp](https://github.com/ggerganov/llama.cpp)
-- Installation mit [Pinokio](https://pinokio.computer)
 
 ---
 
 ## 📚 Weitere Dokumentation
 
 - [🎮 GPU Selection Guide](./docs/GPU_SELECTION.md) - NEW!
-- [🎯 Pinokio Installation Guide](./PINOKIO.md)
 - [📋 Migration Guide v1.1 → v1.2](MIGRATION_GUIDE.md)
 - [🏗️ Architecture Refactor Plan](ARCHITECTURE_REFACTOR.md)
 - [Quick Start Guide](docs/README_QUICKSTART.md)

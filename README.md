@@ -38,6 +38,7 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 - ✅ **System-Prompts** - JARVIS-Persönlichkeit konfigurierbar
 
 ### 🎙️ Voice Control (v1.2.0 geplant)
+> ⚠️ **Hinweis:** Voice-Features (TTS/Whisper) sind aktuell **nicht Teil des Releases**. Die folgenden Punkte sind Roadmap/Entwicklung.
 - 🔄 **Voice Input** - Whisper-basierte Spracherkennung (in Entwicklung)
 - 🔄 **Voice Output** - XTTS v2 mit vorgeklonten JARVIS-Stimmen (in Entwicklung)
 - ✅ **Vorgeklonte Voice-Samples** - Deutsch & Englisch (DE/EN v2.2)
@@ -67,6 +68,7 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 ## 🎙️ Voice Samples - Sofort einsatzbereit!
 
 JarvisCore enthält **vorgeklonte JARVIS-Voice-Samples**, die keine langwierige Berechnung erfordern:
+> ⚠️ **Hinweis:** Die Voice-Pipeline selbst ist im aktuellen Release **noch nicht enthalten**.
 
 ### ✨ Vorteile der Vorgeklonten Stimmen
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jarviscore"
-version = "1.2.0-dev"
+version = "1.2.0"
 description = "J.A.R.V.I.S. Core - Lokaler deutscher KI-Assistent mit LLM, Voice Control & Plugin System"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -216,7 +216,7 @@ addopts = """
 [tool.black]
 line-length = 100
 target-version = ["py310", "py311", "py312"]
-include = '\. pyi?$'
+include = '\.pyi?$'
 exclude = '''
 /(
     \.git

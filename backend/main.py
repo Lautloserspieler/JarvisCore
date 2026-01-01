@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List, Dict, Tuple
+from contextlib import asynccontextmanager
 from datetime import datetime
 import json
 import uuid
@@ -49,9 +50,9 @@ try:
     tts_service = init_tts_service()
     if tts_service and tts_service.is_available():
         status = tts_service.get_status()
-        print(f"[BACKEND] \u2705 TTS service ready: {status['engine']} on {status['device']}")
+        print(f"[BACKEND] ✅ TTS service ready: {status['engine']} on {status['device']}")
     else:
-        print("[BACKEND] \u26a0\ufe0f  TTS service initialized with fallback or unavailable")
+        print("[BACKEND] ⚠️  TTS service initialized with fallback or unavailable")
 except Exception as e:
     print(f"[WARNING] TTS service unavailable: {e}")
     tts_router = None
@@ -105,45 +106,7 @@ def get_system_prompt(model_name: str) -> str:
         print(f"[INFO] Using FULL prompt for {model_name} (large model)")
         return JARVIS_PROMPT_FULL if JARVIS_PROMPT_FULL else JARVIS_PROMPT_FALLBACK
 
-app = FastAPI(title="JARVIS Core API", version="1.2.0")
-
-# CORS Configuration - Allow Frontend (Port 5000) + Backend (Port 5050)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5000",  # Vite dev server
-        "http://127.0.0.1:5000",
-        "http://localhost:5050",  # Backend (for compatibility)
-        "http://127.0.0.1:5050"
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Include routers
-if settings_router:
-    app.include_router(settings_router)
-    print("[BACKEND] Settings router mounted")
-
-if tts_router:
-    app.include_router(tts_router)
-    print("[BACKEND] TTS router mounted")
-
-
-@app.on_event("startup")
-async def startup_event():
-    global plugin_manager
-    print("[BACKEND] Initializing plugin manager on startup...")
-    try:
-        from backend.plugin_manager import PluginManager
-        plugin_manager = PluginManager()
-        print(f"[BACKEND] Plugin manager ready: {len(plugin_manager.plugins)} plugins")
-    except Exception as e:
-        print(f"[ERROR] Failed to init plugin manager: {e}")
-        plugin_manager = None
-
-# In-memory storage
+# In-memory storage (before FastAPI init)
 sessions_db = {}
 messages_db = {}
 memories_db: List[Dict] = []  # For memory tab
@@ -168,6 +131,51 @@ if os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN"):
     hf_token_storage = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
     print("[INFO] HuggingFace token loaded from environment")
 
+# FIX: Replace deprecated @app.on_event("startup") with lifespan context manager
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler for startup and shutdown"""
+    # Startup event
+    global plugin_manager
+    print("[BACKEND] Initializing plugin manager on startup...")
+    try:
+        from backend.plugin_manager import PluginManager
+        plugin_manager = PluginManager()
+        print(f"[BACKEND] Plugin manager ready: {len(plugin_manager.plugins)} plugins")
+    except Exception as e:
+        print(f"[ERROR] Failed to init plugin manager: {e}")
+        plugin_manager = None
+    
+    yield  # Application runs here
+    
+    # Shutdown event (if needed in future)
+    print("[BACKEND] Shutting down...")
+
+app = FastAPI(title="JARVIS Core API", version="1.2.0", lifespan=lifespan)
+
+# CORS Configuration - Allow Frontend (Port 5000) + Backend (Port 5050)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5000",  # Vite dev server
+        "http://127.0.0.1:5000",
+        "http://localhost:5050",  # Backend (for compatibility)
+        "http://127.0.0.1:5050"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+if settings_router:
+    app.include_router(settings_router)
+    print("[BACKEND] Settings router mounted")
+
+if tts_router:
+    app.include_router(tts_router)
+    print("[BACKEND] TTS router mounted")
+
 # AI Response Generator mit Plugin-Integration und llama.cpp
 async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool, Optional[int], Optional[float]]:
     """
@@ -186,7 +194,7 @@ async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool
     if plugin_manager:
         plugin_response = plugin_manager.process_message(message, {"session_id": session_id})
         if plugin_response:
-            print(f"[DEBUG] \u2705 Plugin handled message")
+            print(f"[DEBUG] ✅ Plugin handled message")
             print(f"[DEBUG] Plugin response: {plugin_response[:100]}...")
             logs_db.append({
                 "id": str(uuid.uuid4()),
@@ -197,7 +205,7 @@ async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool
             })
             return plugin_response, True, None, None  # Plugins don't have token stats
     
-    print(f"[DEBUG] \u26a0\ufe0f No plugin handled message, using LLM")
+    print(f"[DEBUG] ⚠️ No plugin handled message, using LLM")
     
     # STEP 2: No plugin handled it -> use LLM
     if not llama_runtime.is_loaded:
@@ -219,14 +227,14 @@ async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool
                 
                 # Skip plugin responses
                 if is_plugin:
-                    print(f"[DEBUG]   \u2192 SKIPPED (plugin response)")
+                    print(f"[DEBUG]   → SKIPPED (plugin response)")
                     continue
                     
                 history.append({
                     'role': 'user' if is_user else 'assistant',
                     'content': msg['text']
                 })
-                print(f"[DEBUG]   \u2192 ADDED to history")
+                print(f"[DEBUG]   → ADDED to history")
         
         print(f"[DEBUG] Final history length: {len(history)} messages")
         
@@ -289,9 +297,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_message = message.get('message', '')
                 session_id = message.get('sessionId', 'default')
                 
-                print(f"\n[INFO] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")
+                print(f"\n[INFO] ═════════════════════════════════════════════════════")
                 print(f"[INFO] Chat message received: {user_message[:50]}...")
-                print(f"[INFO] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")
+                print(f"[INFO] ═════════════════════════════════════════════════════")
                 
                 if session_id not in messages_db:
                     messages_db[session_id] = []
@@ -337,7 +345,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 messages_db[session_id].append(stored_message)
                 
                 print(f"[DEBUG] Stored response with isPlugin={is_plugin}, tokens={tokens}")
-                print(f"[INFO] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n")
+                print(f"[INFO] ═════════════════════════════════════════════════════\n")
                 
                 # Build WebSocket response with token stats
                 ws_response = {
@@ -754,11 +762,11 @@ if __name__ == "__main__":
     import uvicorn
     
     print("""
-    \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
-    \u2551          JARVIS Core Backend v1.2.0                  \u2551
-    \u2551         Just A Rather Very Intelligent System        \u2551
-    \u2551         with llama.cpp + TTS voice synthesis         \u2551
-    \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d
+    ╔══════════════════════════════════════════════════════╗
+    ║          JARVIS Core Backend v1.2.0                  ║
+    ║         Just A Rather Very Intelligent System        ║
+    ║         with llama.cpp + TTS voice synthesis         ║
+    ╚══════════════════════════════════════════════════════╝
     """)
     
     print("[INFO] Starting JARVIS Core API...")

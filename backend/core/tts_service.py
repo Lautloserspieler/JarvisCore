@@ -77,14 +77,20 @@ class TTSService:
         
         try:
             logger.info("Initializing XTTS v2 engine...")
+            
+            # FIX: Register safe globals for PyTorch 2.6+ weights_only security
             if TORCH_AVAILABLE and hasattr(torch.serialization, "add_safe_globals"):
-                from TTS.tts.configs.xtts_config import XttsConfig
-                torch.serialization.add_safe_globals([XttsConfig])
-            # Note: verbose parameter removed in newer TTS versions
-            self.tts_engine = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2")
+                try:
+                    from TTS.tts.models.xtts import XttsAudioConfig
+                    torch.serialization.add_safe_globals([XttsAudioConfig])
+                    logger.debug("Registered XttsAudioConfig as safe global")
+                except Exception as e:
+                    logger.warning(f"Could not register XttsAudioConfig: {e}")
+            
+            # Initialize XTTS model
+            self.tts_engine = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2", gpu=self.use_gpu)
             
             if self.use_gpu:
-                self.tts_engine = self.tts_engine.to("cuda")
                 logger.info(f"✅ XTTS initialized on {self.device} (GPU)")
             else:
                 logger.info(f"✅ XTTS initialized on {self.device} (CPU)")

@@ -13,10 +13,11 @@
 [![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-orange.svg)](https://github.com/ggerganov/llama.cpp)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/Lautloserspieler/JarvisCore?style=social)](https://github.com/Lautloserspieler/JarvisCore)
+[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.com/channels/1431731317036290050/1431737106656399461)
 
 Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llama.cpp Inferenz**
 
-[🇬🇧 English Version](./README_GB.md) | [📚 Docs](./docs/) | [❓ FAQ](./FAQ.md) | [🔒 Security](./SECURITY.md)
+[🇬🇧 English Version](./README_GB.md) | [📚 Docs](./docs/) | [❓ FAQ](./FAQ.md) | [🔒 Security](./SECURITY.md) | [💬 Discord Server](https://discord.com/channels/1431731317036290050/1431737106656399461)
 
 </div>
 
@@ -26,6 +27,7 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 
 - **Schnellstart (manuell)**: [README_QUICKSTART.md](./README_QUICKSTART.md)
 - **Fehlerbehebung**: [FAQ](./FAQ.md)
+- **Community**: [Discord Server](https://discord.com/channels/1431731317036290050/1431737106656399461)
 
 ## ✨ Features
 
@@ -37,10 +39,10 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 - ✅ **Bis 32K Context** - Lange Konversationen möglich
 - ✅ **System-Prompts** - JARVIS-Persönlichkeit konfigurierbar
 
-### 🎙️ Voice Control (v1.2.0 geplant)
-> ⚠️ **Hinweis:** Voice-Features (TTS/Whisper) sind aktuell **nicht Teil des Releases**. Die folgenden Punkte sind Roadmap/Entwicklung.
-- 🔄 **Voice Input** - Whisper-basierte Spracherkennung (in Entwicklung)
-- 🔄 **Voice Output** - XTTS v2 mit vorgeklonten JARVIS-Stimmen (in Entwicklung)
+### 🎙️ Voice Control (v1.3.0 geplant)
+> ⚠️ **Hinweis:** Voice-Features (TTS/Whisper) sind aktuell **nicht Teil des Releases**. Die folgenden Punkte sind Roadmap/Entwicklung für v1.3.0.
+- 🔄 **Voice Input** - Whisper-basierte Spracherkennung (Geplant v1.3.0)
+- 🔄 **Voice Output** - XTTS v2 mit vorgeklonten JARVIS-Stimmen (Geplant v1.3.0)
 - ✅ **Vorgeklonte Voice-Samples** - Deutsch & Englisch (DE/EN v2.2)
 - ✅ **Automatische Sprach-Erkennung** - Deutsch/Englisch Support
 - ⚡ **Keine langwierige Berechnung** - Voice Samples vorkonfiguriert
@@ -48,7 +50,7 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 ### 🎨 Frontend (Vue 3)
 - ✅ **Holographische UI** - Beeindruckende JARVIS-inspirierte Benutzeroberfläche
 - ✅ **Echtzeit-Chat** - WebSocket-basierte Live-Kommunikation
-- ✅ **Sprach-Interface** - Voice-Input mit visueller Rückmeldung
+- ✅ **Sprach-Interface** - Voice-Input mit visueller Rückmeldung (v1.3.0)
 - ✅ **Multi-Tab Navigation** - Chat, Dashboard, Memory, Models, Settings
 - ✅ **Model-Management** - Download und Verwaltung von KI-Modellen
 - ✅ **Plugin System** - Wetter, Timer, Notizen, News uvm.
@@ -68,7 +70,7 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 ## 🎙️ Voice Samples - Sofort einsatzbereit!
 
 JarvisCore enthält **vorgeklonte JARVIS-Voice-Samples**, die keine langwierige Berechnung erfordern:
-> ⚠️ **Hinweis:** Die Voice-Pipeline selbst ist im aktuellen Release **noch nicht enthalten**.
+> ⚠️ **Hinweis:** Die Voice-Pipeline selbst ist im aktuellen Release **noch nicht enthalten**. Geplant für v1.3.0.
 
 ### ✨ Vorteile der Vorgeklonten Stimmen
 
@@ -104,7 +106,7 @@ Siehe [models/tts/voices/README.md](./models/tts/voices/README.md) für technisc
 
 ### 📦 Manuelle Installation (Empfohlen)
 
-#### Option A: Neue Methode (v1.2.0-dev) - Empfohlen
+#### Option A: Neue Methode (v1.2.0) - Empfohlen
 
 ```bash
 # Repository klonen
@@ -177,19 +179,19 @@ python scripts/start_web.py
 **Welche Variante ist richtig?**
 
 - **Web**: Backend + Frontend (Vite). Ideal für Entwicklung/Testing im Browser.
-- **Desktop**: Backend + Wails Dev Mode. Für UI-Entwicklung am Desktop.
-- **Prod**: Backend + Desktop-Binary. Für lokale Produktion/Demo ohne Dev-Tools.
+- **Desktop**: Backend + Wails Dev Mode. Für UI-Entwicklung am Desktop. (v1.3.0)
+- **Prod**: Backend + Desktop-Binary. Für lokale Produktion/Demo ohne Dev-Tools. (v1.3.0)
 
 **Kurzbeispiele:**
 
 ```bash
-# Web UI im Browser
+# Web UI im Browser (EMPFOHLEN - v1.2.0)
 jarviscore web
 
-# Desktop UI (Dev)
+# Desktop UI (Dev) - GEPLANT v1.3.0
 jarviscore desktop
 
-# Desktop UI (Production Binary)
+# Desktop UI (Production Binary) - GEPLANT v1.3.0
 jarviscore prod
 ```
 
@@ -197,21 +199,21 @@ Alternativ kannst du die Skripte direkt nutzen:
 
 ```bash
 python scripts/start_web.py
-python scripts/start_desktop.py
-python scripts/start_production.py
+python scripts/start_desktop.py     # v1.3.0
+python scripts/start_production.py  # v1.3.0
 ```
 
-## 🔄 CLI Commands (NEU in v1.2.0-dev)
+## 🔄 CLI Commands (NEU in v1.2.0)
 
 ```bash
 # Web Mode (Development) - EMPFOHLEN
 jarviscore web
 # Öffnet automatisch http://localhost:5050
 
-# Desktop Mode (Wails Dev)
+# Desktop Mode (Wails Dev) - v1.3.0
 jarviscore desktop
 
-# Production Mode (Desktop Binary)
+# Production Mode (Desktop Binary) - v1.3.0
 jarviscore prod
 
 # Hilfe anzeigen
@@ -220,7 +222,7 @@ jarviscore --help
 
 ---
 
-## 📦 Dependency Management (Neu in v1.2.0-dev)
+## 📦 Dependency Management (Neu in v1.2.0)
 
 ### Old Way ❌ (Legacy, wird entfernt)
 ```bash
@@ -509,7 +511,7 @@ Eine kurze Einordnung, welche Variablen wofür gedacht sind (LLM, TTS, Plugins, 
 
 ## 🎯 Roadmap
 
-### ✅ v1.1.0 (Current) - Dezember 2025
+### ✅ v1.1.0 - Dezember 2025
 - ✅ Vue 3 Frontend
 - ✅ Production-ready llama.cpp
 - ✅ Automatische GPU-Erkennung
@@ -517,18 +519,24 @@ Eine kurze Einordnung, welche Variablen wofür gedacht sind (LLM, TTS, Plugins, 
 - ✅ Model Download System
 - ✅ Vorgeklonte Voice Samples (DE/EN v2.2)
 
-### 🔄 v1.2.0 (Q1 2026) - NEW!
+### 🔄 v1.2.0 (January 2026) - CURRENT
 - ✅ **Consolidated Dependency Management** (pyproject.toml)
 - ✅ **CLI Entry Points** (jarviscore web/desktop/prod)
 - ✅ **Enhanced Configuration** (50+ settings in .env.example)
 - ✅ **GPU Selection** (NVIDIA CUDA / AMD ROCm / CPU)
-- 🔄 Voice Input (Whisper)
-- 🔄 Voice Output (XTTS v2)
-- 🔄 Desktop App (Wails)
-- 🔄 Enhanced Memory System
-- 🔄 Docker Support
+- ✅ **Multilingual Voice Cloning** (German + English)
+- ✅ **FastAPI Lifespan Manager** (Modern async support)
+- ✅ **Knowledge Base API** (Offline semantic search)
+- 🔄 Desktop App (Wails) - Geplant v1.3.0
+- 🔄 Voice Input (Whisper) - Geplant v1.3.0
 
-### 📋 v2.0.0 - Q2 2026
+### 📋 v1.3.0 - Q2 2026
+- Voice Input Integration (Whisper)
+- Native Desktop App (Wails)
+- Enhanced UI Components
+- Improved Test Coverage (70%+)
+
+### 📋 v2.0.0 - Q3 2026
 - RAG Implementation
 - Vector Database
 - Multi-User Support
@@ -579,6 +587,7 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 - Gebaut mit [Vue 3](https://vuejs.org/)
 - Backend mit [FastAPI](https://fastapi.tiangolo.com/)
 - Lokale Inferenz mit [llama.cpp](https://github.com/ggerganov/llama.cpp)
+- Community Support auf [Discord](https://discord.com/channels/1431731317036290050/1431737106656399461)
 
 ---
 
@@ -606,8 +615,8 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 
 *"Manchmal muss man rennen, bevor man gehen kann."* - Tony Stark
 
-**Version:** 1.1.0 | **v1.2.0-dev Phase 1 ✅** | **Release:** 02. Januar 2026
+**Version:** 1.2.0 | **Release:** 02. Januar 2026
 
-[⭐ Star us on GitHub](https://github.com/Lautloserspieler/JarvisCore) | [🐛 Report Bug](https://github.com/Lautloserspieler/JarvisCore/issues) | [💡 Request Feature](https://github.com/Lautloserspieler/JarvisCore/issues)
+[⭐ Star us on GitHub](https://github.com/Lautloserspieler/JarvisCore) | [🐛 Report Bug](https://github.com/Lautloserspieler/JarvisCore/issues) | [💡 Request Feature](https://github.com/Lautloserspieler/JarvisCore/issues) | [💬 Join Discord](https://discord.com/channels/1431731317036290050/1431737106656399461)
 
 </div>

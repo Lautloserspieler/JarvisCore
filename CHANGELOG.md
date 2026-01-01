@@ -4,6 +4,9 @@ Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert
 
 ## [Unreleased]
 
+### Hinweis
+- ⚠️ **Voice-Features (TTS/Whisper) sind derzeit nicht Teil eines Releases.** Die folgenden Einträge beschreiben geplante/experimentelle Arbeit und sind noch nicht ausgeliefert.
+
 ### Added
 - 🇩🇪 **Multilingual Voice Cloning mit Language-Aware Caching**
   - Separate Voice Latents pro Sprache (Deutsch, Englisch)

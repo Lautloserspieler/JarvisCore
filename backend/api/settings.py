@@ -1,10 +1,10 @@
 """Settings API - Configuration Management"""
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
-from typing import Optional, Dict
 import json
 from pathlib import Path
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 SETTINGS_VERSION = 1
@@ -33,14 +33,14 @@ class APISettings(BaseModel):
     ws_url: str = "ws://localhost:5050"
     timeout: int = 30000
     retry_attempts: int = 3
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 class PluginAPIKeys(BaseModel):
     """API Keys für Plugins"""
-    openweather_api_key: Optional[str] = None
+    openweather_api_key: str | None = None
     # Weitere API-Keys können hier hinzugefügt werden
-    google_api_key: Optional[str] = None
-    deepl_api_key: Optional[str] = None
+    google_api_key: str | None = None
+    deepl_api_key: str | None = None
 
 class AllSettings(BaseModel):
     llama: LlamaSettings
@@ -66,7 +66,7 @@ def _default_settings() -> AllSettings:
     )
 
 
-def _merge_settings(defaults: Dict, incoming: Dict) -> Dict:
+def _merge_settings(defaults: dict, incoming: dict) -> dict:
     merged = dict(defaults)
     for key, value in incoming.items():
         if isinstance(value, dict) and isinstance(merged.get(key), dict):
@@ -76,7 +76,7 @@ def _merge_settings(defaults: Dict, incoming: Dict) -> Dict:
     return merged
 
 
-def _migrate_settings(data: Dict) -> Dict:
+def _migrate_settings(data: dict) -> dict:
     defaults = _default_settings().dict()
     if not isinstance(data, dict):
         return defaults
@@ -93,7 +93,7 @@ def load_settings():
     global current_settings
     if SETTINGS_FILE.exists():
         try:
-            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+            with open(SETTINGS_FILE, encoding='utf-8') as f:
                 data = json.load(f)
                 migrated = _migrate_settings(data)
                 current_settings = AllSettings(**migrated)
@@ -113,13 +113,13 @@ def save_settings():
 def apply_plugin_api_keys():
     """Wendet Plugin API-Keys als Umgebungsvariablen an"""
     import os
-    
+
     if current_settings.plugin_api_keys.openweather_api_key:
         os.environ["OPENWEATHER_API_KEY"] = current_settings.plugin_api_keys.openweather_api_key
-    
+
     if current_settings.plugin_api_keys.google_api_key:
         os.environ["GOOGLE_API_KEY"] = current_settings.plugin_api_keys.google_api_key
-    
+
     if current_settings.plugin_api_keys.deepl_api_key:
         os.environ["DEEPL_API_KEY"] = current_settings.plugin_api_keys.deepl_api_key
 
@@ -138,11 +138,11 @@ async def get_llama_settings() -> LlamaSettings:
 async def update_llama_settings(settings: LlamaSettings):
     """Update llama.cpp inference settings"""
     global current_settings
-    
+
     # Update settings
     current_settings.llama = settings
     save_settings()
-    
+
     # Apply to llama_runtime if model is loaded
     from core.llama_inference import llama_runtime
     if llama_runtime.is_loaded:
@@ -152,17 +152,17 @@ async def update_llama_settings(settings: LlamaSettings):
         llama_runtime.default_repeat_penalty = settings.repeat_penalty
         llama_runtime.default_max_tokens = settings.max_tokens
         # Note: n_ctx, n_gpu_layers require model reload
-    
+
     return {"success": True, "message": "Settings updated successfully"}
 
 @router.get("/llama/info")
 async def get_llama_info():
     """Get information about loaded model"""
     from core.llama_inference import llama_runtime
-    
+
     if not llama_runtime.is_loaded:
         raise HTTPException(status_code=404, detail="No model loaded")
-    
+
     return {
         "model": llama_runtime.model_name,
         "context_window": llama_runtime.n_ctx,
@@ -202,39 +202,39 @@ async def get_plugin_api_keys() -> PluginAPIKeys:
     """Get Plugin API Keys (masked)"""
     # Maskiere API-Keys für Sicherheit
     masked = PluginAPIKeys()
-    
+
     if current_settings.plugin_api_keys.openweather_api_key:
         key = current_settings.plugin_api_keys.openweather_api_key
         masked.openweather_api_key = key[:4] + "*" * (len(key) - 8) + key[-4:] if len(key) > 8 else "***"
-    
+
     if current_settings.plugin_api_keys.google_api_key:
         key = current_settings.plugin_api_keys.google_api_key
         masked.google_api_key = key[:4] + "*" * (len(key) - 8) + key[-4:] if len(key) > 8 else "***"
-    
+
     if current_settings.plugin_api_keys.deepl_api_key:
         key = current_settings.plugin_api_keys.deepl_api_key
         masked.deepl_api_key = key[:4] + "*" * (len(key) - 8) + key[-4:] if len(key) > 8 else "***"
-    
+
     return masked
 
 @router.post("/plugin-api-keys")
 async def update_plugin_api_keys(keys: PluginAPIKeys):
     """Update Plugin API Keys"""
     global current_settings
-    
+
     # Update nur nicht-None Werte
     if keys.openweather_api_key is not None:
         current_settings.plugin_api_keys.openweather_api_key = keys.openweather_api_key
-    
+
     if keys.google_api_key is not None:
         current_settings.plugin_api_keys.google_api_key = keys.google_api_key
-    
+
     if keys.deepl_api_key is not None:
         current_settings.plugin_api_keys.deepl_api_key = keys.deepl_api_key
-    
+
     save_settings()
     apply_plugin_api_keys()
-    
+
     return {"success": True, "message": "Plugin API Keys updated"}
 
 @router.get("/plugin-api-keys/check")

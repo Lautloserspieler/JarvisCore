@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	"golang.org/x/time/rate"
 )
@@ -263,7 +263,7 @@ func loadAPIKeys(logger *log.Logger, cfg Config) error {
 
 type Claims struct {
 	APIKey string `json:"api_key"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // Middleware: Verify API Key
@@ -324,9 +324,9 @@ func GenerateToken(apiKey string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		APIKey: apiKey,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-			IssuedAt:  time.Now().Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 

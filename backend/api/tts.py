@@ -7,11 +7,11 @@ Provides REST API for text-to-speech functionality:
 - Status monitoring
 - Language support
 """
+import logging
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import FileResponse
-from typing import Optional, Dict
-from pathlib import Path
-import logging
 
 try:
     from backend.tts_service import get_tts_service
@@ -29,14 +29,14 @@ router = APIRouter(prefix="/api/tts", tags=["tts"])
 async def synthesize_speech(data: dict = Body(...)):
     """
     Synthesize speech from text.
-    
+
     Request body:
     {
         "text": "Text to synthesize",
         "language": "de" | "en" (optional, auto-detected if omitted),
         "return_file": true | false (optional, default true)
     }
-    
+
     Returns:
         Audio file (WAV) or error message
     """
@@ -45,33 +45,33 @@ async def synthesize_speech(data: dict = Body(...)):
             status_code=503,
             detail="TTS service not available. Install with: pip install TTS"
         )
-    
+
     text = data.get("text", "").strip()
     language = data.get("language")  # None = auto-detect
     return_file = data.get("return_file", True)
-    
+
     if not text:
         raise HTTPException(status_code=400, detail="Text cannot be empty")
-    
+
     # Get TTS service
     try:
         tts = get_tts_service()
-        
+
         if not tts.is_available():
             raise HTTPException(
                 status_code=503,
                 detail="TTS engine not initialized"
             )
-        
+
         # Synthesize
         audio_path = tts.synthesize(text=text, language=language)
-        
+
         if not audio_path or not audio_path.exists():
             raise HTTPException(
                 status_code=500,
                 detail="Failed to generate audio"
             )
-        
+
         # Return file response
         if return_file:
             return FileResponse(
@@ -90,19 +90,19 @@ async def synthesize_speech(data: dict = Body(...)):
                 "language": language or tts.current_language,
                 "engine": "xtts" if not tts.using_fallback else "pyttsx3"
             }
-    
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"TTS synthesis error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/status")
 async def get_tts_status():
     """
     Get TTS service status.
-    
+
     Returns:
     {
         "enabled": bool,
@@ -120,7 +120,7 @@ async def get_tts_status():
             "available": False,
             "error": "TTS library not installed"
         }
-    
+
     try:
         tts = get_tts_service()
         return tts.get_status()
@@ -137,7 +137,7 @@ async def get_tts_status():
 async def update_tts_config(config: dict = Body(...)):
     """
     Update TTS configuration.
-    
+
     Request body:
     {
         "enabled": bool,
@@ -148,7 +148,7 @@ async def update_tts_config(config: dict = Body(...)):
         "temperature": float (0.0-1.0),
         "speed": float (0.5-2.0)
     }
-    
+
     Returns:
         Success status and updated configuration
     """
@@ -157,11 +157,11 @@ async def update_tts_config(config: dict = Body(...)):
             status_code=503,
             detail="TTS service not available"
         )
-    
+
     try:
         tts = get_tts_service()
         success = tts.update_config(config)
-        
+
         if success:
             return {
                 "success": True,
@@ -173,19 +173,19 @@ async def update_tts_config(config: dict = Body(...)):
                 status_code=500,
                 detail="Failed to update configuration"
             )
-    
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to update TTS config: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/languages")
 async def get_supported_languages():
     """
     Get list of supported languages.
-    
+
     Returns:
     {
         "languages": [
@@ -212,20 +212,20 @@ async def get_supported_languages():
             "voice_sample": "Jarvis_EN.wav"
         }
     ]
-    
+
     # Check if voice samples exist
     if TTS_AVAILABLE:
         try:
             tts = get_tts_service()
             status = tts.get_status()
             voice_samples = status.get('voice_samples', {})
-            
+
             for lang in languages:
                 code = lang['code']
                 lang['voice_available'] = voice_samples.get(code) != 'missing'
         except Exception as e:
             logger.warning(f"Could not check voice samples: {e}")
-    
+
     return {
         "languages": languages,
         "default": "de"
@@ -236,7 +236,7 @@ async def get_supported_languages():
 async def get_available_voices():
     """
     Get list of available voice samples.
-    
+
     Returns:
         List of voice samples with metadata
     """
@@ -245,15 +245,15 @@ async def get_available_voices():
             status_code=503,
             detail="TTS service not available"
         )
-    
+
     try:
         tts = get_tts_service()
         status = tts.get_status()
-        
+
         voices = []
         for lang, path_str in status.get('voice_samples', {}).items():
             voice_path = Path(path_str) if path_str != 'missing' else None
-            
+
             voices.append({
                 "language": lang,
                 "name": f"JARVIS {lang.upper()}",
@@ -261,15 +261,15 @@ async def get_available_voices():
                 "available": voice_path and voice_path.exists() if voice_path else False,
                 "version": "v2.2"
             })
-        
+
         return {
             "voices": voices,
             "engine": status.get('engine', 'unknown')
         }
-    
+
     except Exception as e:
         logger.error(f"Failed to get voices: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 __all__ = ['router']

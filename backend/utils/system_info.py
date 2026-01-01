@@ -27,7 +27,7 @@ def get_gpu_info() -> dict[str, Any]:
                 }
     except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
         pass
-    
+
     # Fallback: No GPU detected
     return {
         'name': 'Keine GPU erkannt',

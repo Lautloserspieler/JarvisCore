@@ -77,6 +77,9 @@ class TTSService:
         
         try:
             logger.info("Initializing XTTS v2 engine...")
+            if TORCH_AVAILABLE and hasattr(torch.serialization, "add_safe_globals"):
+                from TTS.tts.configs.xtts_config import XttsConfig
+                torch.serialization.add_safe_globals([XttsConfig])
             # Note: verbose parameter removed in newer TTS versions
             self.tts_engine = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2")
             

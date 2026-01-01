@@ -112,7 +112,7 @@ git clone https://github.com/Lautloserspieler/JarvisCore.git
 cd JarvisCore
 
 # Installiere JarvisCore mit essentiellen Features
-pip install -e ".[tts]"
+pip install -e ".[all]"
 
 # Installiere Frontend Dependencies
 cd frontend

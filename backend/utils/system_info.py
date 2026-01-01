@@ -2,9 +2,9 @@ import psutil
 import platform
 import subprocess
 import re
-from typing import Dict, Any
+from typing import Any
 
-def get_gpu_info() -> Dict[str, Any]:
+def get_gpu_info() -> dict[str, Any]:
     """Detect GPU information"""
     try:
         # Try nvidia-smi first
@@ -27,7 +27,7 @@ def get_gpu_info() -> Dict[str, Any]:
                 }
     except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
         pass
-    
+
     # Fallback: No GPU detected
     return {
         'name': 'Keine GPU erkannt',
@@ -37,7 +37,7 @@ def get_gpu_info() -> Dict[str, Any]:
         'available': False
     }
 
-def get_cpu_info() -> Dict[str, Any]:
+def get_cpu_info() -> dict[str, Any]:
     """Get CPU information"""
     return {
         'cores': psutil.cpu_count(logical=False),
@@ -46,7 +46,7 @@ def get_cpu_info() -> Dict[str, Any]:
         'name': platform.processor() or 'Unknown CPU'
     }
 
-def get_memory_info() -> Dict[str, Any]:
+def get_memory_info() -> dict[str, Any]:
     """Get RAM information"""
     mem = psutil.virtual_memory()
     return {
@@ -56,7 +56,7 @@ def get_memory_info() -> Dict[str, Any]:
         'percent': mem.percent
     }
 
-def get_disk_info() -> Dict[str, Any]:
+def get_disk_info() -> dict[str, Any]:
     """Get disk information"""
     disk = psutil.disk_usage('/')
     return {
@@ -66,7 +66,7 @@ def get_disk_info() -> Dict[str, Any]:
         'percent': disk.percent
     }
 
-def get_network_info() -> Dict[str, Any]:
+def get_network_info() -> dict[str, Any]:
     """Get network information"""
     return {
         'status': 'Online',
@@ -77,13 +77,13 @@ def get_uptime() -> str:
     """Get system uptime"""
     boot_time = psutil.boot_time()
     uptime_seconds = psutil.time.time() - boot_time
-    
+
     hours = int(uptime_seconds // 3600)
     minutes = int((uptime_seconds % 3600) // 60)
-    
+
     return f"{hours}h {minutes}m"
 
-def get_all_system_info() -> Dict[str, Any]:
+def get_all_system_info() -> dict[str, Any]:
     """Get complete system information"""
     return {
         'cpu': get_cpu_info(),

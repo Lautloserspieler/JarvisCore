@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 from typing import Optional, Dict, Tuple
 from enum import Enum
+import warnings
 
 try:
     from TTS.api import TTS
@@ -79,16 +80,32 @@ class TTSService:
             logger.info("Initializing XTTS v2 engine...")
             
             # FIX: Register safe globals for PyTorch 2.6+ weights_only security
+            # XTTS weights require these classes to be allowlisted
             if TORCH_AVAILABLE and hasattr(torch.serialization, "add_safe_globals"):
                 try:
-                    from TTS.tts.models.xtts import XttsAudioConfig
-                    torch.serialization.add_safe_globals([XttsAudioConfig])
-                    logger.debug("Registered XttsAudioConfig as safe global")
+                    # Register all required XTTS config classes
+                    from TTS.tts.configs.xtts_config import XttsConfig
+                    torch.serialization.add_safe_globals([XttsConfig])
+                    logger.debug("Registered XttsConfig as safe global for PyTorch 2.6+")
                 except Exception as e:
-                    logger.warning(f"Could not register XttsAudioConfig: {e}")
+                    logger.warning(f"Could not register XttsConfig: {e}")
             
-            # Initialize XTTS model
-            self.tts_engine = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2", gpu=self.use_gpu)
+            # Suppress deprecated gpu parameter warning from TTS library
+            # TTS.api.py:70 uses deprecated gpu parameter
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message=".*gpu.*will be deprecated.*")
+                # Initialize XTTS model (gpu parameter deprecated but still supported)
+                self.tts_engine = TTS(
+                    model_name="tts_models/multilingual/multi-dataset/xtts_v2",
+                    gpu=self.use_gpu
+                )
+            
+            # Modern approach: move to device if supported
+            if self.tts_engine and self.use_gpu:
+                try:
+                    self.tts_engine.to(self.device)
+                except Exception as e:
+                    logger.debug(f"Could not move TTS to device using .to(): {e}")
             
             if self.use_gpu:
                 logger.info(f"✅ XTTS initialized on {self.device} (GPU)")

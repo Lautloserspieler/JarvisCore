@@ -5,7 +5,8 @@
 # Skips heavy ML libraries (torch, transformers, accelerate)
 
 # Core Backend
-fastapi==0.109.0
+fastapi==0.115.0
+starlette>=0.37.2
 uvicorn[standard]==0.34.1
 python-dotenv==1.0.0
 pydantic==2.5.3
@@ -30,4 +31,3 @@ ruff==0.6.8
 mypy==1.7.1
 bandit==1.7.9
 safety==3.2.9
-

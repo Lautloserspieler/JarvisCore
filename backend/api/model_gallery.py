@@ -48,16 +48,25 @@ def _serialize_model(model: Any) -> dict:
 
 
 async def _progress_callback(
-    model_id: str, progress: float | None, downloaded: int, total: int | None
+    model_id: str,
+    progress: float | None,
+    downloaded: int,
+    total: int | None,
+    *,
+    status: str | None = None,
+    error_message: str | None = None,
 ) -> None:
-    await progress_broadcaster.broadcast(
-        {
-            "model_id": model_id,
-            "progress": progress,
-            "downloaded": downloaded,
-            "total": total,
-        }
-    )
+    payload: dict[str, Any] = {
+        "model_id": model_id,
+        "progress": progress,
+        "downloaded": downloaded,
+        "total": total,
+    }
+    if status is not None:
+        payload["status"] = status
+    if error_message is not None:
+        payload["errorMessage"] = error_message
+    await progress_broadcaster.broadcast(payload)
 
 
 @router.get("/gallery")

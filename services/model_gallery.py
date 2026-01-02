@@ -267,7 +267,7 @@ def schedule_download(
                 model_id, gallery=gallery, progress_callback=progress_callback
             )
         except Exception as exc:
-            logger.exception("Download fehlgeschlagen für %s", model_id)
+            logger.exception("Download fehlgeschlagen für %s: %s", model_id, exc)
             if progress_callback:
                 try:
                     await progress_callback(
@@ -282,6 +282,10 @@ def schedule_download(
                     logger.exception(
                         "Fehler beim Melden des Download-Fehlers für %s", model_id
                     )
-            raise
+            return {
+                "status": "error",
+                "model_id": model_id,
+                "error": str(exc),
+            }
 
     return asyncio.create_task(_task_wrapper())

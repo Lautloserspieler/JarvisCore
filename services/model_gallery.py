@@ -3,10 +3,11 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Awaitable, Callable, Iterable
+from typing import Awaitable, Iterable, Protocol
 from urllib.parse import urlsplit
 
 import aiohttp
@@ -27,7 +28,20 @@ REGISTRY_PATH = PROJECT_ROOT / "config" / "models.json"
 CHUNK_SIZE_BYTES = 8192
 DOWNLOAD_TIMEOUT_SECONDS = 3600
 
-ProgressCallback = Callable[[str, float | None, int, int | None], Awaitable[None]]
+logger = logging.getLogger(__name__)
+
+
+class ProgressCallback(Protocol):
+    async def __call__(
+        self,
+        model_id: str,
+        progress: float | None,
+        downloaded: int,
+        total: int | None,
+        *,
+        status: str | None = None,
+        error_message: str | None = None,
+    ) -> None: ...
 
 
 def fetch_gallery(*, cdn_url: str | None = None, use_cache: bool = True) -> GalleryPayload:
@@ -247,6 +261,27 @@ def schedule_download(
     gallery: GalleryPayload,
     progress_callback: ProgressCallback | None = None,
 ) -> asyncio.Task:
-    return asyncio.create_task(
-        download_model(model_id, gallery=gallery, progress_callback=progress_callback)
-    )
+    async def _task_wrapper() -> dict:
+        try:
+            return await download_model(
+                model_id, gallery=gallery, progress_callback=progress_callback
+            )
+        except Exception as exc:
+            logger.exception("Download fehlgeschlagen für %s", model_id)
+            if progress_callback:
+                try:
+                    await progress_callback(
+                        model_id,
+                        None,
+                        0,
+                        None,
+                        status="error",
+                        error_message=str(exc),
+                    )
+                except Exception:
+                    logger.exception(
+                        "Fehler beim Melden des Download-Fehlers für %s", model_id
+                    )
+            raise
+
+    return asyncio.create_task(_task_wrapper())

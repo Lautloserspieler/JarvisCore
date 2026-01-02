@@ -197,6 +197,7 @@ changelog = "https://github.com/Lautloserspieler/JarvisCore/blob/main/CHANGELOG.
 # === TOOL CONFIGURATION ===
 
 [tool.setuptools]
+package-dir = { jarviscore = "src/jarviscore" }
 packages = ["jarviscore", "backend", "plugins"]
 
 [tool.pytest.ini_options]

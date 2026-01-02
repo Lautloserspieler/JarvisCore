@@ -45,13 +45,21 @@
         </div>
       </div>
 
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <button
           class="flex-1 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="installing"
+          :disabled="installing || installed"
           @click="emit('install', model.id)"
         >
-          {{ installing ? 'Installiere…' : 'Installieren' }}
+          {{ installLabel }}
+        </button>
+        <button
+          v-if="installed"
+          class="rounded-md border border-destructive/50 px-3 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="deleting"
+          @click="emit('delete', model.id)"
+        >
+          {{ deleting ? 'Lösche…' : 'Löschen' }}
         </button>
         <button
           class="rounded-md border border-border/70 px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground"
@@ -104,10 +112,13 @@ const props = defineProps<{
   model: ModelMetadata;
   progressState?: ProgressState | null;
   installing?: boolean;
+  installed?: boolean;
+  deleting?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: 'install', id: string): void;
+  (e: 'delete', id: string): void;
   (e: 'details', model: ModelMetadata): void;
 }>();
 
@@ -126,5 +137,11 @@ const progressLabel = computed(() => {
   if (props.progressState.status === 'completed') return 'Abgeschlossen';
   if (props.progressState.status === 'error') return 'Fehler beim Download';
   return 'Download läuft';
+});
+
+const installLabel = computed(() => {
+  if (props.installed) return 'Installiert';
+  if (props.installing) return 'Installiere…';
+  return 'Installieren';
 });
 </script>

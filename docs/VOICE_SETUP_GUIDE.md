@@ -245,7 +245,7 @@ speech:
 - **XTTS v2 Paper**: [arXiv:2406.04904](https://arxiv.org/abs/2406.04904)
 - **Coqui TTS Docs**: [coqui.ai](https://coqui.ai/)
 - **Main README**: [JarvisCore README.md](../README.md)
-- **FAQ**: [FAQ.md](../FAQ.md)
+- **FAQ**: [FAQ.md](./FAQ.md)
 
 ---
 

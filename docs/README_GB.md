@@ -11,13 +11,13 @@
 [![Vue](https://img.shields.io/badge/Vue-3.5+-green.svg)](https://vuejs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
 [![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-orange.svg)](https://github.com/ggerganov/llama.cpp)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/Lautloserspieler/JarvisCore?style=social)](https://github.com/Lautloserspieler/JarvisCore)
 
 
 A modern AI assistant with holographic UI and **fully local llama.cpp inference**
 
-[🇩🇪 Deutsche Version](./README.md) | [📚 Docs](./docs/) | [❓ FAQ](./FAQ.md) | [🔒 Security](./SECURITY.md)
+[🇩🇪 Deutsche Version](../README.md) | [📚 Docs](./) | [❓ FAQ](./FAQ.md) | [🔒 Security](../SECURITY.md)
 
 </div>
 
@@ -271,7 +271,7 @@ JARVIS Core uses an **Ollama-inspired download system**:
 5. **Load Model**: Click "Load" on downloaded model
 6. **Start Chat**: Go to "Chat" tab and type
 
-More info: [docs/LLM_DOWNLOAD_SYSTEM.md](./docs/LLM_DOWNLOAD_SYSTEM.md)
+More info: [./LLM_DOWNLOAD_SYSTEM.md](././LLM_DOWNLOAD_SYSTEM.md)
 
 ---
 
@@ -371,7 +371,7 @@ python setup_llama.py
 # Select Option 3
 ```
 
-More help: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTING.md)
+More help: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./TROUBLESHOOTING.md)
 
 ---
 
@@ -434,13 +434,13 @@ Full license: [LICENSE](./LICENSE)
 
 ## 📚 Additional Documentation
 
-- [Quick Start Guide](docs/README_QUICKSTART.md)
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [LLM Download System](docs/LLM_DOWNLOAD_SYSTEM.md)
-- [Performance Guide](docs/PERFORMANCE.md)
-- [Deployment Guide](DEPLOYMENT.md)
+- [Quick Start Guide](./README_QUICKSTART.md)
+- [Architecture Overview](./ARCHITECTURE.md)
+- [LLM Download System](./LLM_DOWNLOAD_SYSTEM.md)
+- [Performance Guide](./PERFORMANCE.md)
+- [Deployment Guide](./DEPLOYMENT.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
-- [FAQ](FAQ.md)
+- [FAQ](./FAQ.md)
 - [Changelog](CHANGELOG.md)
 
 ---

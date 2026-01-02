@@ -48,7 +48,7 @@ JarvisCore/
 
 2. **Update Documentation**
    - README.md: Add "Getting Started" section with mode decision tree
-   - DEPLOYMENT.md: Separate sections for Web vs Desktop deployment
+   - ./DEPLOYMENT.md: Separate sections for Web vs Desktop deployment
    - Add `docs/modes.md` explaining:
      - Web Mode: Development, browser-based UI
      - Desktop Mode: Packaged Wails app, native UI

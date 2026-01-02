@@ -283,7 +283,7 @@ mv .env.backup .env
    - Configure plugin API keys
 
 4. ✅ **Review Documentation**
-   - Read `ARCHITECTURE_REFACTOR.md`
+   - Read `./ARCHITECTURE_REFACTOR.md`
    - Check plugin docs
    - Review security guidelines
 

@@ -28,8 +28,8 @@ Weiterführend:
 * **`JARVIS_XTTS_DEFAULT_SPEAKER`** – Optionaler Standardsprecher.
 
 Weiterführend:
-* [TTS Integration Guide](../TTS_INTEGRATION_GUIDE.md)
-* [Voice Setup Guide](../VOICE_SETUP_GUIDE.md)
+* [TTS Integration Guide](./TTS_INTEGRATION_GUIDE.md)
+* [Voice Setup Guide](./VOICE_SETUP_GUIDE.md)
 
 ## 🧩 Plugins & API-Keys
 

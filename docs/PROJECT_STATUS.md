@@ -53,8 +53,8 @@
 - [x] Add breaking changes documentation
 
 **Key Files:**
-- [`ARCHITECTURE_REFACTOR.md`](../ARCHITECTURE_REFACTOR.md) - Complete refactor plan
-- [`MIGRATION_GUIDE.md`](../MIGRATION_GUIDE.md) - Migration instructions
+- [`ARCHITECTURE_REFACTOR.md`](./ARCHITECTURE_REFACTOR.md) - Complete refactor plan
+- [`MIGRATION_GUIDE.md`](./MIGRATION_GUIDE.md) - Migration instructions
 - [`README.md`](../README.md) - Updated with Phase 1 info
 
 ### Quality Metrics
@@ -373,8 +373,8 @@ Documentation: 95%+
 ## 📚 Resources & Documentation
 
 ### User Guides
-- [📋 Migration Guide](../MIGRATION_GUIDE.md) - v1.1 → v1.2 upgrade
-- [🏗️ Architecture Plan](../ARCHITECTURE_REFACTOR.md) - Technical overview
+- [📋 Migration Guide](./MIGRATION_GUIDE.md) - v1.1 → v1.2 upgrade
+- [🏗️ Architecture Plan](./ARCHITECTURE_REFACTOR.md) - Technical overview
 - [README](../README.md) - Project overview & setup
 
 ### Developer Docs
@@ -391,8 +391,8 @@ Documentation: 95%+
 ## 🙋 Support & Contact
 
 **Questions about Phase 1?**
-- 📚 [Read MIGRATION_GUIDE.md](../MIGRATION_GUIDE.md)
-- 📚 [Read ARCHITECTURE_REFACTOR.md](../ARCHITECTURE_REFACTOR.md)
+- 📚 [Read MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
+- 📚 [Read ARCHITECTURE_REFACTOR.md](./ARCHITECTURE_REFACTOR.md)
 - 🐛 [Open GitHub Issue](https://github.com/Lautloserspieler/JarvisCore/issues)
 - 📬 Email: emeyer@fn.de
 

@@ -136,7 +136,7 @@ async def download_model(
 def _verify_checksum(file_path: Path, expected_checksum: str) -> bool:
     normalized_expected = expected_checksum.strip()
     if normalized_expected.lower().startswith("sha256:"):
-        normalized_expected = normalized_expected.split(":", 1)[1].strip()
+        normalized_expected = normalized_expected[len("sha256:") :].strip()
     hasher = hashlib.sha256()
     with file_path.open("rb") as file_handle:
         for chunk in iter(lambda: file_handle.read(CHUNK_SIZE_BYTES), b""):

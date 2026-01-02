@@ -1,0 +1,648 @@
+{
+  "version": "1.0",
+  "generatedAt": "2024-10-01T00:00:00Z",
+  "models": [
+    {
+      "id": "llama-3-2-3b-q4",
+      "name": "Llama 3.2 3B Q4",
+      "categories": [
+        "chat",
+        "general"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001001",
+      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-2-3b-q4.gguf",
+      "languages": [
+        "en",
+        "de"
+      ],
+      "recommendedHardware": {
+        "cpu": "8-core",
+        "gpu": "CPU",
+        "ramGb": 16,
+        "vramGb": 0
+      },
+      "parameters": "3B",
+      "sizeGb": 1.8,
+      "rating": 4.2,
+      "license": "Meta",
+      "description": "CPU-freundliches Llama 3.2 3B Q4 für allgemeine Aufgaben.",
+      "tags": [
+        "tier-1",
+        "cpu-friendly"
+      ],
+      "quantization": "Q4",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "llama-3-2-8b-q5",
+      "name": "Llama 3.2 8B Q5",
+      "categories": [
+        "chat",
+        "general"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001002",
+      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-2-8b-q5.gguf",
+      "languages": [
+        "en",
+        "de"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "8B",
+      "sizeGb": 4.6,
+      "rating": 4.6,
+      "license": "Meta",
+      "description": "Balanciertes Llama 3.2 8B Q5 für Qualität und Geschwindigkeit.",
+      "tags": [
+        "tier-1",
+        "balanced"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "mistral-7b-instruct-q5",
+      "name": "Mistral 7B Instruct Q5",
+      "categories": [
+        "chat",
+        "instruction"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001003",
+      "downloadUrl": "https://cdn.jarviscore.example/models/mistral-7b-instruct-q5.gguf",
+      "languages": [
+        "en",
+        "fr"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "7B",
+      "sizeGb": 4.2,
+      "rating": 4.5,
+      "license": "Apache-2.0",
+      "description": "Chat-spezialisiertes Mistral 7B Instruct Q5.",
+      "tags": [
+        "tier-1",
+        "chat"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "llama-3-2-3b-instruct-q4",
+      "name": "Llama 3.2 3B Instruct Q4",
+      "categories": [
+        "chat",
+        "instruction"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001004",
+      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-2-3b-instruct-q4.gguf",
+      "languages": [
+        "en",
+        "de"
+      ],
+      "recommendedHardware": {
+        "cpu": "8-core",
+        "gpu": "CPU",
+        "ramGb": 16,
+        "vramGb": 0
+      },
+      "parameters": "3B",
+      "sizeGb": 1.9,
+      "rating": 4.1,
+      "license": "Meta",
+      "description": "Chat-optimiertes Llama 3.2 3B Instruct Q4 für CPU-Einsatz.",
+      "tags": [
+        "tier-1",
+        "cpu"
+      ],
+      "quantization": "Q4",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "leolm-7b-q5",
+      "name": "LeoLM 7B Q5",
+      "categories": [
+        "chat",
+        "german"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001005",
+      "downloadUrl": "https://cdn.jarviscore.example/models/leolm-7b-q5.gguf",
+      "languages": [
+        "de",
+        "en"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "7B",
+      "sizeGb": 4.1,
+      "rating": 4.4,
+      "license": "Apache-2.0",
+      "description": "Deutsches LeoLM 7B Q5 für hochwertige Antworten.",
+      "tags": [
+        "tier-1",
+        "deutsch"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "codellama-7b-q5",
+      "name": "CodeLlama 7B Q5",
+      "categories": [
+        "code",
+        "development"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001006",
+      "downloadUrl": "https://cdn.jarviscore.example/models/codellama-7b-q5.gguf",
+      "languages": [
+        "en"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "7B",
+      "sizeGb": 4.0,
+      "rating": 4.3,
+      "license": "Meta",
+      "description": "CodeLlama 7B Q5 für Entwicklungs- und Coding-Aufgaben.",
+      "tags": [
+        "tier-1",
+        "code"
+      ],
+      "quantization": "Q5",
+      "contextLength": 16384,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "qwen-2-5-7b-q5",
+      "name": "Qwen 2.5 7B Q5",
+      "categories": [
+        "multilingual",
+        "chat"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001007",
+      "downloadUrl": "https://cdn.jarviscore.example/models/qwen-2-5-7b-q5.gguf",
+      "languages": [
+        "en",
+        "zh",
+        "de"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "7B",
+      "sizeGb": 4.3,
+      "rating": 4.4,
+      "license": "Apache-2.0",
+      "description": "Mehrsprachiges Qwen 2.5 7B Q5.",
+      "tags": [
+        "tier-1",
+        "multilingual"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "phi-3-mini-q4",
+      "name": "Phi-3 Mini Q4",
+      "categories": [
+        "lightweight",
+        "general"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001008",
+      "downloadUrl": "https://cdn.jarviscore.example/models/phi-3-mini-q4.gguf",
+      "languages": [
+        "en"
+      ],
+      "recommendedHardware": {
+        "cpu": "6-core",
+        "gpu": "CPU",
+        "ramGb": 8,
+        "vramGb": 0
+      },
+      "parameters": "3.8B",
+      "sizeGb": 1.6,
+      "rating": 4.0,
+      "license": "MIT",
+      "description": "Leichtgewichtiges Phi-3 Mini Q4 für schnelle Antworten.",
+      "tags": [
+        "tier-1",
+        "lightweight"
+      ],
+      "quantization": "Q4",
+      "contextLength": 4096,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "gemma-2-9b-q5",
+      "name": "Gemma 2 9B Q5",
+      "categories": [
+        "chat",
+        "quality"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001009",
+      "downloadUrl": "https://cdn.jarviscore.example/models/gemma-2-9b-q5.gguf",
+      "languages": [
+        "en",
+        "de"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3070",
+        "ramGb": 32,
+        "vramGb": 12
+      },
+      "parameters": "9B",
+      "sizeGb": 5.1,
+      "rating": 4.6,
+      "license": "Google",
+      "description": "Qualitätsorientiertes Gemma 2 9B Q5 von Google.",
+      "tags": [
+        "tier-1",
+        "quality"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "hermes-2-pro-mistral-q5",
+      "name": "Hermes 2 Pro Mistral Q5",
+      "categories": [
+        "function-calling",
+        "chat"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001010",
+      "downloadUrl": "https://cdn.jarviscore.example/models/hermes-2-pro-mistral-q5.gguf",
+      "languages": [
+        "en"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "7B",
+      "sizeGb": 4.4,
+      "rating": 4.5,
+      "license": "MIT",
+      "description": "Hermes 2 Pro Mistral Q5 mit Fokus auf Function Calling.",
+      "tags": [
+        "tier-1",
+        "function-calling"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "llama-3-1-70b-q4",
+      "name": "Llama 3.1 70B Q4",
+      "categories": [
+        "chat",
+        "flagship"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001011",
+      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-1-70b-q4.gguf",
+      "languages": [
+        "en"
+      ],
+      "recommendedHardware": {
+        "cpu": "32-core",
+        "gpu": "NVIDIA A100",
+        "ramGb": 128,
+        "vramGb": 80
+      },
+      "parameters": "70B",
+      "sizeGb": 38.0,
+      "rating": 4.8,
+      "license": "Meta",
+      "description": "Flaggschiff-Modell Llama 3.1 70B Q4 für GPU-Setups.",
+      "tags": [
+        "tier-2",
+        "gpu"
+      ],
+      "quantization": "Q4",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "mixtral-8x7b-q4",
+      "name": "Mixtral 8x7B Q4",
+      "categories": [
+        "moe",
+        "general"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001012",
+      "downloadUrl": "https://cdn.jarviscore.example/models/mixtral-8x7b-q4.gguf",
+      "languages": [
+        "en",
+        "fr"
+      ],
+      "recommendedHardware": {
+        "cpu": "24-core",
+        "gpu": "NVIDIA RTX 4090",
+        "ramGb": 64,
+        "vramGb": 24
+      },
+      "parameters": "8x7B",
+      "sizeGb": 24.0,
+      "rating": 4.7,
+      "license": "Apache-2.0",
+      "description": "Leistungsstarkes Mixtral 8x7B Q4 MoE-Modell.",
+      "tags": [
+        "tier-2",
+        "moe"
+      ],
+      "quantization": "Q4",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "deepseek-coder-6-7b-q5",
+      "name": "DeepSeek Coder 6.7B Q5",
+      "categories": [
+        "code",
+        "development"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001013",
+      "downloadUrl": "https://cdn.jarviscore.example/models/deepseek-coder-6-7b-q5.gguf",
+      "languages": [
+        "en"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "6.7B",
+      "sizeGb": 4.1,
+      "rating": 4.4,
+      "license": "Apache-2.0",
+      "description": "Code-spezialisiertes DeepSeek Coder 6.7B Q5.",
+      "tags": [
+        "tier-2",
+        "code"
+      ],
+      "quantization": "Q5",
+      "contextLength": 16384,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "llama-3-2-1b-q4",
+      "name": "Llama 3.2 1B Q4",
+      "categories": [
+        "lightweight",
+        "general"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001014",
+      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-2-1b-q4.gguf",
+      "languages": [
+        "en"
+      ],
+      "recommendedHardware": {
+        "cpu": "4-core",
+        "gpu": "CPU",
+        "ramGb": 4,
+        "vramGb": 0
+      },
+      "parameters": "1B",
+      "sizeGb": 0.9,
+      "rating": 3.8,
+      "license": "Meta",
+      "description": "Ultra-leichtes Llama 3.2 1B Q4.",
+      "tags": [
+        "tier-2",
+        "ultra-light"
+      ],
+      "quantization": "Q4",
+      "contextLength": 4096,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "em-german-7b-q5",
+      "name": "EM German 7B Q5",
+      "categories": [
+        "german",
+        "chat"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001015",
+      "downloadUrl": "https://cdn.jarviscore.example/models/em-german-7b-q5.gguf",
+      "languages": [
+        "de"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "7B",
+      "sizeGb": 4.2,
+      "rating": 4.2,
+      "license": "MIT",
+      "description": "Deutsches EM German 7B Q5 für natürliche Konversationen.",
+      "tags": [
+        "tier-2",
+        "deutsch"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "zephyr-7b-beta-q5",
+      "name": "Zephyr 7B Beta Q5",
+      "categories": [
+        "chat",
+        "quality"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001016",
+      "downloadUrl": "https://cdn.jarviscore.example/models/zephyr-7b-beta-q5.gguf",
+      "languages": [
+        "en"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "7B",
+      "sizeGb": 4.3,
+      "rating": 4.3,
+      "license": "Apache-2.0",
+      "description": "Zephyr 7B Beta Q5 mit starker Chat-Qualität.",
+      "tags": [
+        "tier-2",
+        "chat"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "qwen-2-5-14b-q5",
+      "name": "Qwen 2.5 14B Q5",
+      "categories": [
+        "multilingual",
+        "advanced"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001017",
+      "downloadUrl": "https://cdn.jarviscore.example/models/qwen-2-5-14b-q5.gguf",
+      "languages": [
+        "en",
+        "zh",
+        "de",
+        "fr"
+      ],
+      "recommendedHardware": {
+        "cpu": "16-core",
+        "gpu": "NVIDIA RTX 4090",
+        "ramGb": 64,
+        "vramGb": 24
+      },
+      "parameters": "14B",
+      "sizeGb": 8.5,
+      "rating": 4.6,
+      "license": "Apache-2.0",
+      "description": "Fortgeschrittenes Qwen 2.5 14B Q5 für viele Sprachen.",
+      "tags": [
+        "tier-2",
+        "multilingual"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "aya-23-8b-q5",
+      "name": "Aya 23 8B Q5",
+      "categories": [
+        "multilingual",
+        "chat"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001018",
+      "downloadUrl": "https://cdn.jarviscore.example/models/aya-23-8b-q5.gguf",
+      "languages": [
+        "en",
+        "de",
+        "fr",
+        "es",
+        "it",
+        "pt",
+        "ar",
+        "ja"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "8B",
+      "sizeGb": 4.7,
+      "rating": 4.4,
+      "license": "Apache-2.0",
+      "description": "Aya 23 8B Q5 für 23 Sprachen.",
+      "tags": [
+        "tier-2",
+        "multilingual"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "starcoder2-7b-q5",
+      "name": "StarCoder2 7B Q5",
+      "categories": [
+        "code",
+        "multilingual"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001019",
+      "downloadUrl": "https://cdn.jarviscore.example/models/starcoder2-7b-q5.gguf",
+      "languages": [
+        "en",
+        "es",
+        "fr",
+        "de"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "7B",
+      "sizeGb": 4.2,
+      "rating": 4.5,
+      "license": "BigCode",
+      "description": "StarCoder2 7B Q5 für Code in 80+ Sprachen.",
+      "tags": [
+        "tier-2",
+        "code"
+      ],
+      "quantization": "Q5",
+      "contextLength": 16384,
+      "updatedAt": "2024-10-01"
+    },
+    {
+      "id": "nous-hermes-2-mistral-q5",
+      "name": "Nous Hermes 2 Mistral Q5",
+      "categories": [
+        "chat",
+        "creative"
+      ],
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001020",
+      "downloadUrl": "https://cdn.jarviscore.example/models/nous-hermes-2-mistral-q5.gguf",
+      "languages": [
+        "en"
+      ],
+      "recommendedHardware": {
+        "cpu": "12-core",
+        "gpu": "NVIDIA RTX 3060",
+        "ramGb": 24,
+        "vramGb": 12
+      },
+      "parameters": "7B",
+      "sizeGb": 4.4,
+      "rating": 4.3,
+      "license": "MIT",
+      "description": "Kreatives Nous Hermes 2 Mistral Q5.",
+      "tags": [
+        "tier-2",
+        "creative"
+      ],
+      "quantization": "Q5",
+      "contextLength": 8192,
+      "updatedAt": "2024-10-01"
+    }
+  ]
+}

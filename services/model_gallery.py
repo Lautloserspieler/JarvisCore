@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Awaitable, Callable, Iterable
@@ -10,14 +11,17 @@ from urllib.parse import urlsplit
 
 import aiohttp
 
-from jarviscore.config.gallery import (
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from config.gallery import (
     GalleryPayload,
     ModelMetadata,
     load_gallery,
     query_models,
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODELS_DIR = PROJECT_ROOT / "models" / "llm"
 REGISTRY_PATH = PROJECT_ROOT / "config" / "models.json"
 CHUNK_SIZE_BYTES = 8192

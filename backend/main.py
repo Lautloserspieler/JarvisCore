@@ -28,6 +28,7 @@ if sys.platform == 'win32':
 from core.llama_inference import llama_runtime
 # Import model downloader
 from backend.model_downloader import model_downloader, MODEL_URLS
+from backend.api.model_gallery import router as model_gallery_router
 
 # Plugin manager wird beim Startup initialisiert
 plugin_manager = None
@@ -175,6 +176,9 @@ if settings_router:
 if tts_router:
     app.include_router(tts_router)
     print("[BACKEND] TTS router mounted")
+
+app.include_router(model_gallery_router)
+print("[BACKEND] Model gallery router mounted")
 
 # AI Response Generator mit Plugin-Integration und llama.cpp
 async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool, Optional[int], Optional[float]]:

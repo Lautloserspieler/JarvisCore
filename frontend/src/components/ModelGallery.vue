@@ -112,7 +112,10 @@
         :model="model"
         :progress-state="progressById[model.id]"
         :installing="installingIds.has(model.id)"
+        :installed="installedIds.has(model.id)"
+        :deleting="deletingIds.has(model.id)"
         @install="installModel"
+        @delete="deleteModel"
         @details="openDetails"
       />
     </div>
@@ -177,6 +180,16 @@ interface ProgressState {
   errorMessage?: string | null;
 }
 
+interface InstalledModelEntry {
+  id: string;
+  path?: string;
+  size?: number;
+  installedAt?: string;
+  backend?: string;
+  active?: boolean;
+  status?: string;
+}
+
 const models = ref<ModelMetadata[]>([]);
 const loading = ref(true);
 const errorMessage = ref<string | null>(null);
@@ -191,6 +204,8 @@ const maxSize = ref<number | null>(null);
 
 const progressById = ref<Record<string, ProgressState>>({});
 const installingIds = ref(new Set<string>());
+const installedIds = ref(new Set<string>());
+const deletingIds = ref(new Set<string>());
 const activeInstallId = ref<string | null>(null);
 const selectedModel = ref<ModelMetadata | null>(null);
 
@@ -285,6 +300,21 @@ const loadGallery = async () => {
   }
 };
 
+const loadInstalled = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/models/installed`);
+    if (!response.ok) throw new Error('Fehler beim Laden der installierten Modelle');
+    const data = (await response.json()) as InstalledModelEntry[];
+    installedIds.value = new Set(
+      data
+        .filter((entry) => entry.status !== 'missing')
+        .map((entry) => entry.id)
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const installModel = async (modelId: string) => {
   if (installingIds.value.has(modelId)) return;
   installingIds.value.add(modelId);
@@ -317,6 +347,22 @@ const installModel = async (modelId: string) => {
   }
 };
 
+const deleteModel = async (modelId: string) => {
+  if (deletingIds.value.has(modelId)) return;
+  deletingIds.value.add(modelId);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/models/${modelId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Modell konnte nicht gelöscht werden');
+    await loadInstalled();
+  } catch (error) {
+    console.error(error);
+  } finally {
+    deletingIds.value.delete(modelId);
+  }
+};
+
 const openDetails = (model: ModelMetadata) => {
   selectedModel.value = model;
 };
@@ -325,7 +371,7 @@ const connectWebSocket = () => {
   const wsBase = API_BASE_URL.replace(/^http/, 'ws');
   socket = new WebSocket(`${wsBase}/api/models/ws/progress`);
 
-  socket.onmessage = (event) => {
+  socket.onmessage = async (event) => {
     try {
       const payload = JSON.parse(event.data);
       if (!payload.model_id) return;
@@ -336,13 +382,18 @@ const connectWebSocket = () => {
         status: 'downloading' as const,
       };
       const progressValue = payload.progress !== null ? Number(payload.progress) : null;
+      const nextStatus =
+        progressValue !== null && progressValue >= 100 ? 'completed' : 'downloading';
       progressById.value[payload.model_id] = {
         ...current,
         progress: progressValue,
         downloaded: payload.downloaded ?? current.downloaded,
         total: payload.total ?? current.total,
-        status: progressValue !== null && progressValue >= 100 ? 'completed' : 'downloading',
+        status: nextStatus,
       };
+      if (nextStatus === 'completed' && current.status !== 'completed') {
+        await loadInstalled();
+      }
     } catch (error) {
       console.error('Fehler beim Verarbeiten des Progress-Events', error);
     }
@@ -355,6 +406,7 @@ const connectWebSocket = () => {
 
 onMounted(() => {
   loadGallery();
+  loadInstalled();
   connectWebSocket();
 });
 

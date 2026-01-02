@@ -19,7 +19,7 @@ from jarviscore.config.gallery import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODELS_DIR = PROJECT_ROOT / "models" / "llm"
-REGISTRY_PATH = PROJECT_ROOT / "config" / "models_registry.json"
+REGISTRY_PATH = PROJECT_ROOT / "config" / "models.json"
 CHUNK_SIZE_BYTES = 8192
 DOWNLOAD_TIMEOUT_SECONDS = 3600
 
@@ -125,20 +125,14 @@ def _verify_checksum(file_path: Path, expected_checksum: str) -> bool:
 
 def register_model(model_id: str, file_path: Path, metadata: ModelMetadata) -> dict:
     registry = _load_registry()
-    metadata_payload = (
-        metadata.model_dump()
-        if hasattr(metadata, "model_dump")
-        else metadata.dict()
-    )
     registry_entry = {
         "id": model_id,
         "name": metadata.name,
-        "file_path": str(file_path),
-        "checksum": metadata.checksum,
-        "size_bytes": file_path.stat().st_size,
-        "installed_at": datetime.now(timezone.utc).isoformat(),
-        "download_url": str(metadata.downloadUrl),
-        "metadata": metadata_payload,
+        "path": str(file_path),
+        "size": file_path.stat().st_size,
+        "installedAt": datetime.now(timezone.utc).isoformat(),
+        "backend": "gallery",
+        "active": False,
     }
     registry.setdefault("models", {})[model_id] = registry_entry
     _save_registry(registry)
@@ -153,7 +147,7 @@ def get_installed_models() -> list[dict]:
     tracked_files = set()
 
     for model_id, entry in registry_models.items():
-        file_path = Path(entry.get("file_path", ""))
+        file_path = Path(entry.get("path", ""))
         status = "installed" if file_path.exists() else "missing"
         entry_with_status = {**entry, "status": status}
         installed.append(entry_with_status)
@@ -171,9 +165,11 @@ def get_installed_models() -> list[dict]:
                 {
                     "id": file_path.stem,
                     "name": file_path.stem,
-                    "file_path": str(file_path),
+                    "path": str(file_path),
                     "status": "unregistered",
-                    "size_bytes": file_path.stat().st_size,
+                    "size": file_path.stat().st_size,
+                    "backend": "gallery",
+                    "active": False,
                 }
             )
 
@@ -222,8 +218,8 @@ def get_registered_model(model_id: str) -> dict | None:
 
 def resolve_model_path(model_id: str) -> Path | None:
     entry = get_registered_model(model_id)
-    if entry and entry.get("file_path"):
-        return Path(entry["file_path"])
+    if entry and entry.get("path"):
+        return Path(entry["path"])
     candidate = MODELS_DIR / f"{model_id}.gguf"
     if candidate.exists():
         return candidate

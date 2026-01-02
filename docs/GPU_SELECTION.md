@@ -263,7 +263,7 @@ GPU Type: NVIDIA CUDA 🟢
 
 - 📚 [Haupt-README](../README.md)
 - 🎯 [Pinokio Documentation](../PINOKIO.md)
-- ❓ [FAQ](../FAQ.md)
+- ❓ [FAQ](./FAQ.md)
 - 🐛 [Troubleshooting](./TROUBLESHOOTING.md)
 
 ---

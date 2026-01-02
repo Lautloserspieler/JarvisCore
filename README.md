@@ -17,7 +17,7 @@
 
 Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llama.cpp Inferenz**
 
-[🇬🇧 English Version](./README_GB.md) | [📚 Docs](./docs/) | [❓ FAQ](./FAQ.md) | [🔒 Security](./SECURITY.md) | [💬 Discord Server](https://discord.com/channels/1431731317036290050/1431737106656399461)
+[🇬🇧 English Version](./docs/README_GB.md) | [📚 Docs](./docs/) | [❓ FAQ](./docs/FAQ.md) | [🔒 Security](./SECURITY.md) | [💬 Discord Server](https://discord.com/channels/1431731317036290050/1431737106656399461)
 
 </div>
 
@@ -25,8 +25,8 @@ Ein moderner KI-Assistent mit holographischer UI und **vollständig lokaler llam
 
 ## 🚀 Quickstart
 
-- **Schnellstart (manuell)**: [README_QUICKSTART.md](./README_QUICKSTART.md)
-- **Fehlerbehebung**: [FAQ](./FAQ.md)
+- **Schnellstart (manuell)**: [README_QUICKSTART.md](./docs/README_QUICKSTART.md)
+- **Fehlerbehebung**: [FAQ](./docs/FAQ.md)
 - **Community**: [Discord Server](https://discord.com/channels/1431731317036290050/1431737106656399461)
 
 ## ✨ Features
@@ -257,7 +257,7 @@ pip install -e ".[dev,tts,cuda]"
 
 ### 📚 Mehr Infos
 
-Siehe [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) für vollständige v1.1 → v1.2 Migration
+Siehe [docs/MIGRATION_GUIDE.md](./docs/MIGRATION_GUIDE.md) für vollständige v1.1 → v1.2 Migration
 
 ---
 
@@ -497,7 +497,7 @@ python setup_llama.py
 # Wähle Option 3
 ```
 
-Weitere Hilfe: [❓ FAQ](./FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTING.md) | [📋 Migration Guide](./MIGRATION_GUIDE.md)
+Weitere Hilfe: [❓ FAQ](./docs/FAQ.md) | [📚 Troubleshooting](./docs/TROUBLESHOOTING.md) | [📋 Migration Guide](./docs/MIGRATION_GUIDE.md)
 
 ---
 
@@ -595,16 +595,16 @@ Vollständige Lizenz: [LICENSE](./LICENSE)
 
 - [🎮 GPU Selection Guide](./docs/GPU_SELECTION.md) - NEW!
 - [⚙️ Konfiguration (.env)](./docs/CONFIGURATION.md)
-- [📋 Migration Guide v1.1 → v1.2](MIGRATION_GUIDE.md)
-- [🏗️ Architecture Refactor Plan](ARCHITECTURE_REFACTOR.md)
+- [📋 Migration Guide v1.1 → v1.2](docs/MIGRATION_GUIDE.md)
+- [🏗️ Architecture Refactor Plan](docs/ARCHITECTURE_REFACTOR.md)
 - [Quick Start Guide](docs/README_QUICKSTART.md)
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [LLM Download System](docs/LLM_DOWNLOAD_SYSTEM.md)
 - [Performance Guide](docs/PERFORMANCE.md)
 - [Voice Samples Guide](models/tts/voices/README.md)
-- [Deployment Guide](DEPLOYMENT.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
-- [FAQ](FAQ.md)
+- [FAQ](docs/FAQ.md)
 - [Changelog](CHANGELOG.md)
 
 ---

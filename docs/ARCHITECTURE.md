@@ -459,7 +459,7 @@ npm run dev
 
 - [README.md](../README.md) - Haupt-Dokumentation
 - [LLM_DOWNLOAD_SYSTEM.md](./LLM_DOWNLOAD_SYSTEM.md) - Download-System Details
-- [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md) - Feature-Status
+- [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) - Feature-Status
 - [CHANGELOG.md](./CHANGELOG.md) - Versions-Historie
 
 ---

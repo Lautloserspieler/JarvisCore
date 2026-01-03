@@ -61,3 +61,20 @@ func withLogging(logger *log.Logger, next http.Handler) http.Handler {
 		logger.Printf("request method=%s path=%s duration=%s", method, path, time.Since(start))
 	})
 }
+
+func sanitizeForLog(value string) string {
+	// Explicitly strip newline and carriage return to prevent log forging via line breaks.
+	value = strings.ReplaceAll(value, "\n", "")
+	value = strings.ReplaceAll(value, "\r", "")
+	return strings.Map(func(r rune) rune {
+		// Allow a conservative set of visible ASCII characters commonly used in URLs;
+		// replace anything else (including control chars) with '?' to avoid log forging.
+		if (r >= 'a' && r <= 'z') ||
+			(r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') ||
+			strings.ContainsRune("-._~!$&'()*+,;=:@/?", r) {
+			return r
+		}
+		return '?'
+	}, value)
+}

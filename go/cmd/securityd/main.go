@@ -65,3 +65,12 @@ func withLogging(logger *log.Logger, next http.Handler) http.Handler {
 		logger.Printf("request method=%s path=%s duration=%s", method, path, time.Since(start))
 	})
 }
+
+func sanitizeForLog(value string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 32 || r == 127 {
+			return -1
+		}
+		return r
+	}, value)
+}

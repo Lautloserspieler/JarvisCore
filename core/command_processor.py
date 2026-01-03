@@ -19,6 +19,7 @@ import os
 import requests
 
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 from typing import Dict, Any, Optional, List, Tuple, Set, Sequence, Union
 
@@ -67,6 +68,7 @@ from core.hotword_manager import HotwordManager
 from core.security_protocol import PriorityLevel
 
 from config.persona import persona
+from utils.media_command_parser import MediaPreferences, parse_media_command
 
 
 class CommandServiceClient:
@@ -2973,7 +2975,14 @@ if __name__ == \"__main__\":
 
         entities = (match.entities if match and match.entities else {}) or {}
 
-        target = entities.get("target") or entities.get("medium") or "youtube"
+        prefs = MediaPreferences()
+        parsed = parse_media_command(normalized, prefs)
+
+        target = entities.get("target") or entities.get("medium")
+        target = parsed.target or target or "youtube"
+
+        if target == "spotify":
+            return "Diese Anfrage ist fuer Spotify gedacht. Bitte aktiviere das Spotify-Plugin oder nenne YouTube explizit."
 
         action = (entities.get("action") or "").lower().strip()
 
@@ -3030,6 +3039,30 @@ if __name__ == \"__main__\":
             self._sync_media_state()
 
             return "Ich springe zurück zum vorherigen Titel." if success else "Ich konnte keine laufende YouTube-Wiedergabe finden."
+
+        if not track and parsed.favorite_song:
+            favorite_song = prefs.get_favorite_song("youtube")
+            track = favorite_song.get("query") or ""
+            if not track:
+                last_media = self.context.get('media_state', {}) if isinstance(self.context, dict) else {}
+                recent_track = (last_media or {}).get('last_track') or ""
+                if isinstance(recent_track, str) and recent_track.strip():
+                    prefs.set_favorite_song("youtube", query=recent_track.strip())
+                    track = recent_track.strip()
+                else:
+                    return "Ich habe noch keinen Lieblingssong hinterlegt. Bitte trage ihn in data/user_media_prefs.json ein."
+
+        if not track and (parsed.favorite_playlist or parsed.playlist_name):
+            favorite_playlist = prefs.get_favorite_playlist("youtube")
+            track = parsed.playlist_name or favorite_playlist.get("name") or ""
+            if not track:
+                last_media = self.context.get('media_state', {}) if isinstance(self.context, dict) else {}
+                playlist_name = self._extract_youtube_playlist_name(last_media)
+                if playlist_name:
+                    prefs.set_favorite_playlist("youtube", name=playlist_name)
+                    track = playlist_name
+                else:
+                    return "Ich habe noch keine Lieblingsplaylist hinterlegt. Bitte trage sie in data/user_media_prefs.json ein."
 
         if not track:
 
@@ -3446,6 +3479,24 @@ if __name__ == \"__main__\":
             if keyword in text:
                 return True
         return False
+
+    def _extract_youtube_playlist_name(self, media_state: Dict[str, Any]) -> Optional[str]:
+        if not isinstance(media_state, dict):
+            return None
+        url = media_state.get("url")
+        if not isinstance(url, str) or not url.strip():
+            return None
+        try:
+            parsed = urlparse(url)
+        except Exception:
+            return None
+        params = parse_qs(parsed.query or "")
+        if not params.get("list"):
+            return None
+        name = media_state.get("track")
+        if isinstance(name, str) and name.strip():
+            return name.strip()
+        return "YouTube-Playlist"
 
 
 

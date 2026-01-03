@@ -23,6 +23,13 @@ class PluginManager:
             'api_key_url': 'https://openweathermap.org/api',
             'api_key_description': 'Kostenloser API-Key für Wetterdaten'
         },
+        'spotify_plugin': {
+            'requires_api_key': True,
+            'api_key_name': 'spotify_client_id',
+            'api_key_label': 'Spotify Client ID',
+            'api_key_url': 'https://developer.spotify.com/dashboard',
+            'api_key_description': 'Spotify OAuth Credentials (Client ID/Secret + Refresh Token oder PKCE)'
+        },
         # Weitere Plugins können hier definiert werden
     }
     

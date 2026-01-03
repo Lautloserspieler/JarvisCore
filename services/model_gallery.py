@@ -41,6 +41,7 @@ class ProgressCallback(Protocol):
         *,
         status: str | None = None,
         error_message: str | None = None,
+        errorMessage: str | None = None,
     ) -> None: ...
 
 
@@ -277,6 +278,7 @@ def schedule_download(
                         None,
                         status="error",
                         error_message=str(exc),
+                        errorMessage=str(exc),
                     )
                 except Exception:
                     logger.exception(

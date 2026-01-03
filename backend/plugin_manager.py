@@ -213,7 +213,7 @@ class PluginManager:
                         plugin_info['status'] = 'insecure'
                     self.plugins[plugin_id] = plugin_info
                     loaded_count += 1
-                    print(f"[PLUGINS] ✓ {plugin_info['name']} (v{plugin_info['version']})")
+                    print("[PLUGINS] ✓ Plugin geladen")
                     
             except Exception as e:
                 print(f"[PLUGINS] ✗ Failed: {plugin_id} - {e}")
@@ -456,14 +456,4 @@ if __name__ == "__main__":
 
     plugin_manager = PluginManager()
     plugins = plugin_manager.get_all_plugins()
-    print(f"Found {len(plugins)} plugins:\n")
-    
-    for plugin in plugins:
-        status_icon = "✓" if plugin['enabled'] else "✗"
-        print(f"{status_icon} {plugin['name']} (v{plugin['version']})")
-        print(f"  ID: {plugin['id']}")
-        print(f"  Description: {plugin['description']}")
-        print(f"  Status: {plugin['status']}")
-        if plugin.get('requires_api_key'):
-            print("  ⚠️ Requires API Key: Ja")
-        print()
+    print(f"Found {len(plugins)} plugins.")

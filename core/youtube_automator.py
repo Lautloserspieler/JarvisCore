@@ -74,12 +74,14 @@ class YouTubeAutomator:
         quality_hint: Optional[str] = None,
     ) -> str:
         base_url = self._sanitize_base_url(base_url)
+        parsed = urllib.parse.urlsplit(base_url)
+        host = parsed.netloc.lower()
         encoded = urllib.parse.quote_plus(query)
-        if "music.youtube.com" in base_url:
-            url = f"{base_url}/search?q={encoded}"
+        if host == "music.youtube.com":
+            url = f"{parsed.scheme}://{host}/search?q={encoded}"
         else:
-            url = f"{base_url}/results?search_query={encoded}"
-        if quality_hint and "music.youtube.com" not in base_url:
+            url = f"{parsed.scheme}://{host}/results?search_query={encoded}"
+        if quality_hint and host != "music.youtube.com":
             url = self._apply_quality_hint(url, quality_hint)
         return url
 
@@ -92,7 +94,8 @@ class YouTubeAutomator:
     ) -> Optional[str]:
         """Fetch the search page and extract the first video ID."""
         base_url = self._sanitize_base_url(base_url)
-        if "music.youtube.com" in base_url:
+        parsed = urllib.parse.urlsplit(base_url)
+        if parsed.netloc.lower() == "music.youtube.com":
             return None
         url = self._build_search_url(query, base_url=base_url, quality_hint=quality_hint)
         headers = {

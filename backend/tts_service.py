@@ -9,6 +9,7 @@ Provides text-to-speech functionality with:
 - Settings integration
 """
 import logging
+import re
 import os
 import tempfile
 import wave
@@ -46,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 def _sanitize_for_log(value: str, max_len: int = 120) -> str:
-    cleaned = value.replace("\r", " ").replace("\n", " ").strip()
+    cleaned = re.sub(r"[\x00-\x1f\x7f]+", " ", value).strip()
     if len(cleaned) > max_len:
         return f"{cleaned[:max_len]}…"
     return cleaned

@@ -288,7 +288,9 @@ class TTSService:
         # Get voice sample for language
         speaker_wav = self.voice_samples.get(language)
         if not speaker_wav or not speaker_wav.exists():
-            logger.error(f"Voice sample not found for language '{language}': {speaker_wav}")
+            safe_language = _sanitize_for_log(language)
+            safe_speaker_wav = _sanitize_for_log(speaker_wav)
+            logger.error("Voice sample not found for language '%s': %s", safe_language, safe_speaker_wav)
             return None
         
         # Create temp file if no output path

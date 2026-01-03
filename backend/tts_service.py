@@ -47,7 +47,26 @@ logger = logging.getLogger(__name__)
 
 
 def _sanitize_for_log(value: str, max_len: int = 120) -> str:
-    cleaned = re.sub(r"[\x00-\x1f\x7f]+", " ", value).strip()
+    """
+    Sanitize potentially untrusted values for safe logging.
+
+    - Converts value to string.
+    - Strips ASCII control characters (including CR/LF) to prevent log injection.
+    - Normalizes internal whitespace.
+    - Truncates to max_len characters and appends an ellipsis if needed.
+    """
+    if value is None:
+        return ""
+
+    # Ensure we always work with a string representation
+    text = str(value)
+
+    # Remove ASCII control characters (0x00–0x1F and 0x7F), including \r and \n
+    cleaned = re.sub(r"[\x00-\x1f\x7f]+", " ", text)
+
+    # Normalize whitespace and trim
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
     if len(cleaned) > max_len:
         return f"{cleaned[:max_len]}…"
     return cleaned

@@ -54,6 +54,7 @@ def _sanitize_for_log(value: str, max_len: int = 120) -> str:
     - Converts value to string.
     - Strips ASCII control characters (including CR/LF) to prevent log injection.
     - Normalizes internal whitespace.
+    - Encodes non-ASCII and other unusual characters using \\xHH escapes.
     - Truncates to max_len characters and appends an ellipsis if needed.
     """
     if value is None:
@@ -67,6 +68,16 @@ def _sanitize_for_log(value: str, max_len: int = 120) -> str:
 
     # Normalize whitespace and trim
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+    # Encode any non-ASCII or otherwise unusual characters as \xHH to keep logs safe
+    def _encode_char(ch: str) -> str:
+        codepoint = ord(ch)
+        # Allow standard printable ASCII characters (space through ~)
+        if 0x20 <= codepoint <= 0x7e:
+            return ch
+        return f"\\x{codepoint:02x}"
+
+    cleaned = "".join(_encode_char(ch) for ch in cleaned)
 
     if len(cleaned) > max_len:
         return f"{cleaned[:max_len]}…"

@@ -50,6 +50,7 @@ class ProgressCallback(Protocol):
         *,
         status: str | None = None,
         error_message: str | None = None,
+        errorMessage: str | None = None,
     ) -> None: ...
 
 
@@ -627,7 +628,7 @@ def schedule_download(
                 model_id, gallery=gallery, progress_callback=progress_callback
             )
         except Exception as exc:
-            logger.exception("Download fehlgeschlagen für %s", model_id)
+            logger.exception("Download fehlgeschlagen für %s: %s", model_id, exc)
             if progress_callback:
                 try:
                     await progress_callback(
@@ -637,6 +638,7 @@ def schedule_download(
                         None,
                         status="error",
                         error_message=str(exc),
+                        errorMessage=str(exc),
                     )
                 except Exception:
                     logger.exception(

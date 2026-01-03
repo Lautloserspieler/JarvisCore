@@ -21,19 +21,22 @@ import (
 const PORT = ":8080"
 
 var (
-	secretKey   string
-	apiKeysFile string
-	lastPersist time.Time
+	secretKey    string
+	apiKeysFile  string
+	adminKey     string
+	lastPersist  time.Time
+	corsOrigins  map[string]struct{}
+	allowAllCORS bool
 )
 
 // API Key Store (in-memory, TODO: move to database)
 type APIKeyInfo struct {
-	Key        string
-	RateLimit  int // requests per minute
-	Burst      int
-	Enabled    bool
-	CreatedAt  time.Time
-	LastUsed   time.Time
+	Key       string
+	RateLimit int // requests per minute
+	Burst     int
+	Enabled   bool
+	CreatedAt time.Time
+	LastUsed  time.Time
 }
 
 var apiKeys = map[string]*APIKeyInfo{}
@@ -84,6 +87,55 @@ func loadSecretKey() string {
 		log.Fatal("[ERROR] JARVIS_AUTH_SECRET ist nicht gesetzt")
 	}
 	return key
+}
+
+func loadAdminKey() string {
+	return strings.TrimSpace(os.Getenv("JARVIS_AUTH_ADMIN_KEY"))
+}
+
+func loadCORSOrigins() {
+	raw := strings.TrimSpace(os.Getenv("JARVIS_AUTH_CORS_ORIGINS"))
+	corsOrigins = map[string]struct{}{}
+	allowAllCORS = false
+	if raw == "" {
+		return
+	}
+	for _, entry := range strings.Split(raw, ",") {
+		origin := strings.TrimSpace(entry)
+		if origin == "" {
+			continue
+		}
+		if origin == "*" {
+			allowAllCORS = true
+		} else {
+			corsOrigins[origin] = struct{}{}
+		}
+	}
+}
+
+func isAllowedOrigin(origin string) bool {
+	if origin == "" {
+		return false
+	}
+	if allowAllCORS {
+		return true
+	}
+	_, ok := corsOrigins[origin]
+	return ok
+}
+
+func isAdminRequest(r *http.Request) bool {
+	if adminKey == "" {
+		return false
+	}
+	headerKey := strings.TrimSpace(r.Header.Get("X-Admin-Key"))
+	if headerKey == "" {
+		authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+		if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+			headerKey = strings.TrimSpace(authHeader[7:])
+		}
+	}
+	return headerKey != "" && headerKey == adminKey
 }
 
 func parseTime(value string, fallback time.Time) time.Time {
@@ -170,12 +222,12 @@ func hydrateAPIKeys(entries []apiKeyEntry) {
 		createdAt := parseTime(entry.CreatedAt, now)
 		lastUsed := parseTime(entry.LastUsed, time.Time{})
 		apiKeys[entry.Key] = &APIKeyInfo{
-			Key:        entry.Key,
-			RateLimit:  rateLimit,
-			Burst:      burst,
-			Enabled:    entry.Enabled,
-			CreatedAt:  createdAt,
-			LastUsed:   lastUsed,
+			Key:       entry.Key,
+			RateLimit: rateLimit,
+			Burst:     burst,
+			Enabled:   entry.Enabled,
+			CreatedAt: createdAt,
+			LastUsed:  lastUsed,
 		}
 	}
 }
@@ -320,6 +372,9 @@ func VerifyToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, fmt.Errorf("unexpected signing method: %s", token.Method.Alg())
+		}
 		return []byte(secretKey), nil
 	})
 
@@ -402,6 +457,10 @@ func verifyTokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
+	if !isAdminRequest(r) {
+		http.Error(w, `{"error":"Admin access required"}`, http.StatusForbidden)
+		return
+	}
 	var req struct {
 		Key       string `json:"key"`
 		RateLimit int    `json:"rate_limit"`
@@ -413,9 +472,27 @@ func createAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	key := strings.TrimSpace(req.Key)
+	if len(key) < 16 {
+		http.Error(w, `{"error":"API key must be at least 16 characters"}`, http.StatusBadRequest)
+		return
+	}
+
+	if req.RateLimit <= 0 {
+		req.RateLimit = 60
+	}
+	if req.Burst <= 0 {
+		req.Burst = 10
+	}
+
 	apiKeysMutex.Lock()
-	apiKeys[req.Key] = &APIKeyInfo{
-		Key:       req.Key,
+	if _, exists := apiKeys[key]; exists {
+		apiKeysMutex.Unlock()
+		http.Error(w, `{"error":"API key already exists"}`, http.StatusConflict)
+		return
+	}
+	apiKeys[key] = &APIKeyInfo{
+		Key:       key,
 		RateLimit: req.RateLimit,
 		Burst:     req.Burst,
 		Enabled:   true,
@@ -431,18 +508,26 @@ func createAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"message": "API key created",
-		"key":     req.Key,
+		"key":     key,
 	})
 }
 
 func listAPIKeysHandler(w http.ResponseWriter, r *http.Request) {
+	if !isAdminRequest(r) {
+		http.Error(w, `{"error":"Admin access required"}`, http.StatusForbidden)
+		return
+	}
 	apiKeysMutex.RLock()
 	defer apiKeysMutex.RUnlock()
 
 	keys := make([]map[string]interface{}, 0, len(apiKeys))
 	for _, info := range apiKeys {
+		maskedKey := info.Key
+		if len(maskedKey) > 4 {
+			maskedKey = fmt.Sprintf("****%s", maskedKey[len(maskedKey)-4:])
+		}
 		keys = append(keys, map[string]interface{}{
-			"key":        info.Key,
+			"key":        maskedKey,
 			"rate_limit": info.RateLimit,
 			"burst":      info.Burst,
 			"enabled":    info.Enabled,
@@ -468,7 +553,9 @@ func protectedHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	secretKey = loadSecretKey()
+	adminKey = loadAdminKey()
 	loadAPIKeys()
+	loadCORSOrigins()
 
 	r := mux.NewRouter()
 
@@ -488,9 +575,15 @@ func main() {
 	// CORS middleware
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
+			origin := r.Header.Get("Origin")
+			if isAllowedOrigin(origin) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Add("Vary", "Origin")
+			} else if allowAllCORS {
+				w.Header().Set("Access-Control-Allow-Origin", "*")
+			}
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization, X-Admin-Key")
 
 			if r.Method == "OPTIONS" {
 				w.WriteHeader(http.StatusOK)

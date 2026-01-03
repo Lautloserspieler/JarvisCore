@@ -36,9 +36,9 @@
       "category": "information",
       "tags": ["weather", "api"]
     },
-    "spotify_plugin": {
+    "youtube_plugin": {
       "category": "media",
-      "tags": ["music", "spotify", "playback"]
+      "tags": ["youtube", "video", "audio", "music"]
     }
   }
 }

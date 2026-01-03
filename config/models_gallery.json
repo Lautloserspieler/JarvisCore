@@ -170,7 +170,7 @@
         "development"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001006",
-      "downloadUrl": "https://huggingface.co/bartowski/CodeLlama-7b-Instruct-GGUF/resolve/main/CodeLlama-7b-Instruct-Q5_K_M.gguf",
+      "downloadUrl": "https://huggingface.co/TheBloke/CodeLlama-7B-Instruct-GGUF/resolve/main/codellama-7b-instruct.Q5_K_M.gguf",
       "languages": [
         "en"
       ],
@@ -484,7 +484,7 @@
         "quality"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001016",
-      "downloadUrl": "https://huggingface.co/bartowski/zephyr-7b-beta-GGUF/resolve/main/zephyr-7b-beta-Q5_K_M.gguf",
+      "downloadUrl": "https://huggingface.co/TheBloke/zephyr-7B-beta-GGUF/resolve/main/zephyr-7b-beta.Q5_K_M.gguf",
       "languages": [
         "en"
       ],
@@ -587,7 +587,7 @@
         "multilingual"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001019",
-      "downloadUrl": "https://huggingface.co/second-state/StarCoder2-7B-GGUF/resolve/main/StarCoder2-7B-Q5_K_M.gguf",
+      "downloadUrl": "https://huggingface.co/second-state/StarCoder2-7B-GGUF/resolve/main/starcoder2-7b-Q5_K_M.gguf",
       "languages": [
         "en",
         "es",
@@ -621,7 +621,7 @@
         "creative"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001020",
-      "downloadUrl": "https://huggingface.co/bartowski/Nous-Hermes-2-Mistral-7B-DPO-GGUF/resolve/main/Nous-Hermes-2-Mistral-7B-DPO-Q5_K_M.gguf",
+      "downloadUrl": "https://huggingface.co/NousResearch/Nous-Hermes-2-Mistral-7B-DPO-GGUF/resolve/main/Nous-Hermes-2-Mistral-7B-DPO.Q5_K_M.gguf",
       "languages": [
         "en"
       ],

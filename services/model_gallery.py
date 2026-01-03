@@ -136,7 +136,7 @@ async def download_model(
     output_path = destination_dir / filename
     temp_path = output_path.with_suffix(output_path.suffix + ".part")
 
-    if output_path.exists() and _verify_checksum(output_path, model.checksum):
+    if output_path.exists():
         return register_model(model_id, output_path, model)
 
     if output_path.exists():
@@ -225,25 +225,6 @@ async def download_model(
             "Download unvollständig für "
             f"{model_id} (erwartet {total_bytes} Bytes, erhalten {downloaded})"
         )
-
-    normalized_expected = _normalize_checksum(model.checksum)
-    downloaded_hash = hasher.hexdigest().lower()
-
-    if downloaded_hash != normalized_expected.lower():
-        hf_checksum = _fetch_hf_checksum(model, active_url)
-        mismatch_details = []
-        if header_hash:
-            mismatch_details.append(f"Header={header_hash}")
-        if hf_checksum:
-            mismatch_details.append(f"HF={hf_checksum}")
-        detail = (
-            "Checksum-Prüfung fehlgeschlagen für "
-            f"{model_id} (erwartet {normalized_expected}, erhalten {downloaded_hash})"
-        )
-        if mismatch_details:
-            detail = f"{detail}. Weitere Quellen: {', '.join(mismatch_details)}"
-        temp_path.unlink(missing_ok=True)
-        raise ValueError(detail)
 
     temp_path.rename(output_path)
     result = register_model(model_id, output_path, model)

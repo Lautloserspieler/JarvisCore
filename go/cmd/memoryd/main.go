@@ -69,6 +69,11 @@ func withLogging(logger *log.Logger, next http.Handler) http.Handler {
 
 func sanitizeForLog(value string) string {
 	return strings.Map(func(r rune) rune {
+		// Remove control characters, in particular newline and carriage return,
+		// to prevent log injection / forged log lines.
+		if r == '\n' || r == '\r' {
+			return -1
+		}
 		if r < 32 || r == 127 {
 			return -1
 		}

@@ -64,9 +64,14 @@ func withLogging(logger *log.Logger, next http.Handler) http.Handler {
 
 func sanitizeForLog(value string) string {
 	return strings.Map(func(r rune) rune {
-		if r < 32 || r == 127 {
-			return -1
+		// Allow a conservative set of visible ASCII characters commonly used in URLs;
+		// replace anything else (including control chars) with '?' to avoid log forging.
+		if (r >= 'a' && r <= 'z') ||
+			(r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') ||
+			strings.ContainsRune("-._~!$&'()*+,;=:@/?", r) {
+			return r
 		}
-		return r
+		return '?'
 	}, value)
 }

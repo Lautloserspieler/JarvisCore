@@ -59,7 +59,7 @@ func withLogging(logger *log.Logger, next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		method := strconv.QuoteToASCII(r.Method)
 		path := strconv.QuoteToASCII(r.URL.EscapedPath())
-		logger.Printf("request method=%s path=%s duration=%s", method, path, time.Since(start))
+		logger.Printf("request method=%s path=%s duration=%s", method, sanitizeForLog(path), time.Since(start))
 	})
 }
 

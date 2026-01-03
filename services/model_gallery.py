@@ -9,6 +9,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Awaitable, Iterable, Protocol
+from urllib import parse, request
 from urllib.parse import urlsplit, urlunsplit
 
 import aiohttp
@@ -85,7 +86,7 @@ async def download_model(
     destination_dir = destination_dir or MODELS_DIR
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    download_url = _resolve_download_url(model.downloadUrl)
+    download_url = _resolve_download_url(model)
     filename = _filename_from_url(download_url, model_id)
     output_path = destination_dir / filename
     temp_path = output_path.with_suffix(output_path.suffix + ".part")
@@ -224,8 +225,8 @@ def _filename_from_url(url: str, fallback: str) -> str:
     return name or f"{fallback}.bin"
 
 
-def _resolve_download_url(raw_url: str) -> str:
-    url = str(raw_url)
+def _resolve_download_url(model: ModelMetadata) -> str:
+    url = str(model.downloadUrl)
     override_base = os.environ.get("JARVIS_GALLERY_CDN_BASE_URL")
     if override_base:
         override_parts = urlsplit(override_base)
@@ -244,12 +245,72 @@ def _resolve_download_url(raw_url: str) -> str:
             )
         )
     elif "cdn.jarviscore.example" in url:
-        raise ValueError(
-            "Download-URL zeigt auf den Platzhalter cdn.jarviscore.example. "
-            "Bitte setze echte URLs in config/models_gallery.json oder "
-            "verwende JARVIS_GALLERY_CDN_BASE_URL."
-        )
+        url = _resolve_bartowski_url(model)
+        if url is None:
+            raise ValueError(
+                "Download-URL zeigt auf den Platzhalter cdn.jarviscore.example und "
+                "kein passendes bartowski-Modell konnte ermittelt werden. "
+                "Bitte setze echte URLs in config/models_gallery.json oder "
+                "verwende JARVIS_GALLERY_CDN_BASE_URL."
+            )
     return url
+
+
+def _resolve_bartowski_url(model: ModelMetadata) -> str | None:
+    query = model.name.strip()
+    if not query:
+        return None
+    search_params = {
+        "search": query,
+        "author": "bartowski",
+        "limit": "5",
+    }
+    search_url = f"https://huggingface.co/api/models?{parse.urlencode(search_params)}"
+    try:
+        with request.urlopen(search_url, timeout=10) as response:
+            results = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        logger.warning("Bartowski-Suche fehlgeschlagen: %s", exc)
+        return None
+
+    if not results:
+        return None
+
+    repo_id = results[0].get("modelId")
+    if not repo_id:
+        return None
+
+    repo_url = f"https://huggingface.co/api/models/{repo_id}"
+    try:
+        with request.urlopen(repo_url, timeout=10) as response:
+            repo_payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        logger.warning("Bartowski-Repo konnte nicht geladen werden: %s", exc)
+        return None
+
+    siblings = repo_payload.get("siblings", [])
+    gguf_files = [
+        entry.get("rfilename")
+        for entry in siblings
+        if isinstance(entry, dict) and str(entry.get("rfilename", "")).endswith(".gguf")
+    ]
+    gguf_files = [name for name in gguf_files if name]
+    if not gguf_files:
+        return None
+
+    quant_hint = model.quantization.replace("_", "").upper()
+    param_hint = model.parameters.replace(" ", "").upper()
+    preferred = []
+    for name in gguf_files:
+        upper_name = name.upper().replace("_", "")
+        if quant_hint and quant_hint in upper_name:
+            preferred.append(name)
+        elif param_hint and param_hint in upper_name:
+            preferred.append(name)
+
+    chosen = preferred[0] if preferred else gguf_files[0]
+    logger.info("Nutze bartowski-Download %s (%s)", repo_id, chosen)
+    return f"https://huggingface.co/{repo_id}/resolve/main/{chosen}"
 
 
 def _get_model_metadata(models: Iterable[ModelMetadata], model_id: str) -> ModelMetadata | None:

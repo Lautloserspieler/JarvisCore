@@ -16,6 +16,7 @@ Wichtige Pfade:
 1. **Gallery-Daten bereitstellen**
    - Standardmäßig wird `config/models_gallery.json` verwendet.
    - Optional kann im Code eine CDN-URL an `load_gallery`/`fetch_gallery` übergeben werden, z. B. in einer eigenen Integration oder bei Bedarf für eigene Deployments.
+   - Alternativ kann `GALLERY_CDN_BASE_URL` gesetzt werden, um den Host der `downloadUrl`-Felder zentral zu überschreiben (z. B. `https://cdn.example.com`).
 
 2. **Backend starten**
    - Stelle sicher, dass das Backend läuft und die Routen unter `/api/models` verfügbar sind.
@@ -148,7 +149,7 @@ Zusätzliche Status-Felder können beim Abruf über `GET /api/models/installed` 
 - Stelle sicher, dass der Cache (`cache/gallery_cache.json`) nicht veraltet oder beschädigt ist.
 
 **Warum bleibt der Fortschritt bei 0 %?**
-- Stelle sicher, dass das CDN/der Download erreichbar ist und dass der WebSocket `/api/models/ws/progress` offen ist.
+- Stelle sicher, dass das CDN/der Download erreichbar ist, `GALLERY_CDN_BASE_URL` korrekt gesetzt ist und dass der WebSocket `/api/models/ws/progress` offen ist.
 
 **Wie entferne ich ein Modell vollständig?**
 - Nutze `DELETE /api/models/{model_id}`; dies entfernt den Registry-Eintrag und löscht die Datei, falls sie vorhanden ist.

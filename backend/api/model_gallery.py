@@ -55,7 +55,9 @@ async def _progress_callback(
     *,
     status: str | None = None,
     error_message: str | None = None,
+    errorMessage: str | None = None,
 ) -> None:
+    normalized_error = error_message or errorMessage
     payload: dict[str, Any] = {
         "model_id": model_id,
         "progress": progress,
@@ -64,8 +66,8 @@ async def _progress_callback(
     }
     if status is not None:
         payload["status"] = status
-    if error_message is not None:
-        payload["errorMessage"] = error_message
+    if normalized_error is not None:
+        payload["errorMessage"] = normalized_error
     await progress_broadcaster.broadcast(payload)
 
 

@@ -4,11 +4,12 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Awaitable, Iterable, Protocol
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 import aiohttp
 
@@ -84,7 +85,8 @@ async def download_model(
     destination_dir = destination_dir or MODELS_DIR
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    filename = _filename_from_url(str(model.downloadUrl), model_id)
+    download_url = _resolve_download_url(model.downloadUrl)
+    filename = _filename_from_url(download_url, model_id)
     output_path = destination_dir / filename
     temp_path = output_path.with_suffix(output_path.suffix + ".part")
 
@@ -98,11 +100,17 @@ async def download_model(
         temp_path.unlink()
 
     if progress_callback:
-        await progress_callback(model_id, 0.0, 0, None)
+        await progress_callback(
+            model_id,
+            0.0,
+            0,
+            None,
+            status="downloading",
+        )
 
     timeout = aiohttp.ClientTimeout(total=DOWNLOAD_TIMEOUT_SECONDS)
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.get(str(model.downloadUrl)) as response:
+        async with session.get(download_url) as response:
             response.raise_for_status()
             total = response.headers.get("Content-Length")
             total_bytes = int(total) if total and total.isdigit() else None
@@ -120,7 +128,13 @@ async def download_model(
                             if total_bytes and total_bytes > 0
                             else None
                         )
-                        await progress_callback(model_id, progress, downloaded, total_bytes)
+                        await progress_callback(
+                            model_id,
+                            progress,
+                            downloaded,
+                            total_bytes,
+                            status="downloading",
+                        )
 
     if not _verify_checksum(temp_path, model.checksum):
         temp_path.unlink(missing_ok=True)
@@ -130,7 +144,13 @@ async def download_model(
     result = register_model(model_id, output_path, model)
     if progress_callback:
         total_final = output_path.stat().st_size
-        await progress_callback(model_id, 100.0, total_final, total_final)
+        await progress_callback(
+            model_id,
+            100.0,
+            total_final,
+            total_final,
+            status="completed",
+        )
     return result
 
 
@@ -202,6 +222,34 @@ def get_installed_models() -> list[dict]:
 def _filename_from_url(url: str, fallback: str) -> str:
     name = Path(urlsplit(url).path).name
     return name or f"{fallback}.bin"
+
+
+def _resolve_download_url(raw_url: str) -> str:
+    url = str(raw_url)
+    override_base = os.environ.get("JARVIS_GALLERY_CDN_BASE_URL")
+    if override_base:
+        override_parts = urlsplit(override_base)
+        if not override_parts.scheme or not override_parts.netloc:
+            raise ValueError(
+                "JARVIS_GALLERY_CDN_BASE_URL muss ein vollstaendiger URL sein."
+            )
+        url_parts = urlsplit(url)
+        url = urlunsplit(
+            (
+                override_parts.scheme,
+                override_parts.netloc,
+                url_parts.path,
+                url_parts.query,
+                url_parts.fragment,
+            )
+        )
+    elif "cdn.jarviscore.example" in url:
+        raise ValueError(
+            "Download-URL zeigt auf den Platzhalter cdn.jarviscore.example. "
+            "Bitte setze echte URLs in config/models_gallery.json oder "
+            "verwende JARVIS_GALLERY_CDN_BASE_URL."
+        )
+    return url
 
 
 def _get_model_metadata(models: Iterable[ModelMetadata], model_id: str) -> ModelMetadata | None:

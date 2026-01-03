@@ -89,7 +89,12 @@ async def download_model(
     destination_dir.mkdir(parents=True, exist_ok=True)
 
     download_url = _resolve_download_url(model)
-    filename = _filename_from_url(download_url, model_id)
+    fallback_url = _resolve_hf_fallback_url(model, download_url)
+    url_candidates = [download_url]
+    if fallback_url and fallback_url != download_url:
+        url_candidates.append(fallback_url)
+    active_url = url_candidates[0]
+    filename = _filename_from_url(active_url, model_id)
     output_path = destination_dir / filename
     temp_path = output_path.with_suffix(output_path.suffix + ".part")
 
@@ -119,37 +124,59 @@ async def download_model(
     timeout = aiohttp.ClientTimeout(total=DOWNLOAD_TIMEOUT_SECONDS)
     headers = _build_download_headers()
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.get(download_url, headers=headers) as response:
-            if response.status == 401:
-                raise ValueError(
-                    "Download erfordert einen HuggingFace-Token. "
-                    "Bitte Token in der Oberfläche speichern oder "
-                    "HF_TOKEN/HUGGING_FACE_HUB_TOKEN setzen."
-                )
-            response.raise_for_status()
-            total = response.headers.get("Content-Length")
-            total_bytes = int(total) if total and total.isdigit() else None
-            downloaded = 0
+        response = None
+        for index, candidate_url in enumerate(url_candidates):
+            if index > 0:
+                active_url = candidate_url
+            response = await session.get(active_url, headers=headers)
+            if response.status == 404 and index == 0 and len(url_candidates) > 1:
+                await response.release()
+                continue
+            break
 
-            with temp_path.open("wb") as file_handle:
-                async for chunk in response.content.iter_chunked(CHUNK_SIZE_BYTES):
-                    if not chunk:
-                        continue
-                    file_handle.write(chunk)
-                    downloaded += len(chunk)
-                    if progress_callback:
-                        progress = (
-                            (downloaded / total_bytes) * 100
-                            if total_bytes and total_bytes > 0
-                            else None
-                        )
-                        await progress_callback(
-                            model_id,
-                            progress,
-                            downloaded,
-                            total_bytes,
-                            status="downloading",
-                        )
+        if response is None:
+            raise ValueError("Download-URL konnte nicht aufgelöst werden.")
+
+        if response.status == 401:
+            await response.release()
+            raise ValueError(
+                "Download erfordert einen HuggingFace-Token. "
+                "Bitte Token in der Oberfläche speichern oder "
+                "HF_TOKEN/HUGGING_FACE_HUB_TOKEN setzen."
+            )
+
+        if response.status == 404:
+            await response.release()
+            raise ValueError(
+                "Download-Datei nicht gefunden (404). "
+                "Bitte prüfe die Datei-URL in config/models_gallery.json."
+            )
+
+        response.raise_for_status()
+        total = response.headers.get("Content-Length")
+        total_bytes = int(total) if total and total.isdigit() else None
+        downloaded = 0
+
+        with temp_path.open("wb") as file_handle:
+            async for chunk in response.content.iter_chunked(CHUNK_SIZE_BYTES):
+                if not chunk:
+                    continue
+                file_handle.write(chunk)
+                downloaded += len(chunk)
+                if progress_callback:
+                    progress = (
+                        (downloaded / total_bytes) * 100
+                        if total_bytes and total_bytes > 0
+                        else None
+                    )
+                    await progress_callback(
+                        model_id,
+                        progress,
+                        downloaded,
+                        total_bytes,
+                        status="downloading",
+                    )
+        response.release()
 
     if not _verify_checksum(temp_path, model.checksum):
         temp_path.unlink(missing_ok=True)
@@ -324,6 +351,52 @@ def _resolve_bartowski_url(model: ModelMetadata) -> str | None:
 
     chosen = preferred[0] if preferred else gguf_files[0]
     logger.info("Nutze bartowski-Download %s (%s)", repo_id, chosen)
+    return f"https://huggingface.co/{repo_id}/resolve/main/{chosen}"
+
+
+def _resolve_hf_fallback_url(model: ModelMetadata, download_url: str) -> str | None:
+    if "huggingface.co" not in download_url or "/resolve/" not in download_url:
+        return None
+
+    parts = urlsplit(download_url).path.strip("/").split("/")
+    if len(parts) < 3:
+        return None
+    repo_id = "/".join(parts[:2])
+    filename = parts[-1]
+
+    repo_url = f"https://huggingface.co/api/models/{repo_id}"
+    try:
+        with request.urlopen(repo_url, timeout=10) as response:
+            repo_payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        logger.warning("HF-Repo konnte nicht geladen werden: %s", exc)
+        return None
+
+    siblings = repo_payload.get("siblings", [])
+    gguf_files = [
+        entry.get("rfilename")
+        for entry in siblings
+        if isinstance(entry, dict) and str(entry.get("rfilename", "")).endswith(".gguf")
+    ]
+    gguf_files = [name for name in gguf_files if name]
+    if not gguf_files:
+        return None
+
+    if filename in gguf_files:
+        return download_url
+
+    quant_hint = model.quantization.replace("_", "").upper()
+    param_hint = model.parameters.replace(" ", "").upper()
+    preferred = []
+    for name in gguf_files:
+        upper_name = name.upper().replace("_", "")
+        if quant_hint and quant_hint in upper_name:
+            preferred.append(name)
+        elif param_hint and param_hint in upper_name:
+            preferred.append(name)
+
+    chosen = preferred[0] if preferred else gguf_files[0]
+    logger.info("HF-Fallback nutzt %s (%s)", repo_id, chosen)
     return f"https://huggingface.co/{repo_id}/resolve/main/{chosen}"
 
 

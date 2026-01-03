@@ -29,6 +29,7 @@ from core.llama_inference import llama_runtime
 # Import model downloader
 from backend.model_downloader import model_downloader, MODEL_URLS
 from backend.api.model_gallery import router as model_gallery_router
+from services import model_gallery as gallery_service
 from config.hf_token import delete_token as delete_hf_token_file
 from config.hf_token import load_token as load_hf_token
 from config.hf_token import save_token as save_hf_token
@@ -713,6 +714,8 @@ async def load_model(model_id: str):
     logs_db.append({"id": str(uuid.uuid4()), "timestamp": datetime.now().isoformat(), "level": "info", "message": f"Loading model: {model_id}", "source": "models"})
     
     model_path = model_downloader.get_model_path(model_id)
+    if not model_path:
+        model_path = gallery_service.resolve_model_path(model_id)
     if not model_path:
         return {"success": False, "message": "Modell nicht gefunden"}
     

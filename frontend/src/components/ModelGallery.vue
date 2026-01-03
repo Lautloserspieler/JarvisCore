@@ -113,8 +113,11 @@
         :progress-state="progressById[model.id]"
         :installing="installingIds.has(model.id)"
         :installed="installedIds.has(model.id)"
+        :active="activeModelId === model.id"
+        :activating="activatingIds.has(model.id)"
         :deleting="deletingIds.has(model.id)"
         @install="installModel"
+        @activate="activateModel"
         @delete="deleteModel"
         @details="openDetails"
       />
@@ -214,8 +217,10 @@ const maxSize = ref<number | null>(null);
 
 const progressById = ref<Record<string, ProgressState>>({});
 const installingIds = ref(new Set<string>());
+const activatingIds = ref(new Set<string>());
 const installedIds = ref(new Set<string>());
 const deletingIds = ref(new Set<string>());
+const activeModelId = ref<string | null>(null);
 const activeInstallId = ref<string | null>(null);
 const selectedModel = ref<ModelMetadata | null>(null);
 const showTokenDialog = ref(false);
@@ -329,6 +334,17 @@ const loadInstalled = async () => {
   }
 };
 
+const loadActiveModel = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/models/active`);
+    if (!response.ok) throw new Error('Aktives Modell konnte nicht geladen werden');
+    const data = await response.json();
+    activeModelId.value = data?.loaded ? data.id : null;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const fetchTokenStatus = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/hf-token/status`);
@@ -394,6 +410,25 @@ const installModel = async (modelId: string) => {
   }
 };
 
+const activateModel = async (modelId: string) => {
+  if (activatingIds.value.has(modelId)) return;
+  activatingIds.value.add(modelId);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/models/${modelId}/load`, {
+      method: 'POST',
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.message ?? 'Modell konnte nicht aktiviert werden');
+    }
+    activeModelId.value = modelId;
+  } catch (error) {
+    console.error(error);
+  } finally {
+    activatingIds.value.delete(modelId);
+  }
+};
+
 const deleteModel = async (modelId: string) => {
   if (deletingIds.value.has(modelId)) return;
   deletingIds.value.add(modelId);
@@ -403,6 +438,7 @@ const deleteModel = async (modelId: string) => {
     });
     if (!response.ok) throw new Error('Modell konnte nicht gelöscht werden');
     await loadInstalled();
+    await loadActiveModel();
   } catch (error) {
     console.error(error);
   } finally {
@@ -446,6 +482,7 @@ const connectWebSocket = () => {
       }
       if (nextStatus === 'completed' && current.status !== 'completed') {
         await loadInstalled();
+        await loadActiveModel();
       }
     } catch (error) {
       console.error('Fehler beim Verarbeiten des Progress-Events', error);
@@ -460,6 +497,7 @@ const connectWebSocket = () => {
 onMounted(() => {
   loadGallery();
   loadInstalled();
+  loadActiveModel();
   connectWebSocket();
 });
 

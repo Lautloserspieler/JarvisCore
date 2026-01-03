@@ -9,6 +9,7 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import Lock
 from typing import Awaitable, Iterable, Protocol
 from urllib import parse, request
 from urllib.parse import urlsplit, urlunsplit
@@ -33,6 +34,8 @@ CHUNK_SIZE_BYTES = 8192
 DOWNLOAD_TIMEOUT_SECONDS = 3600
 
 logger = logging.getLogger(__name__)
+_ACTIVE_DOWNLOADS: dict[str, asyncio.Task] = {}
+_ACTIVE_DOWNLOADS_LOCK = Lock()
 
 
 class ProgressCallback(Protocol):
@@ -470,6 +473,10 @@ def schedule_download(
     gallery: GalleryPayload,
     progress_callback: ProgressCallback | None = None,
 ) -> asyncio.Task:
+    with _ACTIVE_DOWNLOADS_LOCK:
+        if model_id in _ACTIVE_DOWNLOADS:
+            return _ACTIVE_DOWNLOADS[model_id]
+
     async def _task_wrapper() -> dict:
         try:
             return await download_model(
@@ -492,10 +499,12 @@ def schedule_download(
                     logger.exception(
                         "Fehler beim Melden des Download-Fehlers für %s", model_id
                     )
-            return {
-                "status": "error",
-                "model_id": model_id,
-                "error": str(exc),
-            }
+            raise
+        finally:
+            with _ACTIVE_DOWNLOADS_LOCK:
+                _ACTIVE_DOWNLOADS.pop(model_id, None)
 
-    return asyncio.create_task(_task_wrapper())
+    task = asyncio.create_task(_task_wrapper())
+    with _ACTIVE_DOWNLOADS_LOCK:
+        _ACTIVE_DOWNLOADS[model_id] = task
+    return task

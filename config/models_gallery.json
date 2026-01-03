@@ -391,7 +391,7 @@
         "development"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001013",
-      "downloadUrl": "https://huggingface.co/TheBloke/deepseek-coder-6.7b-instruct-GGUF/resolve/main/deepseek-coder-6.7b-instruct.Q5_K_M.gguf",
+      "downloadUrl": "https://huggingface.co/deepseek-ai/deepseek-coder-6.7b-base",
       "languages": [
         "en"
       ],

@@ -59,15 +59,20 @@ func withLogging(logger *log.Logger, next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		method := strconv.QuoteToASCII(r.Method)
 		path := strconv.QuoteToASCII(r.URL.EscapedPath())
-		logger.Printf("request method=%s path=%s duration=%s", method, sanitizeForLog(path), time.Since(start))
+		logger.Printf("request method=%s path=%s duration=%s", sanitizeLogString(method), sanitizeLogString(path), time.Since(start))
 	})
 }
 
-func sanitizeForLog(value string) string {
-	return strings.Map(func(r rune) rune {
+func sanitizeLogString(value string) string {
+	s := strings.Map(func(r rune) rune {
 		if r < 32 || r == 127 {
 			return -1
 		}
 		return r
 	}, value)
+	// Remove surrounding quotes added by strconv.QuoteToASCII, if present.
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	}
+	return s
 }

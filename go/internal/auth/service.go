@@ -22,18 +22,22 @@ const defaultListenAddr = ":8080"
 // Configuration
 
 type Config struct {
-	ListenAddr string
-	SecretKey  string
-	KeysFile   string
-	KeysEnv    string
+	ListenAddr  string
+	SecretKey   string
+	KeysFile    string
+	KeysEnv     string
+	AdminKey    string
+	CORSOrigins string
 }
 
 func LoadConfig() (Config, error) {
 	cfg := Config{
-		ListenAddr: defaultListenAddr,
-		KeysFile:   filepath.Join("config", "auth_keys.json"),
-		KeysEnv:    strings.TrimSpace(os.Getenv("JARVIS_AUTH_KEYS")),
-		SecretKey:  strings.TrimSpace(os.Getenv("JARVIS_AUTH_SECRET")),
+		ListenAddr:  defaultListenAddr,
+		KeysFile:    filepath.Join("config", "auth_keys.json"),
+		KeysEnv:     strings.TrimSpace(os.Getenv("JARVIS_AUTH_KEYS")),
+		SecretKey:   strings.TrimSpace(os.Getenv("JARVIS_AUTH_SECRET")),
+		AdminKey:    strings.TrimSpace(os.Getenv("JARVIS_AUTH_ADMIN_KEY")),
+		CORSOrigins: strings.TrimSpace(os.Getenv("JARVIS_AUTH_CORS_ORIGINS")),
 	}
 
 	if value := strings.TrimSpace(os.Getenv("JARVIS_AUTH_ADDR")); value != "" {
@@ -61,11 +65,14 @@ type APIKeyInfo struct {
 }
 
 var (
-	secretKey   string
-	apiKeysFile string
-	lastPersist time.Time
-	apiKeys     = map[string]*APIKeyInfo{}
-	apiKeysMu   sync.RWMutex
+	secretKey    string
+	apiKeysFile  string
+	adminKey     string
+	lastPersist  time.Time
+	apiKeys      = map[string]*APIKeyInfo{}
+	apiKeysMu    sync.RWMutex
+	corsOrigins  map[string]struct{}
+	allowAllCORS bool
 )
 
 // Rate Limiter Store
@@ -116,6 +123,51 @@ func parseTime(value string, fallback time.Time) time.Time {
 		return fallback
 	}
 	return parsed
+}
+
+func loadCORSOrigins(raw string) {
+	corsOrigins = map[string]struct{}{}
+	allowAllCORS = false
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return
+	}
+	for _, entry := range strings.Split(raw, ",") {
+		origin := strings.TrimSpace(entry)
+		if origin == "" {
+			continue
+		}
+		if origin == "*" {
+			allowAllCORS = true
+		} else {
+			corsOrigins[origin] = struct{}{}
+		}
+	}
+}
+
+func isAllowedOrigin(origin string) bool {
+	if origin == "" {
+		return false
+	}
+	if allowAllCORS {
+		return true
+	}
+	_, ok := corsOrigins[origin]
+	return ok
+}
+
+func isAdminRequest(r *http.Request) bool {
+	if adminKey == "" {
+		return false
+	}
+	headerKey := strings.TrimSpace(r.Header.Get("X-Admin-Key"))
+	if headerKey == "" {
+		authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+		if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+			headerKey = strings.TrimSpace(authHeader[7:])
+		}
+	}
+	return headerKey != "" && headerKey == adminKey
 }
 
 func loadAPIKeysFromFile(path string) ([]apiKeyEntry, error) {
@@ -339,6 +391,9 @@ func VerifyToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, fmt.Errorf("unexpected signing method: %s", token.Method.Alg())
+		}
 		return []byte(secretKey), nil
 	})
 
@@ -364,6 +419,8 @@ func NewService(cfg Config, logger *log.Logger) (*Service, error) {
 	}
 
 	secretKey = cfg.SecretKey
+	adminKey = cfg.AdminKey
+	loadCORSOrigins(cfg.CORSOrigins)
 	if err := loadAPIKeys(logger, cfg); err != nil {
 		return nil, err
 	}
@@ -464,6 +521,10 @@ func (s *Service) verifyTokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) createAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
+	if !isAdminRequest(r) {
+		http.Error(w, `{"error":"Admin access required"}`, http.StatusForbidden)
+		return
+	}
 	var req struct {
 		Key       string `json:"key"`
 		RateLimit int    `json:"rate_limit"`
@@ -475,9 +536,26 @@ func (s *Service) createAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	key := strings.TrimSpace(req.Key)
+	if len(key) < 16 {
+		http.Error(w, `{"error":"API key must be at least 16 characters"}`, http.StatusBadRequest)
+		return
+	}
+	if req.RateLimit <= 0 {
+		req.RateLimit = 60
+	}
+	if req.Burst <= 0 {
+		req.Burst = 10
+	}
+
 	apiKeysMu.Lock()
-	apiKeys[req.Key] = &APIKeyInfo{
-		Key:       req.Key,
+	if _, exists := apiKeys[key]; exists {
+		apiKeysMu.Unlock()
+		http.Error(w, `{"error":"API key already exists"}`, http.StatusConflict)
+		return
+	}
+	apiKeys[key] = &APIKeyInfo{
+		Key:       key,
 		RateLimit: req.RateLimit,
 		Burst:     req.Burst,
 		Enabled:   true,
@@ -493,18 +571,26 @@ func (s *Service) createAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"message": "API key created",
-		"key":     req.Key,
+		"key":     key,
 	})
 }
 
-func (s *Service) listAPIKeysHandler(w http.ResponseWriter, _ *http.Request) {
+func (s *Service) listAPIKeysHandler(w http.ResponseWriter, r *http.Request) {
+	if !isAdminRequest(r) {
+		http.Error(w, `{"error":"Admin access required"}`, http.StatusForbidden)
+		return
+	}
 	apiKeysMu.RLock()
 	defer apiKeysMu.RUnlock()
 
 	keys := make([]map[string]interface{}, 0, len(apiKeys))
 	for _, info := range apiKeys {
+		maskedKey := info.Key
+		if len(maskedKey) > 4 {
+			maskedKey = fmt.Sprintf("****%s", maskedKey[len(maskedKey)-4:])
+		}
 		keys = append(keys, map[string]interface{}{
-			"key":        info.Key,
+			"key":        maskedKey,
 			"rate_limit": info.RateLimit,
 			"burst":      info.Burst,
 			"enabled":    info.Enabled,
@@ -530,9 +616,15 @@ func (s *Service) protectedHandler(w http.ResponseWriter, r *http.Request) {
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := r.Header.Get("Origin")
+		if isAllowedOrigin(origin) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Add("Vary", "Origin")
+		} else if allowAllCORS {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization, X-Admin-Key")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)

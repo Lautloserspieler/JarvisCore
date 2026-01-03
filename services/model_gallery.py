@@ -160,11 +160,13 @@ async def download_model(
         total_bytes = int(total) if total and total.isdigit() else None
         downloaded = 0
 
+        hasher = hashlib.sha256()
         with temp_path.open("wb") as file_handle:
             async for chunk in response.content.iter_chunked(CHUNK_SIZE_BYTES):
                 if not chunk:
                     continue
                 file_handle.write(chunk)
+                hasher.update(chunk)
                 downloaded += len(chunk)
                 if progress_callback:
                     progress = (
@@ -181,7 +183,11 @@ async def download_model(
                     )
         response.release()
 
-    if not _verify_checksum(temp_path, model.checksum):
+    normalized_expected = model.checksum.strip()
+    if normalized_expected.lower().startswith("sha256:"):
+        normalized_expected = normalized_expected.split(":", 1)[1].strip()
+    downloaded_hash = hasher.hexdigest().lower()
+    if downloaded_hash != normalized_expected.lower():
         temp_path.unlink(missing_ok=True)
         raise ValueError(f"Checksum-Prüfung fehlgeschlagen für {model_id}")
 

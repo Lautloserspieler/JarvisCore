@@ -113,8 +113,11 @@
         :progress-state="progressById[model.id]"
         :installing="installingIds.has(model.id)"
         :installed="installedIds.has(model.id)"
+        :active="activeModelId === model.id"
+        :activating="activatingIds.has(model.id)"
         :deleting="deletingIds.has(model.id)"
         @install="installModel"
+        @activate="activateModel"
         @delete="deleteModel"
         @details="openDetails"
       />
@@ -136,6 +139,15 @@
       :error-message="activeProgress?.status === 'error' ? activeProgress?.errorMessage ?? null : null"
       @close="activeInstallId = null"
     />
+
+    <ModelGalleryTokenDialog
+      :open="showTokenDialog"
+      :model-name="activeInstallModel?.name || ''"
+      :saving="tokenSaving"
+      :error-message="tokenError"
+      @close="closeTokenDialog"
+      @submit="handleTokenSubmit"
+    />
   </div>
 </template>
 
@@ -145,6 +157,7 @@ import { API_BASE_URL } from '@/lib/api';
 import ModelCard from '@/components/ModelCard.vue';
 import InstallationProgress from '@/components/InstallationProgress.vue';
 import ModelInfo from '@/components/ModelInfo.vue';
+import ModelGalleryTokenDialog from '@/components/ModelGalleryTokenDialog.vue';
 
 interface HardwareSpec {
   cpu: string;
@@ -204,10 +217,16 @@ const maxSize = ref<number | null>(null);
 
 const progressById = ref<Record<string, ProgressState>>({});
 const installingIds = ref(new Set<string>());
+const activatingIds = ref(new Set<string>());
 const installedIds = ref(new Set<string>());
 const deletingIds = ref(new Set<string>());
+const activeModelId = ref<string | null>(null);
 const activeInstallId = ref<string | null>(null);
 const selectedModel = ref<ModelMetadata | null>(null);
+const showTokenDialog = ref(false);
+const tokenSaving = ref(false);
+const tokenError = ref<string | null>(null);
+const tokenModelId = ref<string | null>(null);
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let socket: WebSocket | null = null;
@@ -315,6 +334,50 @@ const loadInstalled = async () => {
   }
 };
 
+const loadActiveModel = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/models/active`);
+    if (!response.ok) throw new Error('Aktives Modell konnte nicht geladen werden');
+    const data = await response.json();
+    activeModelId.value = data?.loaded ? data.id : null;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const fetchTokenStatus = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/hf-token/status`);
+    if (!response.ok) {
+      return { has_token: false };
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Token-Status konnte nicht geladen werden', error);
+    return { has_token: false };
+  }
+};
+
+const requiresTokenPrompt = (message: string | null | undefined) => {
+  if (!message) return false;
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes('huggingface') ||
+    normalized.includes('unauthorized') ||
+    normalized.includes('401') ||
+    normalized.includes('token')
+  );
+};
+
+const promptForToken = async (modelId: string, message?: string | null) => {
+  if (showTokenDialog.value) return;
+  const status = await fetchTokenStatus();
+  if (status.has_token) return;
+  tokenModelId.value = modelId;
+  tokenError.value = message ?? null;
+  showTokenDialog.value = true;
+};
+
 const installModel = async (modelId: string) => {
   if (installingIds.value.has(modelId)) return;
   installingIds.value.add(modelId);
@@ -347,6 +410,25 @@ const installModel = async (modelId: string) => {
   }
 };
 
+const activateModel = async (modelId: string) => {
+  if (activatingIds.value.has(modelId)) return;
+  activatingIds.value.add(modelId);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/models/${modelId}/load`, {
+      method: 'POST',
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.message ?? 'Modell konnte nicht aktiviert werden');
+    }
+    activeModelId.value = modelId;
+  } catch (error) {
+    console.error(error);
+  } finally {
+    activatingIds.value.delete(modelId);
+  }
+};
+
 const deleteModel = async (modelId: string) => {
   if (deletingIds.value.has(modelId)) return;
   deletingIds.value.add(modelId);
@@ -356,6 +438,7 @@ const deleteModel = async (modelId: string) => {
     });
     if (!response.ok) throw new Error('Modell konnte nicht gelöscht werden');
     await loadInstalled();
+    await loadActiveModel();
   } catch (error) {
     console.error(error);
   } finally {
@@ -382,17 +465,24 @@ const connectWebSocket = () => {
         status: 'downloading' as const,
       };
       const progressValue = payload.progress !== null ? Number(payload.progress) : null;
+      const payloadStatus = typeof payload.status === 'string' ? payload.status : null;
       const nextStatus =
-        progressValue !== null && progressValue >= 100 ? 'completed' : 'downloading';
+        payloadStatus ||
+        (progressValue !== null && progressValue >= 100 ? 'completed' : 'downloading');
       progressById.value[payload.model_id] = {
         ...current,
         progress: progressValue,
         downloaded: payload.downloaded ?? current.downloaded,
         total: payload.total ?? current.total,
         status: nextStatus,
+        errorMessage: payload.errorMessage ?? current.errorMessage,
       };
+      if (nextStatus === 'error' && requiresTokenPrompt(payload.errorMessage)) {
+        await promptForToken(payload.model_id, payload.errorMessage);
+      }
       if (nextStatus === 'completed' && current.status !== 'completed') {
         await loadInstalled();
+        await loadActiveModel();
       }
     } catch (error) {
       console.error('Fehler beim Verarbeiten des Progress-Events', error);
@@ -407,6 +497,7 @@ const connectWebSocket = () => {
 onMounted(() => {
   loadGallery();
   loadInstalled();
+  loadActiveModel();
   connectWebSocket();
 });
 
@@ -414,4 +505,40 @@ onBeforeUnmount(() => {
   if (debounceTimer) clearTimeout(debounceTimer);
   if (socket) socket.close();
 });
+
+const handleTokenSubmit = async (token: string) => {
+  if (!token) {
+    tokenError.value = 'Bitte gib einen gültigen Token ein.';
+    return;
+  }
+  tokenSaving.value = true;
+  tokenError.value = null;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/hf-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const result = await response.json();
+    if (!result.success) {
+      tokenError.value = result.message ?? 'Token konnte nicht gespeichert werden.';
+      return;
+    }
+    showTokenDialog.value = false;
+    if (tokenModelId.value) {
+      await installModel(tokenModelId.value);
+    }
+  } catch (error) {
+    console.error('Token konnte nicht gespeichert werden', error);
+    tokenError.value = 'Token konnte nicht gespeichert werden.';
+  } finally {
+    tokenSaving.value = false;
+  }
+};
+
+const closeTokenDialog = () => {
+  showTokenDialog.value = false;
+  tokenError.value = null;
+  tokenModelId.value = null;
+};
 </script>

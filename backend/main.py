@@ -29,6 +29,10 @@ from core.llama_inference import llama_runtime
 # Import model downloader
 from backend.model_downloader import model_downloader, MODEL_URLS
 from backend.api.model_gallery import router as model_gallery_router
+from services import model_gallery as gallery_service
+from config.hf_token import delete_token as delete_hf_token_file
+from config.hf_token import load_token as load_hf_token
+from config.hf_token import save_token as save_hf_token
 
 # Plugin manager wird beim Startup initialisiert
 plugin_manager = None
@@ -113,7 +117,7 @@ messages_db = {}
 memories_db: List[Dict] = []  # For memory tab
 logs_db: List[Dict] = []  # For logs tab
 
-# HuggingFace token storage (in-memory, can be persisted to file later)
+# HuggingFace token storage (in-memory, persisted to file)
 hf_token_storage: Optional[str] = None
 
 print("[INFO] JARVIS Core API initializing...")
@@ -127,10 +131,15 @@ logs_db.append({
     "source": "backend"
 })
 
-# Try to load token from environment on startup
-if os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN"):
-    hf_token_storage = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+env_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+if env_token:
+    hf_token_storage = env_token
     print("[INFO] HuggingFace token loaded from environment")
+else:
+    stored_token = load_hf_token()
+    if stored_token:
+        hf_token_storage = stored_token
+        print("[INFO] HuggingFace token loaded from storage")
 
 # FIX: Replace deprecated @app.on_event("startup") with lifespan context manager
 @asynccontextmanager
@@ -576,9 +585,10 @@ async def health_check():
 @app.get("/api/hf-token/status")
 async def get_hf_token_status():
     """Check if HF token is configured"""
+    env_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
     return {
-        "has_token": hf_token_storage is not None,
-        "source": "environment" if (os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")) else "stored"
+        "has_token": bool(env_token or hf_token_storage),
+        "source": "environment" if env_token else ("stored" if hf_token_storage else "none")
     }
 
 @app.post("/api/hf-token")
@@ -595,6 +605,10 @@ async def set_hf_token(data: dict = Body(...)):
         return {"success": False, "message": "Invalid token format. HuggingFace tokens start with 'hf_'"}
     
     hf_token_storage = token
+    try:
+        save_hf_token(token)
+    except OSError as exc:
+        return {"success": False, "message": f"Token konnte nicht gespeichert werden: {exc}"}
     print("[INFO] HuggingFace token stored")
     
     logs_db.append({
@@ -612,6 +626,7 @@ async def delete_hf_token():
     """Remove stored HuggingFace token"""
     global hf_token_storage
     hf_token_storage = None
+    delete_hf_token_file()
     print("[INFO] HuggingFace token removed")
     return {"success": True, "message": "Token removed"}
 
@@ -699,6 +714,8 @@ async def load_model(model_id: str):
     logs_db.append({"id": str(uuid.uuid4()), "timestamp": datetime.now().isoformat(), "level": "info", "message": f"Loading model: {model_id}", "source": "models"})
     
     model_path = model_downloader.get_model_path(model_id)
+    if not model_path:
+        model_path = gallery_service.resolve_model_path(model_id)
     if not model_path:
         return {"success": False, "message": "Modell nicht gefunden"}
     

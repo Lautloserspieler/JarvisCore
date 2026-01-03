@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Awaitable, Iterable, Protocol
@@ -98,7 +99,12 @@ async def download_model(
         output_path.unlink()
 
     if temp_path.exists():
-        temp_path.unlink()
+        try:
+            temp_path.unlink()
+        except OSError:
+            temp_path = output_path.with_suffix(
+                f"{output_path.suffix}.{uuid.uuid4().hex}.part"
+            )
 
     if progress_callback:
         await progress_callback(
@@ -110,8 +116,14 @@ async def download_model(
         )
 
     timeout = aiohttp.ClientTimeout(total=DOWNLOAD_TIMEOUT_SECONDS)
+    headers = _build_download_headers()
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.get(download_url) as response:
+        async with session.get(download_url, headers=headers) as response:
+            if response.status == 401:
+                raise ValueError(
+                    "Download erfordert einen HuggingFace-Token. "
+                    "Setze HF_TOKEN oder HUGGING_FACE_HUB_TOKEN."
+                )
             response.raise_for_status()
             total = response.headers.get("Content-Length")
             total_bytes = int(total) if total and total.isdigit() else None
@@ -311,6 +323,13 @@ def _resolve_bartowski_url(model: ModelMetadata) -> str | None:
     chosen = preferred[0] if preferred else gguf_files[0]
     logger.info("Nutze bartowski-Download %s (%s)", repo_id, chosen)
     return f"https://huggingface.co/{repo_id}/resolve/main/{chosen}"
+
+
+def _build_download_headers() -> dict[str, str]:
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    if not hf_token:
+        return {}
+    return {"Authorization": f"Bearer {hf_token}"}
 
 
 def _get_model_metadata(models: Iterable[ModelMetadata], model_id: str) -> ModelMetadata | None:

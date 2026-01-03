@@ -116,6 +116,7 @@ models/xtts-*/
 data/*.json
 !data/*.template.json
 !data/.gitkeep
+!data/user_media_prefs.json
 data/knowledge_base/
 data/memoryd/
 data/cache/

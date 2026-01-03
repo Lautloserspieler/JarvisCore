@@ -41,6 +41,12 @@ class PluginAPIKeys(BaseModel):
     # Weitere API-Keys können hier hinzugefügt werden
     google_api_key: str | None = None
     deepl_api_key: str | None = None
+    spotify_client_id: str | None = None
+    spotify_client_secret: str | None = None
+    spotify_refresh_token: str | None = None
+    spotify_redirect_uri: str | None = None
+    spotify_pkce_verifier: str | None = None
+    spotify_auth_code: str | None = None
 
 class AllSettings(BaseModel):
     llama: LlamaSettings
@@ -122,6 +128,24 @@ def apply_plugin_api_keys():
 
     if current_settings.plugin_api_keys.deepl_api_key:
         os.environ["DEEPL_API_KEY"] = current_settings.plugin_api_keys.deepl_api_key
+
+    if current_settings.plugin_api_keys.spotify_client_id:
+        os.environ["SPOTIFY_CLIENT_ID"] = current_settings.plugin_api_keys.spotify_client_id
+
+    if current_settings.plugin_api_keys.spotify_client_secret:
+        os.environ["SPOTIFY_CLIENT_SECRET"] = current_settings.plugin_api_keys.spotify_client_secret
+
+    if current_settings.plugin_api_keys.spotify_refresh_token:
+        os.environ["SPOTIFY_REFRESH_TOKEN"] = current_settings.plugin_api_keys.spotify_refresh_token
+
+    if current_settings.plugin_api_keys.spotify_redirect_uri:
+        os.environ["SPOTIFY_REDIRECT_URI"] = current_settings.plugin_api_keys.spotify_redirect_uri
+
+    if current_settings.plugin_api_keys.spotify_pkce_verifier:
+        os.environ["SPOTIFY_PKCE_VERIFIER"] = current_settings.plugin_api_keys.spotify_pkce_verifier
+
+    if current_settings.plugin_api_keys.spotify_auth_code:
+        os.environ["SPOTIFY_AUTH_CODE"] = current_settings.plugin_api_keys.spotify_auth_code
 
 # Load settings on module import
 load_settings()

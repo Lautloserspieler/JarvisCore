@@ -45,6 +45,7 @@ class ProgressCallback(Protocol):
         *,
         status: str | None = None,
         error_message: str | None = None,
+        errorMessage: str | None = None,
     ) -> None: ...
 
 
@@ -197,8 +198,9 @@ async def download_model(
 
 def _verify_checksum(file_path: Path, expected_checksum: str) -> bool:
     normalized_expected = expected_checksum.strip()
-    if normalized_expected.lower().startswith("sha256:"):
-        normalized_expected = normalized_expected.split(":", 1)[1].strip()
+    prefix = "sha256:"
+    if normalized_expected.lower().startswith(prefix):
+        normalized_expected = normalized_expected[len(prefix) :].strip()
     hasher = hashlib.sha256()
     with file_path.open("rb") as file_handle:
         for chunk in iter(lambda: file_handle.read(CHUNK_SIZE_BYTES), b""):
@@ -474,7 +476,7 @@ def schedule_download(
                 model_id, gallery=gallery, progress_callback=progress_callback
             )
         except Exception as exc:
-            logger.exception("Download fehlgeschlagen für %s", model_id)
+            logger.exception("Download fehlgeschlagen für %s: %s", model_id, exc)
             if progress_callback:
                 try:
                     await progress_callback(
@@ -484,11 +486,16 @@ def schedule_download(
                         None,
                         status="error",
                         error_message=str(exc),
+                        errorMessage=str(exc),
                     )
                 except Exception:
                     logger.exception(
                         "Fehler beim Melden des Download-Fehlers für %s", model_id
                     )
-            raise
+            return {
+                "status": "error",
+                "model_id": model_id,
+                "error": str(exc),
+            }
 
     return asyncio.create_task(_task_wrapper())

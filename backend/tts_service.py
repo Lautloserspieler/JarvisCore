@@ -263,9 +263,7 @@ class TTSService:
         
         # Validate language
         if language not in ['de', 'en']:
-            safe_language = _sanitize_for_log(language)
-            safe_current = _sanitize_for_log(self.current_language)
-            logger.warning("Unsupported language '%s', using '%s'", safe_language, safe_current)
+            logger.warning("Unsupported language provided, using configured default.")
             language = self.current_language
         
         # Update current language

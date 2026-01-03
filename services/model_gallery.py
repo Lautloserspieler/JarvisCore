@@ -128,7 +128,7 @@ async def download_model(
 
     timeout = aiohttp.ClientTimeout(total=DOWNLOAD_TIMEOUT_SECONDS)
     headers = _build_download_headers()
-    async with aiohttp.ClientSession(timeout=timeout) as session:
+    async with aiohttp.ClientSession(timeout=timeout, auto_decompress=False) as session:
         response = None
         for index, candidate_url in enumerate(url_candidates):
             if index > 0:

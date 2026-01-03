@@ -13,6 +13,8 @@ from typing import Any, Dict, Optional, Tuple
 import psutil
 import requests
 
+from utils.media_command_parser import MediaPreferences, parse_media_command
+
 # Plugin Metadata
 PLUGIN_NAME = "Spotify"
 PLUGIN_DESCRIPTION = "Steuert Spotify per Desktop-App oder Web-API"
@@ -34,16 +36,40 @@ class SpotifyPlugin:
     def process(self, command: str, context: Dict[str, Any]) -> Optional[str]:
         command_lower = command.lower().strip()
 
-        if not self._is_spotify_request(command_lower):
+        prefs = MediaPreferences()
+        parsed = parse_media_command(command_lower, prefs)
+
+        if parsed.target == "youtube":
             return None
 
-        intent = self._detect_intent(command_lower)
-        query, explicit_uri = self._extract_query_and_uri(command)
+        if not self._is_spotify_request(command_lower) and parsed.target != "spotify":
+            return None
 
-        if intent == "liked":
-            target_uri = "spotify:collection:tracks"
-        else:
-            target_uri = explicit_uri
+        intent = self._detect_intent(command_lower, parsed)
+        query, explicit_uri = self._extract_query_and_uri(command, parsed)
+
+        favorite_payload: Dict[str, Optional[str]] = {}
+        if parsed.favorite_song:
+            favorite_payload = prefs.get_favorite_song("spotify")
+            if not favorite_payload.get("query") and not favorite_payload.get("uri"):
+                favorite_payload = self._hydrate_spotify_favorite_song(prefs) or favorite_payload
+        elif parsed.favorite_playlist:
+            favorite_payload = prefs.get_favorite_playlist("spotify")
+            if not favorite_payload.get("name") and not favorite_payload.get("uri"):
+                favorite_payload = self._hydrate_spotify_favorite_playlist(prefs) or favorite_payload
+
+        if not explicit_uri and favorite_payload.get("uri"):
+            explicit_uri = favorite_payload["uri"]
+        if not query:
+            query = favorite_payload.get("query") or favorite_payload.get("name") or ""
+
+        if (parsed.favorite_song or parsed.favorite_playlist) and not query and not explicit_uri:
+            return (
+                "Ich habe noch keinen Favoriten hinterlegt. "
+                "Bitte trage ihn in data/user_media_prefs.json ein oder aktiviere die Spotify-API."
+            )
+
+        target_uri = explicit_uri
 
         if not target_uri and query:
             target_uri = self._resolve_uri_via_api(query, intent)
@@ -67,17 +93,16 @@ class SpotifyPlugin:
             "lied",
             "lieblingssong",
             "lieblingslied",
+            "lieblingsplaylist",
         ]
         return any(trigger in command for trigger in triggers)
 
-    def _detect_intent(self, command: str) -> str:
-        if "playlist" in command:
+    def _detect_intent(self, command: str, parsed) -> str:
+        if parsed.favorite_playlist or parsed.playlist_name or "playlist" in command:
             return "playlist"
-        if "lieblingssong" in command or "lieblingslied" in command:
-            return "liked"
         return "track"
 
-    def _extract_query_and_uri(self, command: str) -> Tuple[str, Optional[str]]:
+    def _extract_query_and_uri(self, command: str, parsed) -> Tuple[str, Optional[str]]:
         uri_match = re.search(r"spotify:(track|playlist):[\w]+", command)
         if uri_match:
             return "", uri_match.group(0)
@@ -86,11 +111,15 @@ class SpotifyPlugin:
         if url_match:
             return "", f"spotify:{url_match.group(1)}:{url_match.group(2)}"
 
+        if parsed.playlist_name:
+            return parsed.playlist_name, None
+
         cleaned = command
         cleaned = re.sub(r"\bspiel(?:e)?\b", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"\bbitte\b", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"\bplaylist\b", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"\blieblings(?:song|lied)\b", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\blieblingsplaylist\b", "", cleaned, flags=re.IGNORECASE)
         cleaned = cleaned.strip()
         return cleaned, None
 
@@ -238,6 +267,59 @@ class SpotifyPlugin:
             return payload.get("access_token")
         except requests.RequestException:
             return None
+
+    def _hydrate_spotify_favorite_song(self, prefs: MediaPreferences) -> Optional[Dict[str, Optional[str]]]:
+        token = self._get_access_token()
+        if not token:
+            return None
+        headers = {"Authorization": f"Bearer {token}"}
+        try:
+            response = requests.get("https://api.spotify.com/v1/me/tracks", params={"limit": 1}, headers=headers, timeout=10)
+            response.raise_for_status()
+            payload = response.json()
+        except requests.RequestException:
+            return None
+        items = payload.get("items", [])
+        if not items:
+            return None
+        track = items[0].get("track") if isinstance(items[0], dict) else None
+        if not isinstance(track, dict):
+            return None
+        uri = track.get("uri")
+        name = track.get("name") or ""
+        artists = track.get("artists") if isinstance(track.get("artists"), list) else []
+        artist_name = ""
+        if artists and isinstance(artists[0], dict):
+            artist_name = artists[0].get("name") or ""
+        query = " ".join(part for part in [name, artist_name] if part).strip()
+        if not uri and not query:
+            return None
+        prefs.set_favorite_song("spotify", query=query or None, uri=uri)
+        return {"query": query or None, "uri": uri}
+
+    def _hydrate_spotify_favorite_playlist(self, prefs: MediaPreferences) -> Optional[Dict[str, Optional[str]]]:
+        token = self._get_access_token()
+        if not token:
+            return None
+        headers = {"Authorization": f"Bearer {token}"}
+        try:
+            response = requests.get("https://api.spotify.com/v1/me/playlists", params={"limit": 1}, headers=headers, timeout=10)
+            response.raise_for_status()
+            payload = response.json()
+        except requests.RequestException:
+            return None
+        items = payload.get("items", [])
+        if not items:
+            return None
+        playlist = items[0] if isinstance(items[0], dict) else None
+        if not isinstance(playlist, dict):
+            return None
+        name = playlist.get("name")
+        uri = playlist.get("uri")
+        if not name and not uri:
+            return None
+        prefs.set_favorite_playlist("spotify", name=name, uri=uri)
+        return {"name": name, "uri": uri}
 
 
 # Plugin Instance

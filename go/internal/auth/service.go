@@ -64,6 +64,10 @@ type APIKeyInfo struct {
 	LastUsed  time.Time
 }
 
+type contextKey string
+
+const apiKeyInfoKey contextKey = "api_key_info"
+
 var (
 	secretKey    string
 	apiKeysFile  string
@@ -71,6 +75,7 @@ var (
 	lastPersist  time.Time
 	apiKeys      = map[string]*APIKeyInfo{}
 	apiKeysMu    sync.RWMutex
+	persistMu    sync.Mutex
 	corsOrigins  map[string]struct{}
 	allowAllCORS bool
 )
@@ -277,10 +282,13 @@ func maybePersistAPIKeys(logger *log.Logger) {
 	if apiKeysFile == "" {
 		return
 	}
+	persistMu.Lock()
 	if time.Since(lastPersist) < 30*time.Second {
+		persistMu.Unlock()
 		return
 	}
 	lastPersist = time.Now().UTC()
+	persistMu.Unlock()
 	if err := persistAPIKeys(apiKeysFile, snapshotAPIKeys()); err != nil {
 		logger.Printf("[WARN] API-Key-Datei konnte nicht gespeichert werden: %v", err)
 	}
@@ -345,16 +353,28 @@ func VerifyAPIKey(logger *log.Logger) mux.MiddlewareFunc {
 			maybePersistAPIKeys(logger)
 
 			// Add key info to context
-			ctx := context.WithValue(r.Context(), "api_key_info", keyInfo)
+			ctx := context.WithValue(r.Context(), apiKeyInfoKey, keyInfo)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
+func apiKeyInfoFromContext(ctx context.Context) (*APIKeyInfo, bool) {
+	info, ok := ctx.Value(apiKeyInfoKey).(*APIKeyInfo)
+	if !ok || info == nil {
+		return nil, false
+	}
+	return info, true
+}
+
 // Middleware: Rate Limiting
 func RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		keyInfo := r.Context().Value("api_key_info").(*APIKeyInfo)
+		keyInfo, ok := apiKeyInfoFromContext(r.Context())
+		if !ok {
+			http.Error(w, `{"error":"API key required"}`, http.StatusUnauthorized)
+			return
+		}
 
 		limiter := rateLimiterStore.GetLimiter(keyInfo.Key, keyInfo.RateLimit, keyInfo.Burst)
 
@@ -589,14 +609,17 @@ func (s *Service) listAPIKeysHandler(w http.ResponseWriter, r *http.Request) {
 		if len(maskedKey) > 4 {
 			maskedKey = fmt.Sprintf("****%s", maskedKey[len(maskedKey)-4:])
 		}
-		keys = append(keys, map[string]interface{}{
+		entry := map[string]interface{}{
 			"key":        maskedKey,
 			"rate_limit": info.RateLimit,
 			"burst":      info.Burst,
 			"enabled":    info.Enabled,
 			"created_at": info.CreatedAt.Unix(),
-			"last_used":  info.LastUsed.Unix(),
-		})
+		}
+		if !info.LastUsed.IsZero() {
+			entry["last_used"] = info.LastUsed.Unix()
+		}
+		keys = append(keys, entry)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -604,7 +627,11 @@ func (s *Service) listAPIKeysHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) protectedHandler(w http.ResponseWriter, r *http.Request) {
-	keyInfo := r.Context().Value("api_key_info").(*APIKeyInfo)
+	keyInfo, ok := apiKeyInfoFromContext(r.Context())
+	if !ok {
+		http.Error(w, `{"error":"API key required"}`, http.StatusUnauthorized)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

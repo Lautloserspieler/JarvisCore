@@ -110,6 +110,15 @@ async def install_model(model_id: str) -> dict:
     return {"status": "started", "model_id": model_id}
 
 
+@router.get("/gallery/preflight/{model_id}")
+async def preflight_model(model_id: str) -> dict:
+    gallery = model_gallery.fetch_gallery()
+    result = model_gallery.preflight_check_model(model_id, gallery=gallery)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
 @router.get("/installed")
 async def get_installed_models() -> list[dict]:
     return model_gallery.get_installed_models()

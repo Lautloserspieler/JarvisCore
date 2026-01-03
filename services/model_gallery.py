@@ -79,6 +79,39 @@ def search_models(
     )
 
 
+def preflight_check_model(model_id: str, *, gallery: GalleryPayload) -> dict:
+    model = _get_model_metadata(gallery.models, model_id)
+    if model is None:
+        return {"error": f"Modell {model_id} nicht in Gallery gefunden"}
+
+    download_url = _resolve_download_url(model)
+    gallery_checksum = _normalize_checksum(model.checksum)
+    header_checksum = _fetch_header_checksum(download_url)
+    hf_checksum = _fetch_hf_checksum(model, download_url)
+    match = (
+        hf_checksum is not None
+        and gallery_checksum.lower() == hf_checksum.lower()
+    )
+
+    if not match:
+        logger.warning(
+            "Checksummen-Warnung für %s: Gallery=%s, Header=%s, HF=%s",
+            model_id,
+            gallery_checksum,
+            header_checksum,
+            hf_checksum,
+        )
+
+    return {
+        "model_id": model_id,
+        "download_url": download_url,
+        "gallery_checksum": gallery_checksum,
+        "header_checksum": header_checksum,
+        "hf_checksum": hf_checksum,
+        "match": match,
+    }
+
+
 async def download_model(
     model_id: str,
     *,
@@ -195,28 +228,22 @@ async def download_model(
 
     normalized_expected = _normalize_checksum(model.checksum)
     downloaded_hash = hasher.hexdigest().lower()
-    expected_hash = normalized_expected
-    if header_hash and header_hash.lower() != normalized_expected.lower():
-        logger.warning(
-            "Checksumme aus Response-Header unterscheidet sich von Gallery (%s).",
-            model_id,
-        )
-        expected_hash = header_hash
-        _update_gallery_checksum(model_id, header_hash)
 
-    if downloaded_hash != expected_hash.lower():
-        refreshed = _fetch_hf_checksum(model, active_url)
-        if refreshed and refreshed.lower() == downloaded_hash:
-            logger.warning(
-                "Checksumme aktualisiert für %s aus HF-Metadaten.", model_id
-            )
-            _update_gallery_checksum(model_id, downloaded_hash)
-        else:
-            temp_path.unlink(missing_ok=True)
-            raise ValueError(
-                "Checksum-Prüfung fehlgeschlagen für "
-                f"{model_id} (erwartet {expected_hash}, erhalten {downloaded_hash})"
-            )
+    if downloaded_hash != normalized_expected.lower():
+        hf_checksum = _fetch_hf_checksum(model, active_url)
+        mismatch_details = []
+        if header_hash:
+            mismatch_details.append(f"Header={header_hash}")
+        if hf_checksum:
+            mismatch_details.append(f"HF={hf_checksum}")
+        detail = (
+            "Checksum-Prüfung fehlgeschlagen für "
+            f"{model_id} (erwartet {normalized_expected}, erhalten {downloaded_hash})"
+        )
+        if mismatch_details:
+            detail = f"{detail}. Weitere Quellen: {', '.join(mismatch_details)}"
+        temp_path.unlink(missing_ok=True)
+        raise ValueError(detail)
 
     temp_path.rename(output_path)
     result = register_model(model_id, output_path, model)
@@ -474,6 +501,19 @@ def _fetch_hf_checksum(model: ModelMetadata, download_url: str) -> str | None:
     if oid:
         return oid
     return None
+
+
+def _fetch_header_checksum(download_url: str) -> str | None:
+    if "huggingface.co" not in download_url:
+        return None
+    headers = {"User-Agent": "JarvisCore/1.0", **_build_download_headers()}
+    try:
+        req = request.Request(download_url, headers=headers, method="HEAD")
+        with request.urlopen(req, timeout=20) as response:
+            return _extract_header_hash(response.headers)
+    except Exception as exc:
+        logger.warning("Header-Checksumme konnte nicht geladen werden: %s", exc)
+        return None
 
 
 def _normalize_checksum(checksum: str) -> str:

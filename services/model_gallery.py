@@ -30,6 +30,8 @@ from config.hf_token import load_token as load_hf_token
 
 MODELS_DIR = PROJECT_ROOT / "models" / "llm"
 REGISTRY_PATH = PROJECT_ROOT / "config" / "models.json"
+GALLERY_PATH = PROJECT_ROOT / "config" / "models_gallery.json"
+CACHE_PATH = PROJECT_ROOT / "cache" / "gallery_cache.json"
 CHUNK_SIZE_BYTES = 8192
 DOWNLOAD_TIMEOUT_SECONDS = 3600
 
@@ -192,12 +194,20 @@ async def download_model(
                 "Checksumme stammt aus Response-Header (Download-URL weicht ab): %s",
                 active_url,
             )
+            _update_gallery_checksum(model_id, downloaded_hash)
         else:
-            temp_path.unlink(missing_ok=True)
-            raise ValueError(
-                "Checksum-Prüfung fehlgeschlagen für "
-                f"{model_id} (erwartet {normalized_expected}, erhalten {downloaded_hash})"
-            )
+            refreshed = _fetch_hf_checksum(model, active_url)
+            if refreshed and refreshed.lower() == downloaded_hash:
+                logger.warning(
+                    "Checksumme aktualisiert für %s aus HF-Metadaten.", model_id
+                )
+                _update_gallery_checksum(model_id, downloaded_hash)
+            else:
+                temp_path.unlink(missing_ok=True)
+                raise ValueError(
+                    "Checksum-Prüfung fehlgeschlagen für "
+                    f"{model_id} (erwartet {normalized_expected}, erhalten {downloaded_hash})"
+                )
 
     temp_path.rename(output_path)
     result = register_model(model_id, output_path, model)
@@ -425,6 +435,38 @@ def _build_download_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {hf_token}"}
 
 
+def _fetch_hf_checksum(model: ModelMetadata, download_url: str) -> str | None:
+    if "huggingface.co" not in download_url:
+        return None
+    parts = urlsplit(download_url).path.strip("/").split("/")
+    if len(parts) < 3:
+        return None
+    repo_id = "/".join(parts[:2])
+    filename = parts[-1]
+    params = parse.urlencode({"files_metadata": "1"})
+    api_url = f"https://huggingface.co/api/models/{repo_id}?{params}"
+    headers = {"User-Agent": "JarvisCore/1.0", **_build_download_headers()}
+    try:
+        req = request.Request(api_url, headers=headers)
+        with request.urlopen(req, timeout=20) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        logger.warning("HF-Metadaten konnten nicht geladen werden: %s", exc)
+        return None
+
+    siblings = payload.get("siblings", [])
+    match = next(
+        (entry for entry in siblings if entry.get("rfilename") == filename), None
+    )
+    if not match:
+        return None
+    lfs = match.get("lfs") or {}
+    oid = lfs.get("oid")
+    if oid:
+        return oid
+    return None
+
+
 def _normalize_checksum(checksum: str) -> str:
     normalized = checksum.strip()
     if normalized.lower().startswith("sha256:"):
@@ -438,6 +480,53 @@ def _extract_header_hash(headers: "aiohttp.typedefs.LooseHeaders") -> str | None
         if value:
             return str(value).strip('"')
     return None
+
+
+def _update_gallery_checksum(model_id: str, sha256_hex: str) -> None:
+    if not GALLERY_PATH.exists():
+        return
+    updated = False
+    try:
+        payload = json.loads(GALLERY_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return
+    models = payload.get("models")
+    if isinstance(models, list):
+        for entry in models:
+            if isinstance(entry, dict) and entry.get("id") == model_id:
+                entry["checksum"] = f"sha256:{sha256_hex}"
+                updated = True
+                break
+    if updated:
+        GALLERY_PATH.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        _update_cache_checksum(model_id, sha256_hex)
+
+
+def _update_cache_checksum(model_id: str, sha256_hex: str) -> None:
+    if not CACHE_PATH.exists():
+        return
+    try:
+        cache_payload = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return
+    payload = cache_payload.get("payload")
+    models = payload.get("models") if isinstance(payload, dict) else None
+    if not isinstance(models, list):
+        return
+    updated = False
+    for entry in models:
+        if isinstance(entry, dict) and entry.get("id") == model_id:
+            entry["checksum"] = f"sha256:{sha256_hex}"
+            updated = True
+            break
+    if updated:
+        CACHE_PATH.write_text(
+            json.dumps(cache_payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
 
 
 def _get_model_metadata(models: Iterable[ModelMetadata], model_id: str) -> ModelMetadata | None:

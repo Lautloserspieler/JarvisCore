@@ -465,5 +465,5 @@ if __name__ == "__main__":
         print(f"  Description: {plugin['description']}")
         print(f"  Status: {plugin['status']}")
         if plugin.get('requires_api_key'):
-            print(f"  ⚠️ Requires API Key: {plugin['api_key_info'].get('api_key_label')}")
+            print("  ⚠️ Requires API Key: Ja")
         print()

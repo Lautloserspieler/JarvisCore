@@ -32,6 +32,13 @@ tts_settings = {
 }
 
 
+def _sanitize_for_log(value: str, max_len: int = 120) -> str:
+    cleaned = value.replace("\r", " ").replace("\n", " ").strip()
+    if len(cleaned) > max_len:
+        return f"{cleaned[:max_len]}…"
+    return cleaned
+
+
 def clean_text_for_tts(text: str) -> str:
     """
     Clean text for TTS by removing LLM tokens and control characters
@@ -42,8 +49,11 @@ def clean_text_for_tts(text: str) -> str:
     Returns:
         Cleaned text suitable for TTS
     """
+    # Trim overly long input before regex processing
+    text = text[:5000]
+
     # Remove LLM special tokens
-    text = re.sub(r'<\|.*?\|>', '', text)  # <|endoftext|>, <|im_start|>, etc.
+    text = re.sub(r'<\|[^|]*\|>', '', text)  # <|endoftext|>, <|im_start|>, etc.
     text = re.sub(r'</?s>', '', text)  # <s>, </s>
     text = re.sub(r'\[INST\]|\[/INST\]', '', text)  # Llama instruction tokens
     text = re.sub(r'<<SYS>>|<</SYS>>', '', text)  # System tokens
@@ -105,7 +115,7 @@ async def synthesize_speech(data: dict = Body(...)):
         audio_path = await tts_service.synthesize(text, language)
 
         if not audio_path or not audio_path.exists():
-            logger.error(f"Audio synthesis failed for text: {text[:50]}")
+            logger.error("Audio synthesis failed for text: %s", _sanitize_for_log(text))
             return {"success": False, "message": "Audio synthesis failed"}
 
         logger.info(f"Audio synthesized: {audio_path}")

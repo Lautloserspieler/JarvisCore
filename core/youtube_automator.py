@@ -73,6 +73,7 @@ class YouTubeAutomator:
         base_url: str = "https://www.youtube.com",
         quality_hint: Optional[str] = None,
     ) -> str:
+        base_url = self._sanitize_base_url(base_url)
         encoded = urllib.parse.quote_plus(query)
         if "music.youtube.com" in base_url:
             url = f"{base_url}/search?q={encoded}"
@@ -90,6 +91,7 @@ class YouTubeAutomator:
         quality_hint: Optional[str] = None,
     ) -> Optional[str]:
         """Fetch the search page and extract the first video ID."""
+        base_url = self._sanitize_base_url(base_url)
         if "music.youtube.com" in base_url:
             return None
         url = self._build_search_url(query, base_url=base_url, quality_hint=quality_hint)
@@ -162,6 +164,15 @@ class YouTubeAutomator:
         mode_normalized = (mode or "").strip().lower()
         if mode_normalized in {"audio", "music", "audio-only", "audio_only"}:
             return "https://music.youtube.com"
+        return "https://www.youtube.com"
+
+    def _sanitize_base_url(self, base_url: str) -> str:
+        parsed = urllib.parse.urlsplit(base_url)
+        if parsed.scheme != "https":
+            return "https://www.youtube.com"
+        host = parsed.netloc.lower()
+        if host in {"www.youtube.com", "music.youtube.com"}:
+            return f"https://{host}"
         return "https://www.youtube.com"
 
     def _apply_quality_hint(self, url: str, quality_hint: str) -> str:

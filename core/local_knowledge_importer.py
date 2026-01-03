@@ -314,12 +314,33 @@ class LocalKnowledgeImporter:
         return '\n'.join(lines)
 
     def _strip_html(self, path: Path) -> str:
-        import re
+        from html.parser import HTMLParser
+
+        class _TextExtractor(HTMLParser):
+            def __init__(self) -> None:
+                super().__init__()
+                self._chunks = []
+                self._skip_depth = 0
+
+            def handle_starttag(self, tag: str, attrs) -> None:
+                if tag.lower() in {"script", "style"}:
+                    self._skip_depth += 1
+
+            def handle_endtag(self, tag: str) -> None:
+                if tag.lower() in {"script", "style"} and self._skip_depth > 0:
+                    self._skip_depth -= 1
+
+            def handle_data(self, data: str) -> None:
+                if self._skip_depth == 0:
+                    self._chunks.append(data)
+
+            def get_text(self) -> str:
+                return " ".join(" ".join(self._chunks).split())
+
         raw = path.read_text(encoding='utf-8', errors='ignore')
-        no_script = re.sub(r'<script.*?>.*?</script>', '', raw, flags=re.DOTALL | re.IGNORECASE)
-        no_style = re.sub(r'<style.*?>.*?</style>', '', no_script, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r'<[^>]+>', ' ', no_style)
-        return re.sub(r'\s+', ' ', text).strip()
+        parser = _TextExtractor()
+        parser.feed(raw)
+        return parser.get_text()
 
     def _build_header(self, path: Path) -> str:
         relative = path.relative_to(self.base_dir).as_posix()

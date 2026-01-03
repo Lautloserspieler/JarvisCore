@@ -499,7 +499,7 @@ def schedule_download(
                     logger.exception(
                         "Fehler beim Melden des Download-Fehlers für %s", model_id
                     )
-            raise
+            return {"error": str(exc), "model_id": model_id}
         finally:
             with _ACTIVE_DOWNLOADS_LOCK:
                 _ACTIVE_DOWNLOADS.pop(model_id, None)

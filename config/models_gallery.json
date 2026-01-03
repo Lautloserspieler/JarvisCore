@@ -9,7 +9,7 @@
         "chat",
         "general"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001001",
+      "checksum": "sha256:4cb1444f81355e47d236ada8190f0325ce46412a83f3ab62a1d63bb314592ebc",
       "downloadUrl": "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
       "languages": [
         "en",
@@ -41,7 +41,7 @@
         "chat",
         "general"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001002",
+      "checksum": "sha256:fb984c9153528e2ffbd10149938fa53e0dfcece23511bd698c3691236d470110",
       "downloadUrl": "https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf",
       "languages": [
         "en",
@@ -73,7 +73,7 @@
         "chat",
         "instruction"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001003",
+      "checksum": "sha256:3ec16208cd105516e5559cecbeb263bc41d8844f32dfc459d4b40f37a951b5a1",
       "downloadUrl": "https://huggingface.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3-Q5_K_M.gguf",
       "languages": [
         "en",
@@ -105,7 +105,7 @@
         "chat",
         "instruction"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001004",
+      "checksum": "sha256:4cb1444f81355e47d236ada8190f0325ce46412a83f3ab62a1d63bb314592ebc",
       "downloadUrl": "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
       "languages": [
         "en",
@@ -137,7 +137,7 @@
         "chat",
         "german"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001005",
+      "checksum": "sha256:d358a82380704e13052819449f43ff122cac1e0a3c9cded89f40e6bbc4adb464",
       "downloadUrl": "https://huggingface.co/TheBloke/leo-hessianai-7b-chat-GGUF/resolve/main/leo-hessianai-7b-chat.Q5_K_M.gguf",
       "languages": [
         "de",
@@ -169,7 +169,7 @@
         "code",
         "development"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001006",
+      "checksum": "sha256:31c44feef2d2a714c29400e4c8ccb0c086efd964af2c6889f4c0dd3ef91df979",
       "downloadUrl": "https://huggingface.co/TheBloke/CodeLlama-7B-Instruct-GGUF/resolve/main/codellama-7b-instruct.Q5_K_M.gguf",
       "languages": [
         "en"
@@ -200,7 +200,7 @@
         "multilingual",
         "chat"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001007",
+      "checksum": "sha256:5f47abc334aff6919f4868913b4b0b00e468e844a91aee45e527e4a145d6ea4d",
       "downloadUrl": "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q5_K_M.gguf",
       "languages": [
         "en",
@@ -233,7 +233,7 @@
         "lightweight",
         "general"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001008",
+      "checksum": "sha256:85f903edc555c32911e326014e229f416ca7e5c430b4b3269d18f8bb3b8c905b",
       "downloadUrl": "https://huggingface.co/bartowski/Phi-3-mini-4k-instruct-GGUF/resolve/main/Phi-3-mini-4k-instruct-Q4_K_M.gguf",
       "languages": [
         "en"
@@ -264,7 +264,7 @@
         "chat",
         "quality"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001009",
+      "checksum": "sha256:cbd4ce17a9c3cd3157a185fc3d0c7ae8264e3ee96bc388c7bbb9c084e7243fce",
       "downloadUrl": "https://huggingface.co/bartowski/gemma-2-9b-it-GGUF/resolve/main/gemma-2-9b-it-Q5_K_M.gguf",
       "languages": [
         "en",
@@ -296,7 +296,7 @@
         "function-calling",
         "chat"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001010",
+      "checksum": "sha256:076ef16e1bb08eab7938ad13b4dd50c9588fb1bb9cc15c0b28dffb47d19d12ef",
       "downloadUrl": "https://huggingface.co/bartowski/Hermes-2-Pro-Mistral-7B-GGUF/resolve/main/Hermes-2-Pro-Mistral-7B-Q5_K_M.gguf",
       "languages": [
         "en"
@@ -327,7 +327,7 @@
         "chat",
         "flagship"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001011",
+      "checksum": "sha256:273c07cdbbca671fa5e8fc091b7a012ace0e0354e04a54a2ed5cc645921c15bc",
       "downloadUrl": "https://huggingface.co/bartowski/Meta-Llama-3.1-70B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-70B-Instruct-Q4_K_M.gguf",
       "languages": [
         "en"
@@ -358,7 +358,7 @@
         "moe",
         "general"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001012",
+      "checksum": "sha256:a8e20676b6e2cddd808697575e20fac6e05038b315ab4035ea613df687d57ffc",
       "downloadUrl": "https://huggingface.co/MaziyarPanahi/Mixtral-8x7B-Instruct-v0.1-GGUF/resolve/main/Mixtral-8x7B-Instruct-v0.1.Q4_K_M.gguf",
       "languages": [
         "en",
@@ -390,7 +390,7 @@
         "code",
         "development"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001013",
+      "checksum": "sha256:5855726805d9f7c9701829dad01100e0a21c55c0d7291fa2211b7f408c3af586",
       "downloadUrl": "https://huggingface.co/TheBloke/deepseek-coder-6.7b-instruct-GGUF/resolve/main/deepseek-coder-6.7b-instruct.Q5_K_M.gguf",
       "languages": [
         "en"
@@ -421,7 +421,7 @@
         "lightweight",
         "general"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001014",
+      "checksum": "sha256:7314cd624de8068beee86215e529a23665ff09e458977e32f30b8149764e7be1",
       "downloadUrl": "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
       "languages": [
         "en"
@@ -452,7 +452,7 @@
         "german",
         "chat"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001015",
+      "checksum": "sha256:4e68cfe534d8583cbf5d6aaece5fe79f8292854741b3a07c8c9ce7a8956fbb1c",
       "downloadUrl": "https://huggingface.co/TheBloke/em_german_leo_mistral-GGUF/resolve/main/em_german_leo_mistral.Q5_K_M.gguf",
       "languages": [
         "de"
@@ -483,7 +483,7 @@
         "chat",
         "quality"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001016",
+      "checksum": "sha256:287504df85c30ea5bebcbd05286e2f7dfd968ebf3aa91fd5da90827cf659f8fd",
       "downloadUrl": "https://huggingface.co/TheBloke/zephyr-7B-beta-GGUF/resolve/main/zephyr-7b-beta.Q5_K_M.gguf",
       "languages": [
         "en"
@@ -514,7 +514,7 @@
         "multilingual",
         "advanced"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001017",
+      "checksum": "sha256:fd9ff5dc4878378e3ef9c63dfdbaef3abda1ca8acad14d1f439432df4a1f17bd",
       "downloadUrl": "https://huggingface.co/bartowski/Qwen2.5-14B-Instruct-GGUF/resolve/main/Qwen2.5-14B-Instruct-Q5_K_M.gguf",
       "languages": [
         "en",
@@ -548,7 +548,7 @@
         "multilingual",
         "chat"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001018",
+      "checksum": "sha256:365dea235ba61556e9f84ac6c8949e2b2acc860ad69ea167b070b8cf524179d4",
       "downloadUrl": "https://huggingface.co/bartowski/aya-23-8B-GGUF/resolve/main/aya-23-8B-Q5_K_M.gguf",
       "languages": [
         "en",
@@ -586,7 +586,7 @@
         "code",
         "multilingual"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001019",
+      "checksum": "sha256:1d7b58d9fe0836ed2c746ceff4335d21ff8ab55cee807cdf437f4baccfab60d9",
       "downloadUrl": "https://huggingface.co/second-state/StarCoder2-7B-GGUF/resolve/main/starcoder2-7b-Q5_K_M.gguf",
       "languages": [
         "en",
@@ -620,7 +620,7 @@
         "chat",
         "creative"
       ],
-      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001020",
+      "checksum": "sha256:b53c0e17e099a47de12d1e28ac37120411c41b19973e1c36e2803060ab7b181f",
       "downloadUrl": "https://huggingface.co/NousResearch/Nous-Hermes-2-Mistral-7B-DPO-GGUF/resolve/main/Nous-Hermes-2-Mistral-7B-DPO.Q5_K_M.gguf",
       "languages": [
         "en"

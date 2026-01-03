@@ -18,16 +18,6 @@ from typing import Optional, Dict, Tuple
 import sys
 
 
-def _sanitize_for_log(value: str) -> str:
-    """
-    Remove newline and carriage-return characters from values before logging.
-    This helps prevent log injection when logging data that may be influenced
-    by user input.
-    """
-    if not isinstance(value, str):
-        value = str(value)
-    return value.replace("\r\n", "").replace("\r", "").replace("\n", "")
-
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))

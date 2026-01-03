@@ -47,12 +47,15 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _sanitize_for_log(value: str, max_len: int = 120) -> str:
+def _sanitize_for_log(value, max_len: int = 120) -> str:
     """
     Sanitize potentially untrusted values for safe logging.
 
-    - Converts value to string.
-    - Strips ASCII control characters (including CR/LF) to prevent log injection.
+    This helper is intended to be used on any value that may be influenced by
+    external input before including it in log messages. It:
+
+    - Converts the value to a string representation.
+    - Removes ASCII control characters (including CR/LF) to prevent log injection.
     - Normalizes internal whitespace.
     - Encodes non-ASCII and other unusual characters using \\xHH escapes.
     - Truncates to max_len characters and appends an ellipsis if needed.

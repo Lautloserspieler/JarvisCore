@@ -608,7 +608,8 @@ async def set_hf_token(data: dict = Body(...)):
     try:
         save_hf_token(token)
     except OSError as exc:
-        return {"success": False, "message": f"Token konnte nicht gespeichert werden: {exc}"}
+        print(f"[ERROR] Failed to save HuggingFace token: {exc}")
+        return {"success": False, "message": "Token konnte nicht gespeichert werden."}
     print("[INFO] HuggingFace token stored")
     
     logs_db.append({

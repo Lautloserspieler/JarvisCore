@@ -170,6 +170,7 @@ Thumbs.db
 .env.production
 config_local.json
 secrets.json
+config/hf_token.json
 
 # Cleanup logs
 cleanup_log.txt

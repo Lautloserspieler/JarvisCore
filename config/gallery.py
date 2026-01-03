@@ -97,7 +97,10 @@ def load_gallery(
     if use_cache:
         cached = _load_cache()
         if cached and _is_cache_valid(cached.cached_at, cache_ttl):
-            return _parse_payload(cached.payload)
+            if _payload_has_placeholder_urls(cached.payload):
+                LOGGER.warning("Gallery-Cache enthaelt Platzhalter-URLs, Cache wird ignoriert.")
+            else:
+                return _parse_payload(cached.payload)
 
     payload: dict | None = None
 
@@ -113,6 +116,19 @@ def load_gallery(
     gallery = _parse_payload(payload)
     _write_cache(payload)
     return gallery
+
+
+def _payload_has_placeholder_urls(payload: dict) -> bool:
+    models = payload.get("models")
+    if not isinstance(models, list):
+        return False
+    for model in models:
+        if not isinstance(model, dict):
+            continue
+        url = str(model.get("downloadUrl", ""))
+        if "cdn.jarviscore.example" in url:
+            return True
+    return False
 
 
 def search_models(models: Iterable[ModelMetadata], query: str) -> list[ModelMetadata]:

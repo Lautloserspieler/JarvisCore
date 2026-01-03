@@ -128,7 +128,7 @@ class KnowledgeManager:
             return text
         lower = text.lower()
         # Umlaute/? -> ASCII
-        lower = lower.translate(str.maketrans({'?':'ae','?':'oe','?':'ue','?':'ss'}))
+        lower = lower.translate(str.maketrans({'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss'}))
         fillers = [
             'suche nach ', 'suche ', 'finde ', 'infos ueber ', 'infos uber ', 'infos ',
             'information ueber ', 'informationen ueber ', 'information uber ', 'informationen uber ',
@@ -807,12 +807,7 @@ class KnowledgeManager:
 
         for topic, content, source, cached_at in rows:
             text = content or ""
-            highlight = text
-            if text:
-                try:
-                    highlight = condense_text(text, min_length=120, max_length=260)
-                except Exception:
-                    highlight = text[:260] + "…" if len(text) > 261 else text
+            highlight = self._build_highlight(text)
             entries.append({
                 "origin": "local",
                 "topic": topic,
@@ -823,6 +818,14 @@ class KnowledgeManager:
                 "label": f"Lokale Quelle: {topic}",
             })
         return entries
+
+    def _build_highlight(self, text: str) -> str:
+        if not text:
+            return ""
+        try:
+            return condense_text(text, min_length=120, max_length=260)
+        except Exception:
+            return text[:260] + "…" if len(text) > 261 else text
 
     def _collect_external_entries(self, query: str, *, limit: int = 2) -> List[Dict[str, Any]]:
         """Fragt externe Quellen sequenziell ab und sammelt Ergebnisse."""
@@ -861,12 +864,7 @@ class KnowledgeManager:
             if not result_text:
                 continue
 
-            highlight = result_text
-            try:
-                highlight = condense_text(str(result_text), min_length=120, max_length=260)
-            except Exception:
-                text = str(result_text)
-                highlight = text[:260] + "…" if len(text) > 261 else text
+            highlight = self._build_highlight(str(result_text))
 
             entries.append({
                 "origin": "external",

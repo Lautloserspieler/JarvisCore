@@ -252,7 +252,9 @@ class TTSService:
         
         # Validate language
         if language not in ['de', 'en']:
-            logger.warning(f"Unsupported language '{language}', using '{self.current_language}'")
+            safe_language = _sanitize_for_log(language)
+            safe_current = _sanitize_for_log(self.current_language)
+            logger.warning("Unsupported language '%s', using '%s'", safe_language, safe_current)
             language = self.current_language
         
         # Update current language
@@ -302,7 +304,8 @@ class TTSService:
                 temperature=self.config.get('temperature', 0.75)
             )
             
-            logger.info("✅ Audio synthesized: %s", output_path)
+            safe_output_path = _sanitize_for_log(output_path)
+            logger.info("✅ Audio synthesized: %s", safe_output_path)
             return output_path
             
         except Exception:
@@ -324,7 +327,8 @@ class TTSService:
         try:
             if output_path:
                 # Save to file
-                logger.info("🔊 Synthesizing (pyttsx3): %s", output_path)
+                safe_output_path = _sanitize_for_log(output_path)
+                logger.info("🔊 Synthesizing (pyttsx3): %s", safe_output_path)
                 self.pyttsx3_engine.save_to_file(text, str(output_path))
                 self.pyttsx3_engine.runAndWait()
                 return output_path

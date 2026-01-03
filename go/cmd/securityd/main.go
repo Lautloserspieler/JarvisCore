@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -30,9 +31,9 @@ func main() {
 
 	listener, err := security.Listen(cfg.ListenAddr)
 	if err != nil {
-		logger.Fatalf("failed to listen on %s: %v", cfg.ListenAddr, err)
+		logger.Fatalf("failed to listen on %s: %v", sanitizeForLog(cfg.ListenAddr), err)
 	}
-	logger.Printf("securityd listening on %s", listener.Addr())
+	logger.Printf("securityd listening on %s", sanitizeForLog(listener.Addr().String()))
 
 	go func() {
 		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {

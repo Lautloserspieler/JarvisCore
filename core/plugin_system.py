@@ -9,11 +9,66 @@ Extensible plugin architecture with built-in plugins:
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-import json
+import ast
 import asyncio
-from pathlib import Path
 from datetime import datetime
+import json
+from pathlib import Path
 import requests
+
+
+def _safe_math_eval(expression: str, allowed_names: Dict[str, Any]) -> float:
+    tree = ast.parse(expression, mode="eval")
+
+    def _eval(node: ast.AST) -> float:
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, (int, float)):
+                return node.value
+            raise ValueError("Unsupported constant type")
+        if isinstance(node, ast.Num):  # pragma: no cover (py<3.8)
+            return node.n
+        if isinstance(node, ast.BinOp):
+            left = _eval(node.left)
+            right = _eval(node.right)
+            if isinstance(node.op, ast.Add):
+                return left + right
+            if isinstance(node.op, ast.Sub):
+                return left - right
+            if isinstance(node.op, ast.Mult):
+                return left * right
+            if isinstance(node.op, ast.Div):
+                return left / right
+            if isinstance(node.op, ast.Mod):
+                return left % right
+            if isinstance(node.op, ast.Pow):
+                return left ** right
+            raise ValueError("Unsupported operator")
+        if isinstance(node, ast.UnaryOp):
+            operand = _eval(node.operand)
+            if isinstance(node.op, ast.UAdd):
+                return +operand
+            if isinstance(node.op, ast.USub):
+                return -operand
+            raise ValueError("Unsupported unary operator")
+        if isinstance(node, ast.Call):
+            if not isinstance(node.func, ast.Name):
+                raise ValueError("Only simple function calls are allowed")
+            func = allowed_names.get(node.func.id)
+            if func is None or not callable(func):
+                raise ValueError("Function not allowed")
+            args = [_eval(arg) for arg in node.args]
+            if node.keywords:
+                raise ValueError("Keyword arguments are not allowed")
+            return func(*args)
+        if isinstance(node, ast.Name):
+            if node.id in allowed_names and not callable(allowed_names[node.id]):
+                return allowed_names[node.id]
+            raise ValueError("Name not allowed")
+        raise ValueError("Unsupported expression")
+
+    return _eval(tree)
 
 
 class PluginInterface(ABC):
@@ -313,6 +368,20 @@ class FileManagerPlugin(PluginInterface):
         self.version = "1.0.0"
         self.description = "Read, write, and manage files"
         self.author = "JARVIS Team"
+        self.base_dir = Path("data").resolve()
+
+    def _resolve_path(self, raw_path: str) -> Path:
+        if not raw_path:
+            raise ValueError("No filepath provided")
+        candidate = Path(raw_path).expanduser()
+        if not candidate.is_absolute():
+            candidate = self.base_dir / candidate
+        resolved = candidate.resolve()
+        try:
+            resolved.relative_to(self.base_dir)
+        except ValueError as exc:
+            raise ValueError("Path is outside the allowed directory") from exc
+        return resolved
     
     async def execute(self, command: str, **kwargs) -> Dict[str, Any]:
         """Execute file operations"""
@@ -320,11 +389,8 @@ class FileManagerPlugin(PluginInterface):
         if command == "read":
             filepath = kwargs.get("filepath", "")
             
-            if not filepath:
-                return {"success": False, "error": "No filepath provided"}
-            
             try:
-                path = Path(filepath)
+                path = self._resolve_path(filepath)
                 if not path.exists():
                     return {"success": False, "error": "File not found"}
                 
@@ -344,11 +410,8 @@ class FileManagerPlugin(PluginInterface):
             filepath = kwargs.get("filepath", "")
             content = kwargs.get("content", "")
             
-            if not filepath:
-                return {"success": False, "error": "No filepath provided"}
-            
             try:
-                path = Path(filepath)
+                path = self._resolve_path(filepath)
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(content, encoding='utf-8')
                 return {
@@ -362,7 +425,7 @@ class FileManagerPlugin(PluginInterface):
             directory = kwargs.get("directory", ".")
             
             try:
-                path = Path(directory)
+                path = self._resolve_path(directory)
                 if not path.is_dir():
                     return {"success": False, "error": "Not a directory"}
                 
@@ -432,23 +495,28 @@ class CalculatorPlugin(PluginInterface):
                 return {"success": False, "error": "No expression provided"}
             
             try:
-                # Safe eval (only math operations)
+                # Safe evaluation using AST whitelist
                 import math
                 allowed_names = {
-                    "abs": abs, "round": round,
-                    "pow": pow, "sqrt": math.sqrt,
-                    "sin": math.sin, "cos": math.cos, "tan": math.tan,
-                    "pi": math.pi, "e": math.e
+                    "abs": abs,
+                    "round": round,
+                    "pow": pow,
+                    "sqrt": math.sqrt,
+                    "sin": math.sin,
+                    "cos": math.cos,
+                    "tan": math.tan,
+                    "pi": math.pi,
+                    "e": math.e,
                 }
-                
-                result = eval(expression, {"__builtins__": {}}, allowed_names)
-                
+
+                result = _safe_math_eval(expression, allowed_names)
+
                 return {
                     "success": True,
                     "result": {
                         "expression": expression,
-                        "result": result
-                    }
+                        "result": result,
+                    },
                 }
             except Exception as e:
                 return {"success": False, "error": f"Calculation error: {str(e)}"}

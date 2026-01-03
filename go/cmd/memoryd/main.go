@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -33,7 +34,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Printf("memoryd lauscht auf %s", cfg.ListenAddr)
+		logger.Printf("memoryd lauscht auf %s", sanitizeForLog(cfg.ListenAddr))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatalf("HTTP-Server-Fehler: %v", err)
 		}

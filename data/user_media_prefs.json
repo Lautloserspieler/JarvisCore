@@ -1,0 +1,21 @@
+{
+  "preferred_target": null,
+  "favorite_song": {
+    "spotify": {
+      "query": null,
+      "uri": null
+    },
+    "youtube": {
+      "query": null
+    }
+  },
+  "favorite_playlist": {
+    "spotify": {
+      "name": null,
+      "uri": null
+    },
+    "youtube": {
+      "name": null
+    }
+  }
+}

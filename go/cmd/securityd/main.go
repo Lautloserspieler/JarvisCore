@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -61,17 +60,26 @@ func withLogging(logger *log.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		method := strconv.QuoteToASCII(r.Method)
-		path := strconv.QuoteToASCII(r.URL.EscapedPath())
-		logger.Printf("request method=%s path=%s duration=%s", method, path, time.Since(start))
+		method := normalizeMethod(r.Method)
+		pathLen := len(r.URL.EscapedPath())
+		logger.Printf("request method=%s path_len=%d duration=%s", method, pathLen, time.Since(start))
 	})
 }
 
-func sanitizeForLog(value string) string {
-	return strings.Map(func(r rune) rune {
-		if r < 32 || r == 127 {
-			return -1
-		}
-		return r
-	}, value)
+func normalizeMethod(value string) string {
+	method := strings.ToUpper(strings.TrimSpace(value))
+	switch method {
+	case http.MethodGet,
+		http.MethodHead,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodOptions,
+		http.MethodConnect,
+		http.MethodTrace:
+		return method
+	default:
+		return "UNKNOWN"
+	}
 }

@@ -35,6 +35,10 @@
     "weather_plugin": {
       "category": "information",
       "tags": ["weather", "api"]
+    },
+    "youtube_plugin": {
+      "category": "media",
+      "tags": ["youtube", "video", "audio", "music"]
     }
   }
 }

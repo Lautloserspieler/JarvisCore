@@ -184,17 +184,24 @@ class YouTubeAutomator:
 
     def _detect_edge(self) -> Optional[str]:
         """Locate the Edge executable."""
-        possible_paths = [
-            Path(p)
-            for p in (
-                shutil.which("msedge"),
-                shutil.which("msedge.exe"),
-                shutil.which("microsoft-edge"),
-            )
-        ]
+        possible_paths = []
+        for raw_path in (
+            shutil.which("msedge"),
+            shutil.which("msedge.exe"),
+            shutil.which("microsoft-edge"),
+        ):
+            if not raw_path:
+                continue
+            try:
+                possible_paths.append(Path(raw_path))
+            except TypeError:
+                continue
         for candidate in possible_paths:
-            if candidate.exists():
-                return str(candidate)
+            try:
+                if candidate.exists():
+                    return str(candidate)
+            except Exception:
+                continue
         try:
             located = shutil.which("msedge")
             if located:

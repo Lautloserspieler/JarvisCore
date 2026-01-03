@@ -1,0 +1,102 @@
+# .github/workflows/codeql.yml
+name: "CodeQL Advanced"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '36 22 * * 3'  # Mittwochs 22:36 UTC
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    timeout-minutes: 360  # 6 Stunden Max-Laufzeit
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - language: actions
+          build-mode: none
+        - language: go
+          build-mode: autobuild
+        - language: javascript-typescript
+          build-mode: none
+        - language: python
+          build-mode: none
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 🆕 Python-Setup für bessere Analyse
+    - name: Set up Python
+      if: matrix.language == 'python'
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    # 🆕 Python-Dependencies installieren
+    - name: Install Python dependencies
+      if: matrix.language == 'python'
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f backend/requirements.txt ]; then 
+          pip install -r backend/requirements.txt
+        fi
+
+    # 🆕 Node.js-Setup für Frontend
+    - name: Set up Node.js
+      if: matrix.language == 'javascript-typescript'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: 'frontend/package-lock.json'
+    
+    # 🆕 Node-Dependencies installieren
+    - name: Install Node dependencies
+      if: matrix.language == 'javascript-typescript'
+      working-directory: ./frontend
+      run: npm ci
+
+    # 🆕 Go-Setup
+    - name: Set up Go
+      if: matrix.language == 'go'
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+        cache: true
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ matrix.language }}
+        build-mode: ${{ matrix.build-mode }}
+        # 🆕 Aktiviere erweiterte Security-Queries
+        queries: +security-extended,security-and-quality
+        # 🆕 Custom Config für spezifische Pfade
+        config: |
+          paths-ignore:
+            - '**/node_modules'
+            - '**/dist'
+            - '**/build'
+            - '**/__pycache__'
+            - '**/venv'
+            - '**/tests/**'  # Optional: Tests ausschließen
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: "/language:${{matrix.language}}"
+        # 🆕 Upload auch bei Fehlern
+        upload: always

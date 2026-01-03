@@ -84,9 +84,21 @@ class YouTubePlugin:
         return " ".join(response_parts)
 
     def _is_youtube_request(self, command_lower: str) -> bool:
-        triggers = ["youtube", "you tube", "yt", "video", "audio", "musik"]
+        media_terms = [
+            "youtube",
+            "you tube",
+            "yt",
+            "video",
+            "audio",
+            "musik",
+            "song",
+            "lied",
+            "titel",
+            "track",
+            "playlist",
+        ]
         play_verbs = ["spiel", "spiele", "abspielen", "starte", "play"]
-        if any(trigger in command_lower for trigger in triggers) and any(
+        if any(term in command_lower for term in media_terms) and any(
             verb in command_lower for verb in play_verbs
         ):
             return True
@@ -119,7 +131,7 @@ class YouTubePlugin:
             r"(?i)\b(spiel(?:e|en|t)?|abspielen|starte|play(?:e)?)\b",
             r"(?i)\b(auf|bei|von)\s+(youtube|you\s*tube|yt)\b",
             r"(?i)\b(youtube|you\s*tube|yt)\b",
-            r"(?i)\b(nur\s+audio|mit\s+video|audio|video|musik)\b",
+            r"(?i)\b(nur\s+audio|mit\s+video|audio|video|musik|song|lied|titel|track|playlist)\b",
             r"(?i)\b(2160|1440|1080|720|480|360|240)p\b",
             r"(?i)\b(bitte|mir|mal)\b",
         ]

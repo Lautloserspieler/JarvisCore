@@ -159,6 +159,7 @@ async def download_model(
         total = response.headers.get("Content-Length")
         total_bytes = int(total) if total and total.isdigit() else None
         downloaded = 0
+        header_hash = _extract_header_hash(response.headers)
 
         hasher = hashlib.sha256()
         with temp_path.open("wb") as file_handle:
@@ -183,13 +184,20 @@ async def download_model(
                     )
         response.release()
 
-    normalized_expected = model.checksum.strip()
-    if normalized_expected.lower().startswith("sha256:"):
-        normalized_expected = normalized_expected.split(":", 1)[1].strip()
+    normalized_expected = _normalize_checksum(model.checksum)
     downloaded_hash = hasher.hexdigest().lower()
     if downloaded_hash != normalized_expected.lower():
-        temp_path.unlink(missing_ok=True)
-        raise ValueError(f"Checksum-Prüfung fehlgeschlagen für {model_id}")
+        if header_hash and downloaded_hash == header_hash.lower():
+            logger.warning(
+                "Checksumme stammt aus Response-Header (Download-URL weicht ab): %s",
+                active_url,
+            )
+        else:
+            temp_path.unlink(missing_ok=True)
+            raise ValueError(
+                "Checksum-Prüfung fehlgeschlagen für "
+                f"{model_id} (erwartet {normalized_expected}, erhalten {downloaded_hash})"
+            )
 
     temp_path.rename(output_path)
     result = register_model(model_id, output_path, model)
@@ -206,10 +214,7 @@ async def download_model(
 
 
 def _verify_checksum(file_path: Path, expected_checksum: str) -> bool:
-    normalized_expected = expected_checksum.strip()
-    prefix = "sha256:"
-    if normalized_expected.lower().startswith(prefix):
-        normalized_expected = normalized_expected[len(prefix) :].strip()
+    normalized_expected = _normalize_checksum(expected_checksum)
     hasher = hashlib.sha256()
     with file_path.open("rb") as file_handle:
         for chunk in iter(lambda: file_handle.read(CHUNK_SIZE_BYTES), b""):
@@ -418,6 +423,21 @@ def _build_download_headers() -> dict[str, str]:
     if not hf_token:
         return {}
     return {"Authorization": f"Bearer {hf_token}"}
+
+
+def _normalize_checksum(checksum: str) -> str:
+    normalized = checksum.strip()
+    if normalized.lower().startswith("sha256:"):
+        normalized = normalized.split(":", 1)[1].strip()
+    return normalized
+
+
+def _extract_header_hash(headers: "aiohttp.typedefs.LooseHeaders") -> str | None:
+    for key in ("X-Linked-ETag", "X-Checksum-Sha256", "ETag"):
+        value = headers.get(key)
+        if value:
+            return str(value).strip('"')
+    return None
 
 
 def _get_model_metadata(models: Iterable[ModelMetadata], model_id: str) -> ModelMetadata | None:

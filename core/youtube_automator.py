@@ -31,7 +31,13 @@ class YouTubeAutomator:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
-    def play_track(self, track: str) -> Tuple[bool, Optional[str], bool]:
+    def play_track(
+        self,
+        track: str,
+        *,
+        mode: str = "video",
+        quality_hint: Optional[str] = None,
+    ) -> Tuple[bool, Optional[str], bool]:
         """
         Resolve the given track on YouTube and launch playback.
 
@@ -41,10 +47,11 @@ class YouTubeAutomator:
         if not cleaned:
             return False, None, False
 
-        search_url = self._build_search_url(cleaned)
+        base_url = self._resolve_base_url(mode)
+        search_url = self._build_search_url(cleaned, base_url=base_url, quality_hint=quality_hint)
         video_url = None
         try:
-            video_url = self._resolve_top_result(cleaned)
+            video_url = self._resolve_top_result(cleaned, base_url=base_url, quality_hint=quality_hint)
         except Exception as exc:  # pragma: no cover
             self.logger.debug(f"Konnte YouTube-Ergebnis nicht auflösen: {exc}")
             video_url = None
@@ -59,13 +66,33 @@ class YouTubeAutomator:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
-    def _build_search_url(self, query: str) -> str:
+    def _build_search_url(
+        self,
+        query: str,
+        *,
+        base_url: str = "https://www.youtube.com",
+        quality_hint: Optional[str] = None,
+    ) -> str:
         encoded = urllib.parse.quote_plus(query)
-        return f"https://www.youtube.com/results?search_query={encoded}"
+        if "music.youtube.com" in base_url:
+            url = f"{base_url}/search?q={encoded}"
+        else:
+            url = f"{base_url}/results?search_query={encoded}"
+        if quality_hint and "music.youtube.com" not in base_url:
+            url = self._apply_quality_hint(url, quality_hint)
+        return url
 
-    def _resolve_top_result(self, query: str) -> Optional[str]:
+    def _resolve_top_result(
+        self,
+        query: str,
+        *,
+        base_url: str = "https://www.youtube.com",
+        quality_hint: Optional[str] = None,
+    ) -> Optional[str]:
         """Fetch the search page and extract the first video ID."""
-        url = self._build_search_url(query)
+        if "music.youtube.com" in base_url:
+            return None
+        url = self._build_search_url(query, base_url=base_url, quality_hint=quality_hint)
         headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -83,13 +110,15 @@ class YouTubeAutomator:
         if initial_data:
             video_id = self._extract_first_video_from_initial_data(initial_data)
             if video_id:
-                return f"https://www.youtube.com/watch?v={video_id}"
+                url = f"https://www.youtube.com/watch?v={video_id}"
+                return self._apply_quality_hint(url, quality_hint) if quality_hint else url
 
         # Fallback regex scan
         match = self._VIDEO_ID_PATTERN.search(text)
         if match:
             video_id = match.group("video_id")
-            return f"https://www.youtube.com/watch?v={video_id}"
+            url = f"https://www.youtube.com/watch?v={video_id}"
+            return self._apply_quality_hint(url, quality_hint) if quality_hint else url
         return None
 
     def _extract_yt_initial_data(self, html: str) -> Optional[dict]:
@@ -129,6 +158,30 @@ class YouTubeAutomator:
                     return str(video_id)
         return None
 
+    def _resolve_base_url(self, mode: str) -> str:
+        mode_normalized = (mode or "").strip().lower()
+        if mode_normalized in {"audio", "music", "audio-only", "audio_only"}:
+            return "https://music.youtube.com"
+        return "https://www.youtube.com"
+
+    def _apply_quality_hint(self, url: str, quality_hint: str) -> str:
+        if not quality_hint:
+            return url
+        parsed = urllib.parse.urlsplit(url)
+        query = urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+        query = [(key, value) for key, value in query if key != "vq"]
+        query.append(("vq", quality_hint))
+        new_query = urllib.parse.urlencode(query)
+        return urllib.parse.urlunsplit(
+            (parsed.scheme, parsed.netloc, parsed.path, new_query, parsed.fragment)
+        )
+
+    def edge_available(self) -> bool:
+        return bool(self._edge_path)
+
+    def edge_path(self) -> Optional[str]:
+        return self._edge_path
+
     def _detect_edge(self) -> Optional[str]:
         """Locate the Edge executable."""
         possible_paths = [
@@ -143,8 +196,6 @@ class YouTubeAutomator:
             if candidate.exists():
                 return str(candidate)
         try:
-            import shutil
-
             located = shutil.which("msedge")
             if located:
                 return located

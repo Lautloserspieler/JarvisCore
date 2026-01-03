@@ -10,7 +10,7 @@
         "general"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001001",
-      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-2-3b-q4.gguf",
+      "downloadUrl": "https://huggingface.co/meta-llama/Llama-3.2-3B",
       "languages": [
         "en",
         "de"
@@ -42,7 +42,7 @@
         "general"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001002",
-      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-2-8b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/meta-llama/Llama-3.2-8B",
       "languages": [
         "en",
         "de"
@@ -74,7 +74,7 @@
         "instruction"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001003",
-      "downloadUrl": "https://cdn.jarviscore.example/models/mistral-7b-instruct-q5.gguf",
+      "downloadUrl": "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3",
       "languages": [
         "en",
         "fr"
@@ -106,7 +106,7 @@
         "instruction"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001004",
-      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-2-3b-instruct-q4.gguf",
+      "downloadUrl": "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct",
       "languages": [
         "en",
         "de"
@@ -138,7 +138,7 @@
         "german"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001005",
-      "downloadUrl": "https://cdn.jarviscore.example/models/leolm-7b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/LeoLM/leo-mistral-hf",
       "languages": [
         "de",
         "en"
@@ -170,7 +170,7 @@
         "development"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001006",
-      "downloadUrl": "https://cdn.jarviscore.example/models/codellama-7b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/codellama/CodeLlama-7b-hf",
       "languages": [
         "en"
       ],
@@ -201,7 +201,7 @@
         "chat"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001007",
-      "downloadUrl": "https://cdn.jarviscore.example/models/qwen-2-5-7b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/Qwen/Qwen2.5-7B",
       "languages": [
         "en",
         "zh",
@@ -234,7 +234,7 @@
         "general"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001008",
-      "downloadUrl": "https://cdn.jarviscore.example/models/phi-3-mini-q4.gguf",
+      "downloadUrl": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct",
       "languages": [
         "en"
       ],
@@ -265,7 +265,7 @@
         "quality"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001009",
-      "downloadUrl": "https://cdn.jarviscore.example/models/gemma-2-9b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/google/gemma-2-9b",
       "languages": [
         "en",
         "de"
@@ -297,7 +297,7 @@
         "chat"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001010",
-      "downloadUrl": "https://cdn.jarviscore.example/models/hermes-2-pro-mistral-q5.gguf",
+      "downloadUrl": "https://huggingface.co/NousResearch/Hermes-2-Pro-Mistral-7B",
       "languages": [
         "en"
       ],
@@ -328,7 +328,7 @@
         "flagship"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001011",
-      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-1-70b-q4.gguf",
+      "downloadUrl": "https://huggingface.co/meta-llama/Meta-Llama-3.1-70B",
       "languages": [
         "en"
       ],
@@ -359,7 +359,7 @@
         "general"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001012",
-      "downloadUrl": "https://cdn.jarviscore.example/models/mixtral-8x7b-q4.gguf",
+      "downloadUrl": "https://huggingface.co/mistralai/Mixtral-8x7B-v0.1",
       "languages": [
         "en",
         "fr"
@@ -391,7 +391,7 @@
         "development"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001013",
-      "downloadUrl": "https://cdn.jarviscore.example/models/deepseek-coder-6-7b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/deepseek-ai/deepseek-coder-6.7b-base",
       "languages": [
         "en"
       ],
@@ -422,7 +422,7 @@
         "general"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001014",
-      "downloadUrl": "https://cdn.jarviscore.example/models/llama-3-2-1b-q4.gguf",
+      "downloadUrl": "https://huggingface.co/meta-llama/Llama-3.2-1B",
       "languages": [
         "en"
       ],
@@ -453,7 +453,7 @@
         "chat"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001015",
-      "downloadUrl": "https://cdn.jarviscore.example/models/em-german-7b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/OpenAssistant/em_german_7b",
       "languages": [
         "de"
       ],
@@ -484,7 +484,7 @@
         "quality"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001016",
-      "downloadUrl": "https://cdn.jarviscore.example/models/zephyr-7b-beta-q5.gguf",
+      "downloadUrl": "https://huggingface.co/HuggingFaceH4/zephyr-7b-beta",
       "languages": [
         "en"
       ],
@@ -515,7 +515,7 @@
         "advanced"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001017",
-      "downloadUrl": "https://cdn.jarviscore.example/models/qwen-2-5-14b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/Qwen/Qwen2.5-14B",
       "languages": [
         "en",
         "zh",
@@ -549,7 +549,7 @@
         "chat"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001018",
-      "downloadUrl": "https://cdn.jarviscore.example/models/aya-23-8b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/CohereForAI/aya-23-8B",
       "languages": [
         "en",
         "de",
@@ -587,7 +587,7 @@
         "multilingual"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001019",
-      "downloadUrl": "https://cdn.jarviscore.example/models/starcoder2-7b-q5.gguf",
+      "downloadUrl": "https://huggingface.co/bigcode/starcoder2-7b",
       "languages": [
         "en",
         "es",
@@ -621,7 +621,7 @@
         "creative"
       ],
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000001020",
-      "downloadUrl": "https://cdn.jarviscore.example/models/nous-hermes-2-mistral-q5.gguf",
+      "downloadUrl": "https://huggingface.co/NousResearch/Nous-Hermes-2-Mistral-7B-DPO",
       "languages": [
         "en"
       ],

@@ -55,7 +55,9 @@ async def _progress_callback(
     *,
     status: str | None = None,
     error_message: str | None = None,
+    errorMessage: str | None = None,
 ) -> None:
+    normalized_error = error_message or errorMessage
     payload: dict[str, Any] = {
         "model_id": model_id,
         "progress": progress,
@@ -64,8 +66,8 @@ async def _progress_callback(
     }
     if status is not None:
         payload["status"] = status
-    if error_message is not None:
-        payload["errorMessage"] = error_message
+    if normalized_error is not None:
+        payload["errorMessage"] = normalized_error
     await progress_broadcaster.broadcast(payload)
 
 
@@ -106,6 +108,15 @@ async def install_model(model_id: str) -> dict:
         model_id, gallery=gallery, progress_callback=_progress_callback
     )
     return {"status": "started", "model_id": model_id}
+
+
+@router.get("/gallery/preflight/{model_id}")
+async def preflight_model(model_id: str) -> dict:
+    gallery = model_gallery.fetch_gallery()
+    result = model_gallery.preflight_check_model(model_id, gallery=gallery)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
 
 
 @router.get("/installed")

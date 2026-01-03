@@ -382,14 +382,17 @@ const connectWebSocket = () => {
         status: 'downloading' as const,
       };
       const progressValue = payload.progress !== null ? Number(payload.progress) : null;
+      const payloadStatus = typeof payload.status === 'string' ? payload.status : null;
       const nextStatus =
-        progressValue !== null && progressValue >= 100 ? 'completed' : 'downloading';
+        payloadStatus ||
+        (progressValue !== null && progressValue >= 100 ? 'completed' : 'downloading');
       progressById.value[payload.model_id] = {
         ...current,
         progress: progressValue,
         downloaded: payload.downloaded ?? current.downloaded,
         total: payload.total ?? current.total,
         status: nextStatus,
+        errorMessage: payload.errorMessage ?? current.errorMessage,
       };
       if (nextStatus === 'completed' && current.status !== 'completed') {
         await loadInstalled();

@@ -100,7 +100,9 @@ def load_gallery(
     if use_cache:
         cached = _load_cache()
         if cached and _is_cache_valid(cached.cached_at, cache_ttl):
-            if _payload_has_placeholder_urls(cached.payload):
+            if _is_cache_stale_for_local_file(cached.cached_at, LOCAL_GALLERY_PATH):
+                LOGGER.info("Gallery-Cache ist älter als die lokale Datei, Cache wird ignoriert.")
+            elif _payload_has_placeholder_urls(cached.payload):
                 LOGGER.warning("Gallery-Cache enthaelt Platzhalter-URLs, Cache wird ignoriert.")
             else:
                 return _parse_payload(cached.payload)
@@ -331,3 +333,11 @@ def _parse_datetime(value: str | None) -> datetime | None:
         return parsed.astimezone(timezone.utc)
     except ValueError:
         return None
+
+
+def _is_cache_stale_for_local_file(cached_at: datetime, path: Path) -> bool:
+    try:
+        file_mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+    except OSError:
+        return False
+    return file_mtime > cached_at

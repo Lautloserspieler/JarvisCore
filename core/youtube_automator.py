@@ -143,8 +143,6 @@ class YouTubeAutomator:
             if candidate.exists():
                 return str(candidate)
         try:
-            import shutil
-
             located = shutil.which("msedge")
             if located:
                 return located

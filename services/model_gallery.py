@@ -186,28 +186,37 @@ async def download_model(
                     )
         response.release()
 
+    if total_bytes is not None and downloaded != total_bytes:
+        temp_path.unlink(missing_ok=True)
+        raise ValueError(
+            "Download unvollständig für "
+            f"{model_id} (erwartet {total_bytes} Bytes, erhalten {downloaded})"
+        )
+
     normalized_expected = _normalize_checksum(model.checksum)
     downloaded_hash = hasher.hexdigest().lower()
-    if downloaded_hash != normalized_expected.lower():
-        if header_hash and downloaded_hash == header_hash.lower():
+    expected_hash = normalized_expected
+    if header_hash and header_hash.lower() != normalized_expected.lower():
+        logger.warning(
+            "Checksumme aus Response-Header unterscheidet sich von Gallery (%s).",
+            model_id,
+        )
+        expected_hash = header_hash
+        _update_gallery_checksum(model_id, header_hash)
+
+    if downloaded_hash != expected_hash.lower():
+        refreshed = _fetch_hf_checksum(model, active_url)
+        if refreshed and refreshed.lower() == downloaded_hash:
             logger.warning(
-                "Checksumme stammt aus Response-Header (Download-URL weicht ab): %s",
-                active_url,
+                "Checksumme aktualisiert für %s aus HF-Metadaten.", model_id
             )
             _update_gallery_checksum(model_id, downloaded_hash)
         else:
-            refreshed = _fetch_hf_checksum(model, active_url)
-            if refreshed and refreshed.lower() == downloaded_hash:
-                logger.warning(
-                    "Checksumme aktualisiert für %s aus HF-Metadaten.", model_id
-                )
-                _update_gallery_checksum(model_id, downloaded_hash)
-            else:
-                temp_path.unlink(missing_ok=True)
-                raise ValueError(
-                    "Checksum-Prüfung fehlgeschlagen für "
-                    f"{model_id} (erwartet {normalized_expected}, erhalten {downloaded_hash})"
-                )
+            temp_path.unlink(missing_ok=True)
+            raise ValueError(
+                "Checksum-Prüfung fehlgeschlagen für "
+                f"{model_id} (erwartet {expected_hash}, erhalten {downloaded_hash})"
+            )
 
     temp_path.rename(output_path)
     result = register_model(model_id, output_path, model)

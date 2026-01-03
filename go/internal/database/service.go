@@ -413,11 +413,6 @@ func (s *Service) addMemoryHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Service) searchMemoriesHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 	memoryType := r.URL.Query().Get("type")
-	var tags []string
-
-	if tagsParam := r.URL.Query().Get("tags"); tagsParam != "" {
-		tags = strings.Split(tagsParam, ",")
-	}
 
 	rows, err := s.db.Query(
 		"SELECT id, content, type, tags, importance, created_at, updated_at FROM memories WHERE content ILIKE '%' || $1 || '%' AND ($2 = '' OR type = $2) ORDER BY importance DESC, updated_at DESC LIMIT 100",

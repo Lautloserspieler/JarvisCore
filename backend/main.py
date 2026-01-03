@@ -298,7 +298,7 @@ async def generate_ai_response(message: str, session_id: str) -> Tuple[str, bool
         print(f"[ERROR] AI generation exception: {e}")
         import traceback
         traceback.print_exc()
-        return f"Fehler bei der Antwort-Generierung: {str(e)}", False, None, None
+        return "Fehler bei der Antwort-Generierung.", False, None, None
 
 # WebSocket endpoint
 @app.websocket("/ws")
@@ -564,7 +564,7 @@ async def get_system_info():
         }
     except Exception as e:
         print(f"[ERROR] System info error: {e}")
-        return {"error": str(e), "timestamp": datetime.now().isoformat()}
+        return {"error": "Internal server error", "timestamp": datetime.now().isoformat()}
 
 # Health API  
 @app.get("/api/health")
@@ -732,8 +732,8 @@ async def load_model(model_id: str):
             return {"success": False, "message": "Fehler beim Laden des Modells"}
     except Exception as e:
         print(f"[ERROR] Model load failed: {e}")
-        logs_db.append({"id": str(uuid.uuid4()), "timestamp": datetime.now().isoformat(), "level": "error", "message": f"Model load exception: {str(e)}", "source": "models"})
-        return {"success": False, "message": str(e)}
+        logs_db.append({"id": str(uuid.uuid4()), "timestamp": datetime.now().isoformat(), "level": "error", "message": "Model load exception", "source": "models"})
+        return {"success": False, "message": "Fehler beim Laden des Modells"}
 
 @app.post("/api/models/unload")
 async def unload_model():
@@ -744,7 +744,7 @@ async def unload_model():
         return {"success": success, "message": "Modell entladen"}
     except Exception as e:
         print(f"[ERROR] Model unload failed: {e}")
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": "Fehler beim Entladen des Modells"}
 
 # Chat API
 @app.get("/api/chat/sessions")

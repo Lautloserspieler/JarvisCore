@@ -93,9 +93,9 @@ async def synthesize_speech(data: dict = Body(...)):
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"TTS synthesis error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception as exc:
+        logger.exception("TTS synthesis error")
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
 @router.get("/status")
@@ -124,12 +124,12 @@ async def get_tts_status():
     try:
         tts = get_tts_service()
         return tts.get_status()
-    except Exception as e:
-        logger.error(f"Failed to get TTS status: {e}")
+    except Exception:
+        logger.exception("Failed to get TTS status")
         return {
             "enabled": False,
             "available": False,
-            "error": str(e)
+            "error": "Internal server error"
         }
 
 
@@ -176,9 +176,9 @@ async def update_tts_config(config: dict = Body(...)):
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Failed to update TTS config: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception as exc:
+        logger.exception("Failed to update TTS config")
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
 @router.get("/languages")
@@ -223,8 +223,8 @@ async def get_supported_languages():
             for lang in languages:
                 code = lang['code']
                 lang['voice_available'] = voice_samples.get(code) != 'missing'
-        except Exception as e:
-            logger.warning(f"Could not check voice samples: {e}")
+        except Exception:
+            logger.exception("Could not check voice samples")
 
     return {
         "languages": languages,
@@ -267,9 +267,9 @@ async def get_available_voices():
             "engine": status.get('engine', 'unknown')
         }
 
-    except Exception as e:
-        logger.error(f"Failed to get voices: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception as exc:
+        logger.exception("Failed to get voices")
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
 __all__ = ['router']

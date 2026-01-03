@@ -115,7 +115,7 @@ async def synthesize_speech(data: dict = Body(...)):
         audio_path = await tts_service.synthesize(text, language)
 
         if not audio_path or not audio_path.exists():
-            logger.error("Audio synthesis failed for text: %s", _sanitize_for_log(text))
+            logger.error("Audio synthesis failed for text length: %d", len(text))
             return {"success": False, "message": "Audio synthesis failed"}
 
         logger.info(f"Audio synthesized: {audio_path}")
@@ -127,9 +127,9 @@ async def synthesize_speech(data: dict = Body(...)):
             headers={"Content-Disposition": f"attachment; filename=\"jarvis_{lang_str}.wav\""}
         )
 
-    except Exception as e:
-        logger.error(f"Synthesis endpoint error: {e}")
-        return {"success": False, "message": str(e)}
+    except Exception:
+        logger.exception("Synthesis endpoint error")
+        return {"success": False, "message": "Internal server error"}
 
 
 @router.get("/status")
@@ -257,6 +257,6 @@ async def test_tts(data: dict = Body(...)):
         else:
             return {"success": False, "message": "Test synthesis failed"}
 
-    except Exception as e:
-        logger.error(f"Test TTS error: {e}")
-        return {"success": False, "message": str(e)}
+    except Exception:
+        logger.exception("Test TTS error")
+        return {"success": False, "message": "Internal server error"}

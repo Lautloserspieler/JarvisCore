@@ -25,6 +25,7 @@ from config.gallery import (
     load_gallery,
     query_models,
 )
+from config.hf_token import load_token as load_hf_token
 
 MODELS_DIR = PROJECT_ROOT / "models" / "llm"
 REGISTRY_PATH = PROJECT_ROOT / "config" / "models.json"
@@ -122,7 +123,8 @@ async def download_model(
             if response.status == 401:
                 raise ValueError(
                     "Download erfordert einen HuggingFace-Token. "
-                    "Setze HF_TOKEN oder HUGGING_FACE_HUB_TOKEN."
+                    "Bitte Token in der Oberfläche speichern oder "
+                    "HF_TOKEN/HUGGING_FACE_HUB_TOKEN setzen."
                 )
             response.raise_for_status()
             total = response.headers.get("Content-Length")
@@ -326,7 +328,11 @@ def _resolve_bartowski_url(model: ModelMetadata) -> str | None:
 
 
 def _build_download_headers() -> dict[str, str]:
-    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    hf_token = (
+        os.environ.get("HF_TOKEN")
+        or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+        or load_hf_token()
+    )
     if not hf_token:
         return {}
     return {"Authorization": f"Bearer {hf_token}"}

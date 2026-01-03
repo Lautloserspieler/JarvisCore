@@ -54,6 +54,7 @@ class LlamaInference:
         model_name: str = "unknown",
         n_ctx: int = 4096,
         n_gpu_layers: Optional[int] = None,
+        n_threads: Optional[int] = None,
         verbose: bool = False
     ) -> bool:
         """Lade GGUF-Modell mit llama.cpp
@@ -63,6 +64,7 @@ class LlamaInference:
             model_name: Name des Modells (für Logging)
             n_ctx: Context-Window-Größe
             n_gpu_layers: Anzahl GPU-Layers (-1 = alle)
+            n_threads: Anzahl CPU-Threads (None = automatisch)
             verbose: Verbose-Modus
             
         Returns:
@@ -92,12 +94,13 @@ class LlamaInference:
                 
                 # GPU Layers
                 gpu_layers = n_gpu_layers if n_gpu_layers is not None else self.n_gpu_layers
+                threads = n_threads if n_threads is not None else (os.cpu_count() or 4)
                 
                 self.model = Llama(
                     model_path=str(model_path),
                     n_ctx=n_ctx,
                     n_gpu_layers=gpu_layers,
-                    n_threads=os.cpu_count() or 4,
+                    n_threads=threads,
                     verbose=verbose,
                     use_mmap=True,
                     use_mlock=False,

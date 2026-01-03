@@ -42,8 +42,11 @@ def clean_text_for_tts(text: str) -> str:
     Returns:
         Cleaned text suitable for TTS
     """
+    # Trim overly long input before regex processing
+    text = text[:5000]
+
     # Remove LLM special tokens
-    text = re.sub(r'<\|.*?\|>', '', text)  # <|endoftext|>, <|im_start|>, etc.
+    text = re.sub(r'<\|[^|]*\|>', '', text)  # <|endoftext|>, <|im_start|>, etc.
     text = re.sub(r'</?s>', '', text)  # <s>, </s>
     text = re.sub(r'\[INST\]|\[/INST\]', '', text)  # Llama instruction tokens
     text = re.sub(r'<<SYS>>|<</SYS>>', '', text)  # System tokens
@@ -105,7 +108,7 @@ async def synthesize_speech(data: dict = Body(...)):
         audio_path = await tts_service.synthesize(text, language)
 
         if not audio_path or not audio_path.exists():
-            logger.error(f"Audio synthesis failed for text: {text[:50]}")
+            logger.error("Audio synthesis failed for text length: %d", len(text))
             return {"success": False, "message": "Audio synthesis failed"}
 
         logger.info(f"Audio synthesized: {audio_path}")
@@ -117,9 +120,9 @@ async def synthesize_speech(data: dict = Body(...)):
             headers={"Content-Disposition": f"attachment; filename=\"jarvis_{lang_str}.wav\""}
         )
 
-    except Exception as e:
-        logger.error(f"Synthesis endpoint error: {e}")
-        return {"success": False, "message": str(e)}
+    except Exception:
+        logger.exception("Synthesis endpoint error")
+        return {"success": False, "message": "Internal server error"}
 
 
 @router.get("/status")
@@ -247,6 +250,6 @@ async def test_tts(data: dict = Body(...)):
         else:
             return {"success": False, "message": "Test synthesis failed"}
 
-    except Exception as e:
-        logger.error(f"Test TTS error: {e}")
-        return {"success": False, "message": str(e)}
+    except Exception:
+        logger.exception("Test TTS error")
+        return {"success": False, "message": "Internal server error"}

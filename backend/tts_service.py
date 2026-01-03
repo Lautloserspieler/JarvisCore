@@ -132,8 +132,8 @@ class TTSService:
             
             logger.info("✅ XTTS v2 initialized successfully")
             
-        except Exception as e:
-            logger.error(f"❌ XTTS initialization failed: {e}")
+        except Exception:
+            logger.exception("❌ XTTS initialization failed")
             
             # Fallback to pyttsx3
             if self.config.get('fallback_to_pyttsx3', True):
@@ -154,9 +154,9 @@ class TTSService:
             self.using_fallback = True
             logger.info("✅ pyttsx3 fallback initialized")
             
-        except Exception as e:
-            logger.error(f"❌ pyttsx3 initialization failed: {e}")
-            raise RuntimeError("No TTS engine available") from e
+        except Exception as exc:
+            logger.exception("❌ pyttsx3 initialization failed")
+            raise RuntimeError("No TTS engine available") from exc
     
     def _configure_pyttsx3(self) -> None:
         """Configure pyttsx3 settings."""
@@ -190,8 +190,8 @@ class TTSService:
             self.pyttsx3_engine.setProperty('rate', speed)
             self.pyttsx3_engine.setProperty('volume', 0.9)
             
-        except Exception as e:
-            logger.warning(f"Failed to configure pyttsx3: {e}")
+        except Exception:
+            logger.exception("Failed to configure pyttsx3")
     
     def synthesize(
         self,
@@ -260,7 +260,7 @@ class TTSService:
             output_path = Path(temp_path)
         
         try:
-            logger.info(f"🎙️ Synthesizing ({language.upper()}): '{text[:50]}...'")
+            logger.info("🎙️ Synthesizing (%s): len=%d", language.upper(), len(text))
             
             # Synthesize with voice cloning
             self.tts_engine.tts_to_file(
@@ -271,11 +271,11 @@ class TTSService:
                 temperature=self.config.get('temperature', 0.75)
             )
             
-            logger.info(f"✅ Audio synthesized: {output_path}")
+            logger.info("✅ Audio synthesized: %s", output_path)
             return output_path
             
-        except Exception as e:
-            logger.error(f"❌ XTTS synthesis failed: {e}")
+        except Exception:
+            logger.exception("❌ XTTS synthesis failed")
             if output_path and output_path.exists():
                 output_path.unlink()
             return None
@@ -293,19 +293,19 @@ class TTSService:
         try:
             if output_path:
                 # Save to file
-                logger.info(f"🔊 Synthesizing (pyttsx3): {output_path}")
+                logger.info("🔊 Synthesizing (pyttsx3): %s", output_path)
                 self.pyttsx3_engine.save_to_file(text, str(output_path))
                 self.pyttsx3_engine.runAndWait()
                 return output_path
             else:
                 # Direct playback
-                logger.info(f"🔊 Speaking (pyttsx3): '{text[:50]}...'")
+                logger.info("🔊 Speaking (pyttsx3): len=%d", len(text))
                 self.pyttsx3_engine.say(text)
                 self.pyttsx3_engine.runAndWait()
                 return None
                 
-        except Exception as e:
-            logger.error(f"❌ pyttsx3 synthesis failed: {e}")
+        except Exception:
+            logger.exception("❌ pyttsx3 synthesis failed")
             return None
     
     def _detect_language(self, text: str) -> str:
@@ -389,8 +389,8 @@ class TTSService:
             logger.info("TTS config updated")
             return True
             
-        except Exception as e:
-            logger.error(f"Failed to update TTS config: {e}")
+        except Exception:
+            logger.exception("Failed to update TTS config")
             return False
 
 

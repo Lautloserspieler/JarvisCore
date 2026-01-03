@@ -22,23 +22,23 @@ var dangerousPatterns = []*regexp.Regexp{
 	// System prompt manipulation
 	regexp.MustCompile(`(?i)(system\s*:|ignore\s+previous|forget\s+that|pretend\s+you\s+are)`),
 	regexp.MustCompile(`(?i)(new\s+instructions|override\s+instructions|disregard)`),
-	
+
 	// Code execution attempts
 	regexp.MustCompile(`(?i)(execute|eval|__import__|subprocess|os\.system)`),
 	regexp.MustCompile(`(?i)(exec\s*\(|eval\s*\(|compile\s*\()`),
-	
+
 	// Sensitive data extraction
 	regexp.MustCompile(`(?i)(password|secret|token|api[_-]?key|credentials)`),
 	regexp.MustCompile(`(?i)(private[_-]?key|access[_-]?token|auth[_-]?token)`),
-	
+
 	// Injection patterns
 	regexp.MustCompile(`(?i)(sql\s+injection|command\s+injection|code\s+injection)`),
 	regexp.MustCompile(`(?i)(\bUNION\s+SELECT|DROP\s+TABLE|DELETE\s+FROM)`),
-	
+
 	// Path traversal
 	regexp.MustCompile(`\.\.[\\/]`),
 	regexp.MustCompile(`(?i)(\.\.%2f|\.\.%5c)`),
-	
+
 	// Jailbreak attempts
 	regexp.MustCompile(`(?i)(DAN\s+mode|developer\s+mode|god\s+mode)`),
 	regexp.MustCompile(`(?i)(unrestricted|uncensored|no\s+filter)`),
@@ -46,21 +46,21 @@ var dangerousPatterns = []*regexp.Regexp{
 
 // Suspicious strings
 var suspiciousStrings = []string{
-	"<!--", "-->",        // HTML comments
-	"{{", "}}",          // Template injection
-	"${", "}",           // Expression injection
-	"\\x", "\\u",       // Encoding escape attempts
-	"\x00",              // Null byte
+	"<!--", "-->", // HTML comments
+	"{{", "}}", // Template injection
+	"${", "}", // Expression injection
+	"\\x", "\\u", // Encoding escape attempts
+	"\x00",                  // Null byte
 	"<script>", "</script>", // XSS
-	"javascript:",       // XSS
-	"data:text/html",    // Data URI XSS
+	"javascript:",         // XSS
+	"data:text/html",      // Data URI XSS
 	"onerror=", "onload=", // Event handlers
 }
 
 // Request/Response Models
 type ValidateRequest struct {
-	Input string `json:"input"`
-	Strict bool  `json:"strict"` // If true, reject on any warning
+	Input  string `json:"input"`
+	Strict bool   `json:"strict"` // If true, reject on any warning
 }
 
 type ValidateResponse struct {
@@ -150,7 +150,7 @@ func (v *PromptValidator) Validate(input string, strict bool) ValidateResponse {
 	}
 
 	// Check for unicode/encoding tricks
-	if strings.Contains(input, "\u") || strings.Contains(input, "\x") {
+	if strings.Contains(input, "\\u") || strings.Contains(input, "\\x") {
 		warnings = append(warnings, "Detected unicode/hex encoding")
 		stats.Warnings["encoding"]++
 	}

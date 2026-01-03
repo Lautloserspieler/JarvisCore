@@ -167,7 +167,7 @@ async def get_gpu_info():
         return gpu_manager.get_gpu_info()
     except Exception as e:
         print(f"[API] GPU info error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/settings/gpu/install")
 async def install_gpu_support(request: GPUInstallRequest):
@@ -189,7 +189,7 @@ async def install_gpu_support(request: GPUInstallRequest):
                 print(f"[GPU] Installation error: {e}")
                 return {
                     'status': 'error',
-                    'message': f'Installation error: {str(e)}'
+                    'message': 'Installation error'
                 }
         
         # Start installation in thread
@@ -203,7 +203,7 @@ async def install_gpu_support(request: GPUInstallRequest):
         }
     except Exception as e:
         print(f"[API] GPU install error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # ============================================================================
 # MODEL DOWNLOAD API ENDPOINTS
@@ -228,7 +228,7 @@ async def get_available_models():
         }
     except Exception as e:
         print(f"[API] Error getting available models: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/models/download")
 async def download_model(request: ModelDownloadRequest):
@@ -277,8 +277,8 @@ async def download_model(request: ModelDownloadRequest):
                     error_data = {
                         "model": model_key,
                         "status": "error",
-                        "message": str(e),
-                        "error": str(e)
+                        "message": "Internal server error",
+                        "error": "Internal server error"
                     }
                     _download_progress.update(error_data)
                     _active_downloads[model_key] = error_data
@@ -295,7 +295,7 @@ async def download_model(request: ModelDownloadRequest):
         }
     except Exception as e:
         print(f"[API] Download error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/models/download/progress")
 async def download_progress_sse(model_key: Optional[str] = Query(None)):
@@ -392,7 +392,7 @@ async def cancel_download(request: Dict[str, str]):
         }
     except Exception as e:
         print(f"[API] Cancel error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/models/variants")
 async def get_model_variants(model_key: str = Query(...)):
@@ -427,7 +427,7 @@ async def get_model_variants(model_key: str = Query(...)):
         }
     except Exception as e:
         print(f"[API] Error getting variants: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/models/delete")
 async def delete_model(request: ModelDeleteRequest):
@@ -461,7 +461,7 @@ async def delete_model(request: ModelDeleteRequest):
         }
     except Exception as e:
         print(f"[API] Delete error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 def _estimate_size(quantization: str) -> str:
     """Estimate model size based on quantization"""
@@ -492,7 +492,7 @@ async def health_check():
     except Exception as e:
         return JSONResponse(
             status_code=503,
-            content={"status": "error", "message": str(e)}
+            content={"status": "error", "message": "Internal server error"}
         )
 
 @app.get("/api/status")
@@ -502,7 +502,7 @@ async def get_status():
         jarvis = get_jarvis()
         return jarvis.get_runtime_status()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/metrics")
 async def get_metrics():
@@ -511,7 +511,7 @@ async def get_metrics():
         jarvis = get_jarvis()
         return jarvis.get_system_metrics(include_details=False)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/llm/status")
 async def llm_status():
@@ -520,7 +520,7 @@ async def llm_status():
         jarvis = get_jarvis()
         return jarvis.get_llm_status()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/llm/action")
 async def llm_action(request: LLMActionRequest):
@@ -541,7 +541,7 @@ async def llm_action(request: LLMActionRequest):
         return result
     except Exception as e:
         print(f"[API] LLM action error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/llm/load")
 async def load_model(request: dict):
@@ -552,7 +552,7 @@ async def load_model(request: dict):
         result = jarvis.control_llm_model("load", model_key)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/llm/unload")
 async def unload_model():
@@ -562,7 +562,7 @@ async def unload_model():
         result = jarvis.control_llm_model("unload")
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/plugins")
 async def get_plugins():
@@ -571,7 +571,7 @@ async def get_plugins():
         jarvis = get_jarvis()
         return jarvis.get_plugin_overview()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/command")
 async def execute_command(request: CommandRequest):
@@ -585,7 +585,7 @@ async def execute_command(request: CommandRequest):
         response = processor.process_command(request.command)
         return {"success": True, "response": response}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/chat/message")
 async def chat_message(request: ChatMessageRequest):
@@ -615,7 +615,7 @@ async def chat_message(request: ChatMessageRequest):
         }
     except Exception as e:
         print(f"[API] Chat error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/settings")
 async def save_setting(request: SettingRequest):
@@ -648,7 +648,7 @@ async def save_setting(request: SettingRequest):
         
         return {"success": True, "message": "Einstellung gespeichert"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/voice/start")
 async def start_listening():
@@ -658,7 +658,7 @@ async def start_listening():
         success = jarvis.start_listening()
         return {"success": success, "listening": jarvis.listening}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/voice/stop")
 async def stop_listening():
@@ -668,7 +668,7 @@ async def stop_listening():
         success = jarvis.stop_listening()
         return {"success": success, "listening": jarvis.listening}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # ============================================================================
 # WEBSOCKET
@@ -725,7 +725,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     print(f"[WS] Command error: {e}")
                     await websocket.send_json({
                         "type": "error",
-                        "message": str(e)
+                        "message": "Internal server error"
                     })
             
             elif msg_type == "chat":
@@ -761,7 +761,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     print(f"[WS] Chat error: {e}")
                     await websocket.send_json({
                         "type": "error",
-                        "message": str(e)
+                        "message": "Internal server error"
                     })
     
     except WebSocketDisconnect:

@@ -215,7 +215,7 @@ const minRating = ref<number | null>(null);
 const minSize = ref<number | null>(null);
 const maxSize = ref<number | null>(null);
 
-const progressById = ref<Record<string, ProgressState>>({});
+const progressById = ref<Record<string, ProgressState>>(Object.create(null));
 const installingIds = ref(new Set<string>());
 const activatingIds = ref(new Set<string>());
 const installedIds = ref(new Set<string>());
@@ -227,6 +227,9 @@ const showTokenDialog = ref(false);
 const tokenSaving = ref(false);
 const tokenError = ref<string | null>(null);
 const tokenModelId = ref<string | null>(null);
+
+const MODEL_ID_PATTERN = /^[a-zA-Z0-9._-]+$/;
+const isSafeModelId = (modelId: string) => MODEL_ID_PATTERN.test(modelId);
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let socket: WebSocket | null = null;
@@ -379,6 +382,10 @@ const promptForToken = async (modelId: string, message?: string | null) => {
 };
 
 const installModel = async (modelId: string) => {
+  if (!isSafeModelId(modelId)) {
+    errorMessage.value = 'Ungültige Modell-ID erkannt.';
+    return;
+  }
   if (installingIds.value.has(modelId)) return;
   installingIds.value.add(modelId);
   activeInstallId.value = modelId;
@@ -390,7 +397,8 @@ const installModel = async (modelId: string) => {
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/models/gallery/${modelId}/install`, {
+    const encodedId = encodeURIComponent(modelId);
+    const response = await fetch(`${API_BASE_URL}/api/models/gallery/${encodedId}/install`, {
       method: 'POST',
     });
     if (!response.ok) {
@@ -457,7 +465,8 @@ const connectWebSocket = () => {
   socket.onmessage = async (event) => {
     try {
       const payload = JSON.parse(event.data);
-      if (!payload.model_id) return;
+      if (!payload.model_id || typeof payload.model_id !== 'string') return;
+      if (!isSafeModelId(payload.model_id)) return;
       const current = progressById.value[payload.model_id] || {
         progress: null,
         downloaded: 0,

@@ -36,7 +36,7 @@ For more information, see: https://github.com/Lautloserspieler/JarvisCore
 
 def main():
     """Main CLI entry point."""
-    project_root = Path(__file__).parent.parent
+    project_root = Path(__file__).resolve().parents[2]
     
     # Parse arguments
     if len(sys.argv) < 2:

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -32,7 +33,7 @@ func main() {
 	go srv.Hub().Run(stop)
 
 	go func() {
-		logger.Printf("gatewayd lauscht auf %s", cfg.ListenAddr)
+		logger.Printf("gatewayd lauscht auf %s", sanitizeForLog(cfg.ListenAddr))
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatalf("HTTP-Server-Fehler: %v", err)
 		}

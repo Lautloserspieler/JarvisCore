@@ -1218,26 +1218,6 @@ class SystemControl:
             self.logger.error(f"Fehler bei Uptime-Berechnung: {e}")
             return "Unbekannt"
     
-    def get_network_status(self):
-        """Gibt Netzwerkstatus zur??ck"""
-        try:
-            net_io = psutil.net_io_counters()
-            if net_io:
-                return f"???{self.format_bytes(net_io.bytes_sent)} ???{self.format_bytes(net_io.bytes_recv)}"
-            else:
-                return "Keine Netzwerkdaten"
-        except Exception as e:
-            self.logger.error(f"Fehler bei Netzwerkstatus: {e}")
-            return "Unbekannt"
-    
-    def format_bytes(self, bytes_value):
-        """Formatiert Bytes in lesbare Einheiten"""
-        for unit in ['B', 'KB', 'MB', 'GB']:
-            if bytes_value < 1024:
-                return f"{bytes_value:.1f}{unit}"
-            bytes_value /= 1024
-        return f"{bytes_value:.1f}TB"
-    
     def get_running_processes(self):
         """Gibt Liste laufender Prozesse zur??ck"""
         try:

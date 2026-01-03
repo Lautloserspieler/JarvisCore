@@ -9,6 +9,7 @@ Provides text-to-speech functionality with:
 - Settings integration
 """
 import logging
+import re
 import os
 import tempfile
 import wave
@@ -43,6 +44,13 @@ except ImportError:
     torch = None
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_for_log(value: str, max_len: int = 120) -> str:
+    cleaned = re.sub(r"[\x00-\x1f\x7f]+", " ", value).strip()
+    if len(cleaned) > max_len:
+        return f"{cleaned[:max_len]}…"
+    return cleaned
 
 
 class TTSService:
@@ -260,7 +268,7 @@ class TTSService:
             output_path = Path(temp_path)
         
         try:
-            logger.info(f"🎙️ Synthesizing ({language.upper()}): '{text[:50]}...'")
+            logger.info("🎙️ Synthesizing (%s): '%s...'", language.upper(), _sanitize_for_log(text, 50))
             
             # Synthesize with voice cloning
             self.tts_engine.tts_to_file(
@@ -299,7 +307,7 @@ class TTSService:
                 return output_path
             else:
                 # Direct playback
-                logger.info(f"🔊 Speaking (pyttsx3): '{text[:50]}...'")
+                logger.info("🔊 Speaking (pyttsx3): '%s...'", _sanitize_for_log(text, 50))
                 self.pyttsx3_engine.say(text)
                 self.pyttsx3_engine.runAndWait()
                 return None

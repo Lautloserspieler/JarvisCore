@@ -1553,8 +1553,8 @@ class SystemControl:
             if result.returncode != 0:
                 raise RuntimeError(result.stderr.strip() or result.stdout.strip())
             return
-        file_mode = 0o444
-        dir_mode = 0o555
+        file_mode = 0o400
+        dir_mode = 0o500
         for target in self._iter_write_targets(root):
             try:
                 if target.is_dir():

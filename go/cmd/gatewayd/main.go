@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -59,6 +61,16 @@ func withLogging(logger *log.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		logger.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
+		path := sanitizeForLog(r.URL.EscapedPath())
+		logger.Printf("%s %s %s", r.Method, strconv.Quote(path), time.Since(start))
 	})
+}
+
+func sanitizeForLog(value string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 32 || r == 127 {
+			return -1
+		}
+		return r
+	}, value)
 }

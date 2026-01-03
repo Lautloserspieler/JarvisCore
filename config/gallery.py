@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 from urllib import error, request
+from urllib.parse import urlsplit, urlunsplit
 
 from pydantic import BaseModel, Field, HttpUrl, ValidationError, field_validator
 
@@ -17,6 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 LOCAL_GALLERY_PATH = REPO_ROOT / "config" / "models_gallery.json"
 CACHE_PATH = REPO_ROOT / "cache" / "gallery_cache.json"
 DEFAULT_CACHE_TTL = timedelta(days=1)
+GALLERY_CDN_BASE_URL_ENV = "GALLERY_CDN_BASE_URL"
 
 
 class GalleryError(RuntimeError):
@@ -113,6 +116,7 @@ def load_gallery(
     if payload is None:
         payload = _load_from_file(LOCAL_GALLERY_PATH)
 
+    payload = _apply_cdn_base_url(payload)
     gallery = _parse_payload(payload)
     _write_cache(payload)
     return gallery
@@ -232,6 +236,46 @@ def _load_from_cdn(cdn_url: str) -> dict:
         raise GalleryDownloadError(f"CDN konnte nicht geladen werden: {exc}") from exc
     except json.JSONDecodeError as exc:
         raise GalleryValidationError(f"Ungültiges JSON vom CDN: {exc}") from exc
+
+
+def _apply_cdn_base_url(payload: dict) -> dict:
+    base_url = os.getenv(GALLERY_CDN_BASE_URL_ENV)
+    if not base_url:
+        return payload
+
+    base_parts = urlsplit(base_url)
+    if not base_parts.scheme or not base_parts.netloc:
+        LOGGER.warning("Ungültige %s-URL: %s", GALLERY_CDN_BASE_URL_ENV, base_url)
+        return payload
+
+    models = payload.get("models")
+    if not isinstance(models, list):
+        return payload
+
+    normalized_base_path = base_parts.path.rstrip("/")
+
+    updated_models: list[dict] = []
+    for model in models:
+        if not isinstance(model, dict):
+            updated_models.append(model)
+            continue
+        download_url = model.get("downloadUrl")
+        if not isinstance(download_url, str):
+            updated_models.append(model)
+            continue
+        model_parts = urlsplit(download_url)
+        model_path = model_parts.path.lstrip("/")
+        combined_path = (
+            f"{normalized_base_path}/{model_path}"
+            if normalized_base_path
+            else f"/{model_path}"
+        )
+        updated_url = urlunsplit(
+            (base_parts.scheme, base_parts.netloc, combined_path, model_parts.query, model_parts.fragment)
+        )
+        updated_models.append({**model, "downloadUrl": updated_url})
+
+    return {**payload, "models": updated_models}
 
 
 def _parse_payload(payload: dict) -> GalleryPayload:

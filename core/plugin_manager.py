@@ -350,9 +350,10 @@ class PluginManager:
 class PluginWrapper:
     """Thin wrapper around a plugin instance."""
 
-    def __init__(self, plugin: Any) -> None:
+    def __init__(self, plugin: Any, plugin_name: Optional[str] = None) -> None:
         self._plugin = plugin
-        self.plugin_name = getattr(plugin, "plugin_name", plugin.__class__.__name__)
+        resolved_name = plugin_name or getattr(plugin, "plugin_name", plugin.__class__.__name__)
+        self.plugin_name = resolved_name
 
     def on_user_message(self, message: str, context: Dict[str, Any]) -> Optional[str]:
         return getattr(self._plugin, "on_user_message", lambda *_: None)(message, context)
@@ -385,11 +386,11 @@ class ThreadedPluginSandbox(PluginWrapper):
         plugin_name: Optional[str] = None,
     ) -> None:
         initial = factory()
-        super().__init__(initial)
+        resolved_name = plugin_name or getattr(initial, "plugin_name", initial.__class__.__name__)
+        super().__init__(initial, plugin_name=resolved_name)
         self.logger = logger
         self.timeout = timeout
         self._factory = factory
-        self.plugin_name = plugin_name or getattr(initial, "plugin_name", initial.__class__.__name__)
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix=f"plugin-{self.plugin_name}")
         self._restart_lock = threading.Lock()
 

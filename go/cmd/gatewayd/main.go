@@ -62,6 +62,7 @@ func withLogging(logger *log.Logger, next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		method := normalizeMethod(r.Method)
 		pathLen := len(r.URL.EscapedPath())
+		// codeql[go/log-injection]: Sanitized via normalizeMethod() which uses a strict allowlist
 		logger.Printf("request method=%s path_len=%d duration=%s", method, pathLen, time.Since(start))
 	})
 }
@@ -82,4 +83,13 @@ func normalizeMethod(value string) string {
 	default:
 		return "UNKNOWN"
 	}
+}
+
+func sanitizeForLog(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 32 || r == 127 {
+			return -1
+		}
+		return r
+	}, s)
 }
